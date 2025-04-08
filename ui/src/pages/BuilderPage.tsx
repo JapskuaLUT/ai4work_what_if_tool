@@ -1,104 +1,102 @@
 // ui/src/pages/BuilderPage.tsx
-// src/pages/BuilderPage.tsx
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
-const presets = {
-    coursework: {
-        lectures: "Mon 9–11, Wed 14–16",
-        projectHours: "4",
-        constraints:
-            "Max 6h/day\nAt least one free afternoon\nNo overlapping tasks"
-    },
-    "teaching-plan": {
-        lectures: "Tue 10–12, Thu 13–15",
-        projectHours: "6",
-        constraints: "Max 5h/day\nTwo free afternoons\nNo overlapping tasks"
-    }
+type Tasks = {
+    lectures: string[];
+    exercisesHours: number;
+    projectHours: number;
+    selfLearningHours: number;
+};
+
+type ScenarioInput = {
+    tasks: Tasks;
+    constraints: string[];
+};
+
+type Scenario = {
+    scenarioId: number;
+    description: string;
+    input: ScenarioInput;
+    output: { status: string };
 };
 
 export default function BuilderPage() {
-    const { projectId } = useParams<{ projectId: string }>();
-    const navigate = useNavigate();
+    const { param } = useParams<{ param: string }>();
+    const [inputData, setInputData] = useState<ScenarioInput | null>(null);
 
-    const [form, setForm] = useState({
-        lectures: "",
-        projectHours: "",
-        constraints: ""
-    });
+    console.log(`param is:${param}`);
 
-    // Prepopulate form when projectId changes
     useEffect(() => {
-        if (projectId && presets[projectId as keyof typeof presets]) {
-            setForm(presets[projectId as keyof typeof presets]);
+        async function fetchData() {
+            try {
+                const response = await fetch(`/data/${param}.json`);
+                const data = await response.json();
+
+                const scenario = data.scenarios.find(
+                    (s: Scenario) => String(s.scenarioId) === param
+                );
+
+                if (scenario) {
+                    setInputData(scenario.input);
+                } else {
+                    console.warn("Scenario not found for ID:", param);
+                }
+            } catch (error) {
+                console.error("Failed to fetch coursework data:", error);
+            }
         }
-    }, [projectId]);
 
-    const handleChange = (field: string, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
-    };
+        fetchData();
+    }, [param]);
 
-    const handleSubmit = () => {
-        console.log("Submitting scenario:", form);
-        // Simulate navigation to the new results page with preloaded scenarios
-        navigate("/results");
-    };
-
-    const label =
-        projectId === "coursework"
-            ? "Coursework Scheduling"
-            : "Teaching Plan Scheduling";
+    if (!inputData) {
+        return <div className="p-4">Loading scenario data...</div>;
+    }
 
     return (
-        <div className="max-w-2xl mx-auto p-6 space-y-6">
-            <h1 className="text-2xl font-bold">{label} – Scenario Builder</h1>
+        <div className="p-6 space-y-6 max-w-2xl mx-auto">
+            <div>
+                <Label>Lectures</Label>
+                <Textarea
+                    value={inputData.tasks.lectures.join("\n")}
+                    readOnly
+                />
+            </div>
 
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium">
-                        Lectures
-                    </label>
-                    <Input
-                        placeholder="e.g. Mon 9–11, Wed 14–16"
-                        value={form.lectures}
-                        onChange={(e) =>
-                            handleChange("lectures", e.target.value)
-                        }
-                    />
-                </div>
+            <div>
+                <Label>Exercise Hours</Label>
+                <Input
+                    type="number"
+                    value={inputData.tasks.exercisesHours}
+                    readOnly
+                />
+            </div>
 
-                <div>
-                    <label className="block text-sm font-medium">
-                        Project Hours
-                    </label>
-                    <Input
-                        placeholder="e.g. 4"
-                        value={form.projectHours}
-                        onChange={(e) =>
-                            handleChange("projectHours", e.target.value)
-                        }
-                    />
-                </div>
+            <div>
+                <Label>Project Hours</Label>
+                <Input
+                    type="number"
+                    value={inputData.tasks.projectHours}
+                    readOnly
+                />
+            </div>
 
-                <div>
-                    <label className="block text-sm font-medium">
-                        Constraints
-                    </label>
-                    <Textarea
-                        placeholder="Max 6h/day, No overlapping tasks..."
-                        value={form.constraints}
-                        onChange={(e) =>
-                            handleChange("constraints", e.target.value)
-                        }
-                    />
-                </div>
+            <div>
+                <Label>Self-Learning Hours</Label>
+                <Input
+                    type="number"
+                    value={inputData.tasks.selfLearningHours}
+                    readOnly
+                />
+            </div>
 
-                <div className="pt-4">
-                    <Button onClick={handleSubmit}>Generate & Compare</Button>
-                </div>
+            <div>
+                <Label>Constraints</Label>
+                <Textarea value={inputData.constraints.join("\n")} readOnly />
             </div>
         </div>
     );
