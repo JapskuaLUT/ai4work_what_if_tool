@@ -31,7 +31,49 @@
                     "Minimum 30-minute break between tasks"
                 ]
             },
-            "output": { "status": "feasible" }
+            "output": {
+                "status": "feasible",
+                "schedule": [
+                    {
+                        "day": "Mon",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Lecture" },
+                            { "time": "15:30–17:30", "task": "Exercises" }
+                        ]
+                    },
+                    {
+                        "day": "Tue",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" }
+                        ]
+                    },
+                    {
+                        "day": "Wed",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" }
+                        ]
+                    },
+                    {
+                        "day": "Thu",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "13–15", "task": "Project" },
+                            { "time": "15:30–17:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Fri",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Self-learning" },
+                            { "time": "15:30–17:30", "task": "Self-learning" }
+                        ]
+                    }
+                ]
+            }
         },
         {
             "scenarioId": 2,
@@ -62,7 +104,7 @@
                     "Lectures must be completed within weekdays only"
                 ]
             },
-            "output": { "status": "infeasible" }
+            "output": { "status": "infeasible", "schedule": [] }
         },
         {
             "scenarioId": 3,
@@ -93,7 +135,7 @@
                     "All study must be in 2+ hour blocks"
                 ]
             },
-            "output": { "status": "infeasible" }
+            "output": { "status": "infeasible", "schedule": [] }
         },
         {
             "scenarioId": 4,
@@ -124,7 +166,48 @@
                     "Must have one day with only lectures"
                 ]
             },
-            "output": { "status": "feasible" }
+            "output": {
+                "status": "feasible",
+                "schedule": [
+                    {
+                        "day": "Mon",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Lecture" },
+                            { "time": "15:30–17:30", "task": "Exercises" },
+                            { "time": "17:30–19:00", "task": "Self-learning" }
+                        ]
+                    },
+                    {
+                        "day": "Tue",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" },
+                            { "time": "16:30–18:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Wed",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" },
+                            { "time": "16:30–18:30", "task": "Self-learning" }
+                        ]
+                    },
+                    {
+                        "day": "Thu",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "13–15", "task": "Project" },
+                            { "time": "15:30–17:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Fri",
+                        "timeBlocks": [{ "time": "9–11", "task": "Lecture" }]
+                    }
+                ]
+            }
         }
     ]
 }

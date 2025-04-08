@@ -12,10 +12,13 @@ export default function App() {
                 <Routes>
                     <Route path="/" element={<MainPage />} />
                     <Route
-                        path="/builder/:param"
-                        element={<BuilderPage />} // <-- Add this route
+                        path="/builder/:projectId"
+                        element={<BuilderPage />}
                     />
-                    <Route path="/results" element={<ScheduleResultsPage />} />
+                    <Route
+                        path="/results/:projectId"
+                        element={<ScheduleResultsPage />}
+                    />
                 </Routes>
             </AppLayout>
         </BrowserRouter>

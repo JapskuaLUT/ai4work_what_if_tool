@@ -3,15 +3,17 @@ import { ComparisonView } from "@/components/scenario/ComparisonView";
 import { ScenarioView } from "@/components/scenario/ScenarioView";
 import { useState, useEffect } from "react";
 import { Scenario } from "@/types";
+import { useParams } from "react-router-dom";
 
 export default function ScheduleResultsPage() {
+    const { projectId } = useParams<{ projectId: string }>();
     const [activeTab, setActiveTab] = useState("compare");
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
 
     useEffect(() => {
         async function fetchScenarios() {
             try {
-                const res = await fetch("/data/scenarios.json");
+                const res = await fetch(`/data/${projectId}.json`);
                 const json = await res.json();
                 setScenarios(json.scenarios);
             } catch (err) {
