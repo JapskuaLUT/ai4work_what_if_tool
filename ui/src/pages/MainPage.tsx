@@ -1,50 +1,40 @@
 // ui/src/pages/MainPage.tsx
 
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 export default function MainPage() {
     const navigate = useNavigate();
-    const [selectedScenario, setSelectedScenario] = useState("");
 
-    const handleScenarioSelect = (id: string) => {
-        setSelectedScenario(id); // mark tab as selected
-        navigate(`/scheduler/${id}`); // navigate to page
+    const handleProjectSelect = (project: string) => {
+        // Navigate to an input page for the selected project
+        navigate(`/builder/${project}`);
     };
 
     return (
-        <div className="p-8 space-y-6">
-            <header className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold">Explainable AI Scheduler</h1>
-                <Tabs
-                    value={selectedScenario}
-                    onValueChange={handleScenarioSelect}
-                >
-                    <TabsList>
-                        <TabsTrigger value="1">Scenario 1</TabsTrigger>
-                        <TabsTrigger value="2">Scenario 2</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                <Button
-                    variant="secondary"
-                    onClick={() => navigate("/scheduler/compare")}
-                >
-                    Compare Scenarios
-                </Button>
-            </header>
+        <div className="p-10 space-y-8 text-center">
+            <h1 className="text-4xl font-bold text-primary">
+                Welcome to Explainable AI Scheduler
+            </h1>
+            <p className="text-muted-foreground text-lg">
+                This tool helps non-technical users understand and compare
+                AI-generated schedules based on real-world constraints.
+            </p>
 
-            <section className="text-center text-muted-foreground">
-                <p>
-                    Select a scenario above to view its schedule and
-                    explanations, or compare scenarios side by side.
-                </p>
-                <p className="mt-2">
-                    This tool helps non-technical users understand why certain
-                    scheduling decisions were made.
-                </p>
-            </section>
+            <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 justify-center max-w-3xl mx-auto">
+                <Button
+                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
+                    onClick={() => handleProjectSelect("coursework")}
+                >
+                    📘 Coursework Scheduling
+                </Button>
+                <Button
+                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
+                    onClick={() => handleProjectSelect("teaching-plan")}
+                >
+                    🧑‍🏫 Teaching Plan Scheduling
+                </Button>
+            </div>
         </div>
     );
 }
