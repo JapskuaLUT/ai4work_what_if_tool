@@ -22,7 +22,6 @@ type Scenario = {
     scenarioId: number;
     description: string;
     input: ScenarioInput;
-    output: { status: string };
 };
 
 type CourseworkPlan = {
@@ -46,8 +45,7 @@ export default function BuilderPage() {
                 selfLearningHours: 0
             },
             constraints: []
-        },
-        output: { status: "feasible" }
+        }
     });
 
     useEffect(() => {
@@ -77,8 +75,7 @@ export default function BuilderPage() {
                     selfLearningHours: 0
                 },
                 constraints: []
-            },
-            output: { status: "feasible" }
+            }
         });
     };
 
@@ -107,9 +104,6 @@ export default function BuilderPage() {
                             <CardTitle>
                                 Scenario {s.scenarioId}: {s.description}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Status: <strong>{s.output.status}</strong>
-                            </p>
                         </CardHeader>
                         <CardContent>
                             <p>
