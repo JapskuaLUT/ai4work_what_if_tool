@@ -1,6 +1,6 @@
 // ui/src/hooks/useOllama.ts
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
     generateCompletion,
     streamCompletion,
@@ -74,7 +74,7 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
     const [modelsError, setModelsError] = useState<Error | null>(null);
 
     // Reference to the controller for cancellation
-    const abortControllerRef = { current: new AbortController() };
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Reset all state
     const resetState = useCallback(() => {
@@ -94,22 +94,36 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
                 setLoading(true);
                 setError(null);
 
+                // Create a new AbortController for this request
+                abortControllerRef.current = new AbortController();
+
                 const params: GenerateParams = {
                     model: options?.model || defaultModel,
                     prompt,
                     ...options
                 };
 
-                const result = await generateCompletion(params);
+                const result = await generateCompletion(
+                    params,
+                    abortControllerRef.current.signal
+                );
                 setResponse(result.response);
                 return result;
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err));
-                setError(error);
-                throw error;
+                // Don't set error state if it was an abort
+                if (err instanceof Error && err.name === "AbortError") {
+                    console.log("Request aborted");
+                } else {
+                    const error =
+                        err instanceof Error ? err : new Error(String(err));
+                    setError(error);
+                    throw error;
+                }
+                throw err;
             } finally {
-                setLoading(false);
+                if (!abortControllerRef.current?.signal.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [defaultModel]
@@ -136,26 +150,50 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
                     ...options
                 };
 
-                await streamCompletion(params, {
-                    onStart: () => {
-                        setStreamingResponse("");
+                await streamCompletion(
+                    params,
+                    {
+                        onStart: () => {
+                            setStreamingResponse("");
+                        },
+                        onToken: (token) => {
+                            if (!abortControllerRef.current?.signal.aborted) {
+                                setStreamingResponse((prev) => prev + token);
+                            }
+                        },
+                        onComplete: (fullResponse) => {
+                            if (!abortControllerRef.current?.signal.aborted) {
+                                setResponse(fullResponse);
+                                setLoading(false);
+                            }
+                        },
+                        onError: (err) => {
+                            // Only set error if it's not an abort error
+                            if (
+                                err.message !== "Stream aborted" &&
+                                err.message !== "Request aborted"
+                            ) {
+                                setError(err);
+                            }
+                            setLoading(false);
+                        }
                     },
-                    onToken: (token) => {
-                        setStreamingResponse((prev) => prev + token);
-                    },
-                    onComplete: (fullResponse) => {
-                        setResponse(fullResponse);
-                        setLoading(false);
-                    },
-                    onError: (err) => {
-                        setError(err);
-                        setLoading(false);
-                    }
-                });
+                    abortControllerRef.current.signal
+                );
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err));
-                setError(error);
+                // Don't set error state if it was an abort
+                if (
+                    err instanceof Error &&
+                    (err.name === "AbortError" ||
+                        err.message === "Stream aborted" ||
+                        err.message === "Request aborted")
+                ) {
+                    console.log("Request aborted");
+                } else {
+                    const error =
+                        err instanceof Error ? err : new Error(String(err));
+                    setError(error);
+                }
                 setLoading(false);
             }
         },
@@ -183,26 +221,50 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
                     ...options
                 };
 
-                await streamChatCompletion(params, {
-                    onStart: () => {
-                        setStreamingResponse("");
+                await streamChatCompletion(
+                    params,
+                    {
+                        onStart: () => {
+                            setStreamingResponse("");
+                        },
+                        onToken: (token) => {
+                            if (!abortControllerRef.current?.signal.aborted) {
+                                setStreamingResponse((prev) => prev + token);
+                            }
+                        },
+                        onComplete: (fullResponse) => {
+                            if (!abortControllerRef.current?.signal.aborted) {
+                                setResponse(fullResponse);
+                                setLoading(false);
+                            }
+                        },
+                        onError: (err) => {
+                            // Only set error if it's not an abort error
+                            if (
+                                err.message !== "Stream aborted" &&
+                                err.message !== "Request aborted"
+                            ) {
+                                setError(err);
+                            }
+                            setLoading(false);
+                        }
                     },
-                    onToken: (token) => {
-                        setStreamingResponse((prev) => prev + token);
-                    },
-                    onComplete: (fullResponse) => {
-                        setResponse(fullResponse);
-                        setLoading(false);
-                    },
-                    onError: (err) => {
-                        setError(err);
-                        setLoading(false);
-                    }
-                });
+                    abortControllerRef.current.signal
+                );
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err));
-                setError(error);
+                // Don't set error state if it was an abort
+                if (
+                    err instanceof Error &&
+                    (err.name === "AbortError" ||
+                        err.message === "Stream aborted" ||
+                        err.message === "Request aborted")
+                ) {
+                    console.log("Request aborted");
+                } else {
+                    const error =
+                        err instanceof Error ? err : new Error(String(err));
+                    setError(error);
+                }
                 setLoading(false);
             }
         },
@@ -219,22 +281,36 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
                 setLoading(true);
                 setError(null);
 
+                // Create a new AbortController for this request
+                abortControllerRef.current = new AbortController();
+
                 const params: GenerateParams = {
                     model: options?.model || defaultModel,
                     prompt,
                     ...options
                 };
 
-                const result = await syncGenerate(params);
+                const result = await syncGenerate(
+                    params,
+                    abortControllerRef.current.signal
+                );
                 setResponse(result);
                 return result;
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err));
-                setError(error);
-                throw error;
+                // Don't set error state if it was an abort
+                if (err instanceof Error && err.name === "AbortError") {
+                    console.log("Request aborted");
+                } else {
+                    const error =
+                        err instanceof Error ? err : new Error(String(err));
+                    setError(error);
+                    throw error;
+                }
+                throw err;
             } finally {
-                setLoading(false);
+                if (!abortControllerRef.current?.signal.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [defaultModel]
@@ -250,22 +326,36 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
                 setLoading(true);
                 setError(null);
 
+                // Create a new AbortController for this request
+                abortControllerRef.current = new AbortController();
+
                 const params: ChatParams = {
                     model: options?.model || defaultModel,
                     messages,
                     ...options
                 };
 
-                const result = await syncChat(params);
+                const result = await syncChat(
+                    params,
+                    abortControllerRef.current.signal
+                );
                 setResponse(result);
                 return result;
             } catch (err) {
-                const error =
-                    err instanceof Error ? err : new Error(String(err));
-                setError(error);
-                throw error;
+                // Don't set error state if it was an abort
+                if (err instanceof Error && err.name === "AbortError") {
+                    console.log("Request aborted");
+                } else {
+                    const error =
+                        err instanceof Error ? err : new Error(String(err));
+                    setError(error);
+                    throw error;
+                }
+                throw err;
             } finally {
-                setLoading(false);
+                if (!abortControllerRef.current?.signal.aborted) {
+                    setLoading(false);
+                }
             }
         },
         [defaultModel]
@@ -273,8 +363,12 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
 
     // Cancel streaming
     const cancelStream = useCallback(() => {
-        abortControllerRef.current.abort();
-        setLoading(false);
+        if (abortControllerRef.current) {
+            console.log("Aborting request...");
+            abortControllerRef.current.abort();
+            // Reset loading state immediately on cancel
+            setLoading(false);
+        }
     }, []);
 
     // Fetch available models
@@ -283,13 +377,23 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
             setLoadingModels(true);
             setModelsError(null);
 
-            const models = await listModels();
+            // Create a new AbortController for this request
+            const controller = new AbortController();
+
+            const models = await listModels(controller.signal);
             setAvailableModels(models.models);
             return models;
         } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err));
-            setModelsError(error);
-            throw error;
+            // Don't set error state if it was an abort
+            if (err instanceof Error && err.name === "AbortError") {
+                console.log("Models request aborted");
+            } else {
+                const error =
+                    err instanceof Error ? err : new Error(String(err));
+                setModelsError(error);
+                throw error;
+            }
+            throw err;
         } finally {
             setLoadingModels(false);
         }

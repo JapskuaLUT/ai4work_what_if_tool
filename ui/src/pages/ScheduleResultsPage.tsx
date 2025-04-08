@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CourseworkPlan } from "@/types/builder";
+import { AIExplanationBox } from "@/components/results/AIExplanationBox";
 
 export default function ScheduleResultsPage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -114,6 +115,8 @@ export default function ScheduleResultsPage() {
                 feasibleCount={feasibleCount}
                 infeasibleCount={infeasibleCount}
             />
+
+            <AIExplanationBox plan={plan} />
 
             <Tabs
                 value={activeTab}
