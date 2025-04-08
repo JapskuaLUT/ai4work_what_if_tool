@@ -36,6 +36,41 @@ export interface ModelResponse {
     eval_duration?: number;
 }
 
+// Interface for chat request parameters
+export interface ChatParams {
+    model: string;
+    messages: {
+        role: "user" | "assistant" | "system";
+        content: string;
+    }[];
+    stream?: boolean;
+    options?: {
+        temperature?: number;
+        top_p?: number;
+        top_k?: number;
+        num_predict?: number;
+        seed?: number;
+        stop?: string[];
+    };
+}
+
+// Interface for chat response
+export interface ChatResponse {
+    model: string;
+    created_at: string;
+    message: {
+        role: string;
+        content: string;
+    };
+    done: boolean;
+    total_duration?: number;
+    load_duration?: number;
+    prompt_eval_count?: number;
+    prompt_eval_duration?: number;
+    eval_count?: number;
+    eval_duration?: number;
+}
+
 // Interface for models list response
 export interface ModelsListResponse {
     models: {
@@ -62,7 +97,7 @@ export interface StreamCallbacks {
 }
 
 /**
- * Generate a response from the Ollama model
+ * Generate a response from the Ollama model (non-streaming)
  */
 export async function generateCompletion(
     params: GenerateParams
@@ -73,7 +108,7 @@ export async function generateCompletion(
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(params)
+            body: JSON.stringify({ ...params, stream: false })
         });
 
         if (!response.ok) {
@@ -88,6 +123,73 @@ export async function generateCompletion(
         return (await response.json()) as ModelResponse;
     } catch (error) {
         console.error("Error calling Ollama:", error);
+        throw error;
+    }
+}
+
+/**
+ * Generate a chat response from the Ollama model (non-streaming)
+ * Uses the /chat API endpoint which is available in newer Ollama versions
+ */
+export async function chatCompletion(
+    params: ChatParams
+): Promise<ChatResponse> {
+    try {
+        const response = await fetch(`${OLLAMA_API_URL}/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ ...params, stream: false })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+                `Ollama API error: ${response.status} ${
+                    response.statusText
+                } ${JSON.stringify(errorData)}`
+            );
+        }
+
+        return (await response.json()) as ChatResponse;
+    } catch (error) {
+        console.error("Error calling Ollama chat:", error);
+        throw error;
+    }
+}
+
+/**
+ * Execute a synchronous (non-streaming) API call to Ollama
+ * This is useful when you need to wait for the entire response
+ * before continuing with other operations
+ */
+export async function syncGenerate(params: GenerateParams): Promise<string> {
+    try {
+        const result = await generateCompletion({
+            ...params,
+            stream: false
+        });
+        return result.response;
+    } catch (error) {
+        console.error("Error in syncGenerate:", error);
+        throw error;
+    }
+}
+
+/**
+ * Execute a synchronous (non-streaming) chat API call to Ollama
+ * Returns just the content of the assistant's response
+ */
+export async function syncChat(params: ChatParams): Promise<string> {
+    try {
+        const result = await chatCompletion({
+            ...params,
+            stream: false
+        });
+        return result.message.content;
+    } catch (error) {
+        console.error("Error in syncChat:", error);
         throw error;
     }
 }
@@ -172,6 +274,93 @@ export async function streamCompletion(
         }
     } catch (error) {
         console.error("Error streaming from Ollama:", error);
+        if (callbacks.onError) {
+            callbacks.onError(error as Error);
+        }
+    }
+}
+
+/**
+ * Stream a chat response from the Ollama model
+ * Uses the /chat API endpoint which is available in newer Ollama versions
+ */
+export async function streamChatCompletion(
+    params: ChatParams,
+    callbacks: StreamCallbacks
+): Promise<void> {
+    try {
+        if (callbacks.onStart) {
+            callbacks.onStart();
+        }
+
+        const response = await fetch(`${OLLAMA_API_URL}/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ ...params, stream: true })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+                `Ollama API error: ${response.status} ${
+                    response.statusText
+                } ${JSON.stringify(errorData)}`
+            );
+        }
+
+        if (!response.body) {
+            throw new Error("Response body is null");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                if (callbacks.onComplete) {
+                    callbacks.onComplete(fullResponse);
+                }
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+
+            // Handle multiple JSON objects in the chunk
+            const lines = chunk
+                .split("\n")
+                .filter((line) => line.trim() !== "");
+
+            for (const line of lines) {
+                try {
+                    const data = JSON.parse(line) as ChatResponse;
+
+                    if (callbacks.onToken) {
+                        callbacks.onToken(data.message.content);
+                    }
+
+                    fullResponse += data.message.content;
+
+                    if (data.done) {
+                        if (callbacks.onComplete) {
+                            callbacks.onComplete(fullResponse);
+                        }
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error parsing JSON from stream:",
+                        error,
+                        line
+                    );
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error streaming from Ollama chat:", error);
         if (callbacks.onError) {
             callbacks.onError(error as Error);
         }

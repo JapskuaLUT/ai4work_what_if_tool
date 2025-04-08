@@ -5,6 +5,7 @@ import { OllamaChat } from "@/components/chat/OllamaChat";
 import { OllamaChatHistory } from "@/components/chat/OllamaChatHistory";
 import { OllamaContextChat } from "@/components/chat/OllamaContextChat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OllamaSyncExample } from "@/components/chat/OllamaSyncExample";
 
 export default function OllamaPage() {
     const [activeTab, setActiveTab] = useState("simple");
@@ -25,6 +26,7 @@ export default function OllamaPage() {
                     <TabsTrigger value="simple">Simple</TabsTrigger>
                     <TabsTrigger value="chat">Chat History</TabsTrigger>
                     <TabsTrigger value="context">Context Chat</TabsTrigger>
+                    <TabsTrigger value="sync">Sync API</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="simple">
@@ -37,6 +39,10 @@ export default function OllamaPage() {
 
                 <TabsContent value="context">
                     <OllamaContextChat />
+                </TabsContent>
+
+                <TabsContent value="sync">
+                    <OllamaSyncExample />
                 </TabsContent>
             </Tabs>
         </div>

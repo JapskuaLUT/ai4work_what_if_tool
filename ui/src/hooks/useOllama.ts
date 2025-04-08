@@ -5,7 +5,11 @@ import {
     generateCompletion,
     streamCompletion,
     listModels,
+    syncGenerate,
+    syncChat,
+    streamChatCompletion,
     GenerateParams,
+    ChatParams,
     ModelResponse,
     ModelsListResponse
 } from "../services/ollamaService";
@@ -23,7 +27,7 @@ interface UseOllamaReturn {
     loadingModels: boolean;
     modelsError: Error | null;
 
-    // Methods
+    // Methods - Streaming
     generate: (
         prompt: string,
         options?: Partial<GenerateParams>
@@ -32,6 +36,22 @@ interface UseOllamaReturn {
         prompt: string,
         options?: Partial<GenerateParams>
     ) => Promise<void>;
+    streamChat: (
+        messages: ChatParams["messages"],
+        options?: Partial<ChatParams>
+    ) => Promise<void>;
+
+    // Methods - Non-streaming (synchronous)
+    generateSync: (
+        prompt: string,
+        options?: Partial<GenerateParams>
+    ) => Promise<string>;
+    chatSync: (
+        messages: ChatParams["messages"],
+        options?: Partial<ChatParams>
+    ) => Promise<string>;
+
+    // Utility methods
     fetchModels: () => Promise<ModelsListResponse>;
     cancelStream: () => void;
     resetState: () => void;
@@ -64,7 +84,7 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
         setStreamingResponse("");
     }, []);
 
-    // Generate completion
+    // Generate completion (streaming)
     const generate = useCallback(
         async (
             prompt: string,
@@ -142,6 +162,115 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
         [defaultModel]
     );
 
+    // Generate using chat API with streaming
+    const streamChat = useCallback(
+        async (
+            messages: ChatParams["messages"],
+            options?: Partial<ChatParams>
+        ): Promise<void> => {
+            try {
+                setLoading(true);
+                setError(null);
+                setStreamingResponse("");
+
+                // Create a new AbortController for this request
+                abortControllerRef.current = new AbortController();
+
+                const params: ChatParams = {
+                    model: options?.model || defaultModel,
+                    messages,
+                    stream: true,
+                    ...options
+                };
+
+                await streamChatCompletion(params, {
+                    onStart: () => {
+                        setStreamingResponse("");
+                    },
+                    onToken: (token) => {
+                        setStreamingResponse((prev) => prev + token);
+                    },
+                    onComplete: (fullResponse) => {
+                        setResponse(fullResponse);
+                        setLoading(false);
+                    },
+                    onError: (err) => {
+                        setError(err);
+                        setLoading(false);
+                    }
+                });
+            } catch (err) {
+                const error =
+                    err instanceof Error ? err : new Error(String(err));
+                setError(error);
+                setLoading(false);
+            }
+        },
+        [defaultModel]
+    );
+
+    // Generate synchronously (non-streaming)
+    const generateSync = useCallback(
+        async (
+            prompt: string,
+            options?: Partial<GenerateParams>
+        ): Promise<string> => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const params: GenerateParams = {
+                    model: options?.model || defaultModel,
+                    prompt,
+                    ...options
+                };
+
+                const result = await syncGenerate(params);
+                setResponse(result);
+                return result;
+            } catch (err) {
+                const error =
+                    err instanceof Error ? err : new Error(String(err));
+                setError(error);
+                throw error;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [defaultModel]
+    );
+
+    // Generate chat synchronously (non-streaming)
+    const chatSync = useCallback(
+        async (
+            messages: ChatParams["messages"],
+            options?: Partial<ChatParams>
+        ): Promise<string> => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const params: ChatParams = {
+                    model: options?.model || defaultModel,
+                    messages,
+                    ...options
+                };
+
+                const result = await syncChat(params);
+                setResponse(result);
+                return result;
+            } catch (err) {
+                const error =
+                    err instanceof Error ? err : new Error(String(err));
+                setError(error);
+                throw error;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [defaultModel]
+    );
+
     // Cancel streaming
     const cancelStream = useCallback(() => {
         abortControllerRef.current.abort();
@@ -176,6 +305,9 @@ export function useOllama(options: UseOllamaOptions = {}): UseOllamaReturn {
         modelsError,
         generate,
         streamGenerate,
+        streamChat,
+        generateSync,
+        chatSync,
         fetchModels,
         cancelStream,
         resetState
