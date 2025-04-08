@@ -10,5 +10,14 @@ export default defineConfig({
         alias: {
             "@": path.resolve(__dirname, "./src")
         }
+    },
+    server: {
+        proxy: {
+            "/api/ollama": {
+                target: "http://localhost:11434/api",
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/ollama/, "")
+            }
+        }
     }
 });
