@@ -1,7 +1,6 @@
 // ui/src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainPage from "@/pages/MainPage";
-import SchedulerPage from "@/pages/SchedulerPage";
 import BuilderPage from "./pages/BuilderPage";
 import { AppLayout } from "./components/layouts/AppLayout";
 import ScheduleResultsPage from "./pages/ScheduleResultsPage";
@@ -12,10 +11,6 @@ export default function App() {
             <AppLayout>
                 <Routes>
                     <Route path="/" element={<MainPage />} />
-                    <Route
-                        path="/scheduler/:scenarioId"
-                        element={<SchedulerPage />}
-                    />
                     <Route
                         path="/builder/:projectId"
                         element={<BuilderPage />} // <-- Add this route
