@@ -1,21 +1,27 @@
 // ui/src/pages/MainPage.tsx
 
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 export default function MainPage() {
     const navigate = useNavigate();
+    const [selectedScenario, setSelectedScenario] = useState("");
 
     const handleScenarioSelect = (id: string) => {
-        navigate(`/scheduler/${id}`);
+        setSelectedScenario(id); // mark tab as selected
+        navigate(`/scheduler/${id}`); // navigate to page
     };
 
     return (
         <div className="p-8 space-y-6">
             <header className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold">Explainable AI Scheduler</h1>
-                <Tabs defaultValue="1" onValueChange={handleScenarioSelect}>
+                <Tabs
+                    value={selectedScenario}
+                    onValueChange={handleScenarioSelect}
+                >
                     <TabsList>
                         <TabsTrigger value="1">Scenario 1</TabsTrigger>
                         <TabsTrigger value="2">Scenario 2</TabsTrigger>
