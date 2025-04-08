@@ -1,9 +1,11 @@
 // ui/src/components/schedule/ScheduleView.tsx
-import { useScenario } from "@/hooks/useScenario";
+import { Scenario } from "@/types";
 
-export function ScheduleView() {
-    const scenario = useScenario();
+interface ScheduleViewProps {
+    scenario: Scenario;
+}
 
+export function ScheduleView({ scenario }: ScheduleViewProps) {
     return (
         <div className="border rounded-lg p-4 h-full overflow-auto">
             <h2 className="font-semibold mb-2">Schedule</h2>

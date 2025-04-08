@@ -1,9 +1,12 @@
-// components/constraints/ConstraintSummaryPanel.tsx
-import { useScenario } from "@/hooks/useScenario";
+import { Scenario } from "@/types";
 
-export function ConstraintSummaryPanel() {
-    const scenario = useScenario();
+interface ConstraintSummaryPanelProps {
+    scenario: Scenario;
+}
 
+export function ConstraintSummaryPanel({
+    scenario
+}: ConstraintSummaryPanelProps) {
     return (
         <div className="border rounded-lg p-4 h-full overflow-auto">
             <h2 className="font-semibold mb-2">Constraints</h2>

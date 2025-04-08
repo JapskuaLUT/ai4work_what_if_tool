@@ -1,9 +1,13 @@
-// components/explanation/AskLLMBox.tsx
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Scenario } from "@/types";
 
-export function AskLLMBox() {
+interface AskLLMBoxProps {
+    scenario: Scenario;
+}
+
+export function AskLLMBox({ scenario }: AskLLMBoxProps) {
     const [question, setQuestion] = useState("");
 
     return (
@@ -18,7 +22,9 @@ export function AskLLMBox() {
                 <Button
                     onClick={() => {
                         if (question.trim()) {
-                            alert(`You asked: ${question}`);
+                            alert(
+                                `You asked: ${question}\n\n(Scenario ID: ${scenario.scenarioId})`
+                            );
                         }
                     }}
                     disabled={!question.trim()}

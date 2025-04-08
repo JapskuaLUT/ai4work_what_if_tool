@@ -43,8 +43,8 @@ export default function BuilderPage() {
 
     const handleSubmit = () => {
         console.log("Submitting scenario:", form);
-        // Simulate navigation to comparison view
-        navigate("/scheduler/compare");
+        // Simulate navigation to the new results page with preloaded scenarios
+        navigate("/results");
     };
 
     const label =

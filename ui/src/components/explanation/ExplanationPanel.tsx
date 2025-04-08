@@ -1,9 +1,11 @@
 // ui/src/components/explanation/ExplanationPanel.tsx
-import { useScenario } from "@/hooks/useScenario";
+import { Scenario } from "@/types";
 
-export function ExplanationPanel() {
-    const scenario = useScenario();
+interface ExplanationPanelProps {
+    scenario: Scenario;
+}
 
+export function ExplanationPanel({ scenario }: ExplanationPanelProps) {
     return (
         <div className="border rounded-lg p-4 h-full overflow-auto">
             <h2 className="font-semibold mb-2">Explanation</h2>
