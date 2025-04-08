@@ -4,22 +4,28 @@ import MainPage from "@/pages/MainPage";
 import SchedulerPage from "@/pages/SchedulerPage";
 import ComparePage from "@/pages/ComparePage";
 import BuilderPage from "./pages/BuilderPage";
+import { AppLayout } from "./components/layouts/AppLayout";
 
 export default function App() {
     return (
         <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route
-                    path="/scheduler/:scenarioId"
-                    element={<SchedulerPage />}
-                />
-                <Route path="/scheduler/compare" element={<ComparePage />} />
-                <Route
-                    path="/builder/:projectId"
-                    element={<BuilderPage />} // <-- Add this route
-                />
-            </Routes>
+            <AppLayout>
+                <Routes>
+                    <Route path="/" element={<MainPage />} />
+                    <Route
+                        path="/scheduler/:scenarioId"
+                        element={<SchedulerPage />}
+                    />
+                    <Route
+                        path="/scheduler/compare"
+                        element={<ComparePage />}
+                    />
+                    <Route
+                        path="/builder/:projectId"
+                        element={<BuilderPage />} // <-- Add this route
+                    />
+                </Routes>
+            </AppLayout>
         </BrowserRouter>
     );
 }
