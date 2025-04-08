@@ -1,10 +1,8 @@
 # Initial idea for the LLM prompt for scheduling problem explainability.
 
-[System / Instruction to LLM]
 You are an AI assistant that provides clear, user-friendly explanations of scheduling problems. You have access to the constraints, tasks, and final outcomes of multiple scheduling scenarios but not the solver’s internal logs. Your goal is to interpret the results and explain them in a way that a non-expert user can understand.
 
-[User Request]
-We have five different scheduling “runs” (scenarios). For each scenario, the input includes:
+We have different scheduling “runs” (scenarios). For each scenario, the input includes:
 
 1. A set of tasks (some with fixed schedules, some flexible with total hours).
 2. A list of constraints (e.g., maximum hours per day, free afternoons, etc.).
@@ -17,253 +15,12 @@ Your task:
 3. **Compare** multiple scenarios, pointing out how or why changing certain constraints/requirements led to different results.
 4. **Offer** a short summary or lesson learned from each scenario.
 
-Below is a JSON object containing all five scenarios. Please analyze it carefully and produce:
+You will receive the scenarios as a JSON object. Please analyze it carefully and produce:
 
--   A **section-by-section** explanation for each scenario (1 through 5).
+-   A **section-by-section** explanation for each scenario (1 through N).
 -   A **plain-language** description suitable for a non-technical audience (e.g., a student or teacher who just wants to understand the schedule).
 -   In the case of an infeasible scenario, discuss which constraints are likely clashing and why no valid arrangement can be found.
 -   A **final comparison** among all scenarios, summarizing the main differences and lessons.
-
-### JSON Data
-
-```json
-{
-    "scenarios": [
-        {
-            "scenarioId": 1,
-            "input": {
-                "tasks": {
-                    "lectures": ["Mon 9–11", "Wed 14–16", "Fri 9–11"],
-                    "exercisesHours": 2,
-                    "projectHours": 4,
-                    "selfLearningHours": 3
-                },
-                "constraints": [
-                    "Max 6 hours per day",
-                    "At least one free afternoon",
-                    "No overlapping tasks"
-                ]
-            },
-            "output": {
-                "status": "feasible",
-                "schedule": [
-                    {
-                        "day": "Mon",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Lecture" },
-                            { "time": "13–15", "task": "Project" },
-                            { "time": "15–17", "task": "Project" }
-                        ]
-                    },
-                    {
-                        "day": "Tue",
-                        "timeBlocks": [{ "time": "8–10", "task": "Exercises" }]
-                    },
-                    {
-                        "day": "Wed",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Self-Learning" },
-                            { "time": "14–16", "task": "Lecture" }
-                        ]
-                    },
-                    {
-                        "day": "Thu",
-                        "timeBlocks": [
-                            { "time": "13–15", "task": "Self-Learning" },
-                            { "time": "15–17", "task": "Self-Learning" }
-                        ]
-                    },
-                    {
-                        "day": "Fri",
-                        "timeBlocks": [{ "time": "9–11", "task": "Lecture" }]
-                    }
-                ]
-            }
-        },
-        {
-            "scenarioId": 2,
-            "input": {
-                "tasks": {
-                    "lectures": ["Mon 9–11", "Wed 14–16", "Fri 9–11"],
-                    "exercisesHours": 2,
-                    "projectHours": 4,
-                    "selfLearningHours": 3
-                },
-                "constraints": [
-                    "Max 4 hours per day",
-                    "At least one free afternoon",
-                    "No overlapping tasks"
-                ]
-            },
-            "output": {
-                "status": "feasible",
-                "schedule": [
-                    {
-                        "day": "Mon",
-                        "timeBlocks": [{ "time": "9–11", "task": "Lecture" }]
-                    },
-                    {
-                        "day": "Tue",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Project" },
-                            { "time": "14–16", "task": "Project" }
-                        ]
-                    },
-                    {
-                        "day": "Wed",
-                        "timeBlocks": [{ "time": "14–16", "task": "Lecture" }]
-                    },
-                    {
-                        "day": "Thu",
-                        "timeBlocks": [
-                            { "time": "8–10", "task": "Exercises" },
-                            { "time": "10–12", "task": "Self-Learning" }
-                        ]
-                    },
-                    {
-                        "day": "Fri",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Lecture" },
-                            { "time": "13–15", "task": "Self-Learning" }
-                        ]
-                    }
-                ]
-            }
-        },
-        {
-            "scenarioId": 3,
-            "input": {
-                "tasks": {
-                    "lectures": ["Mon 9–11", "Wed 14–16"],
-                    "exercisesHours": 2,
-                    "projectHours": 4,
-                    "selfLearningHours": 3
-                },
-                "constraints": [
-                    "Max 6 hours per day",
-                    "Friday must be fully free",
-                    "At least one additional free afternoon",
-                    "No overlapping tasks"
-                ]
-            },
-            "output": {
-                "status": "feasible",
-                "schedule": [
-                    {
-                        "day": "Mon",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Lecture" },
-                            { "time": "13–15", "task": "Project" }
-                        ]
-                    },
-                    {
-                        "day": "Tue",
-                        "timeBlocks": [
-                            { "time": "8–10", "task": "Project" },
-                            { "time": "14–16", "task": "Exercises" }
-                        ]
-                    },
-                    {
-                        "day": "Wed",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Self-Learning" },
-                            { "time": "14–16", "task": "Lecture" }
-                        ]
-                    },
-                    {
-                        "day": "Thu",
-                        "timeBlocks": [
-                            { "time": "8–10", "task": "Self-Learning" },
-                            { "time": "10–12", "task": "Self-Learning" }
-                        ]
-                    },
-                    {
-                        "day": "Fri",
-                        "timeBlocks": []
-                    }
-                ]
-            }
-        },
-        {
-            "scenarioId": 4,
-            "input": {
-                "tasks": {
-                    "lectures": ["Mon 9–11", "Wed 14–16", "Fri 9–11"],
-                    "exercisesHours": 4,
-                    "projectHours": 6,
-                    "selfLearningHours": 3
-                },
-                "constraints": [
-                    "Max 4 hours per day",
-                    "At least two free afternoons",
-                    "No overlapping tasks"
-                ]
-            },
-            "output": {
-                "status": "infeasible",
-                "schedule": []
-            }
-        },
-        {
-            "scenarioId": 5,
-            "input": {
-                "tasks": {
-                    "lectures": ["Mon 9–11", "Wed 10–12", "Thu 9–11"],
-                    "exercisesHours": 2,
-                    "projectHours": 4,
-                    "selfLearningHours": 3
-                },
-                "constraints": [
-                    "Max 6 hours per day",
-                    "No tasks before 9 AM",
-                    "Exactly two evenings free",
-                    "No overlapping tasks"
-                ]
-            },
-            "output": {
-                "status": "feasible",
-                "schedule": [
-                    {
-                        "day": "Mon",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Lecture" },
-                            { "time": "13–15", "task": "Project" },
-                            { "time": "15–17", "task": "Project" }
-                        ]
-                    },
-                    {
-                        "day": "Tue",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Exercises" },
-                            { "time": "13–15", "task": "Exercises" }
-                        ]
-                    },
-                    {
-                        "day": "Wed",
-                        "timeBlocks": [
-                            { "time": "10–12", "task": "Lecture" },
-                            { "time": "14–16", "task": "Self-Learning" }
-                        ]
-                    },
-                    {
-                        "day": "Thu",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Lecture" },
-                            { "time": "14–16", "task": "Self-Learning" }
-                        ]
-                    },
-                    {
-                        "day": "Fri",
-                        "timeBlocks": [
-                            { "time": "9–11", "task": "Self-Learning" }
-                        ]
-                    }
-                ]
-            }
-        }
-    ]
-}
-```
 
 ### Desired Response Format
 
@@ -282,12 +39,226 @@ Please provide your answer with:
 
 ### Example of a Short, High-Level Explanation (Guideline)
 
-**Scenario 1**:  
+**Scenario 1**:
 “The solver managed to fit Exercises, Project, and Self-Learning within a maximum of 6 hours per day. You’ll notice Monday is busy, but Tuesday afternoon is left free. This meets the requirement of having at least one free afternoon.”
 
-**Scenario 4**:  
+**Scenario N**:
 “This scenario is infeasible because the required hours (4 for Exercises, 6 for Project, 3 for Self-Learning, plus fixed lectures) exceed what can fit into 4 hours per day, especially when you also need two free afternoons. These constraints collide, so there’s no valid schedule.”
 
-_(Feel free to expand and refine with more detail and user-friendly language.)_
+## User prompt (the JSON)
 
-Thank you! We look forward to your clear, concise explanations.
+```json
+{
+    "name": "Coursework Schedule Simulation Set A",
+    "description": "A dataset to simulate and evaluate weekly coursework schedules under varied constraints.",
+    "scenarios": [
+        {
+            "scenarioId": 1,
+            "description": "Strict but manageable limits with some flexibility on afternoons.",
+            "input": {
+                "tasks": {
+                    "lectures": [
+                        "Mon 9–11",
+                        "Mon 13–15",
+                        "Tue 10–12",
+                        "Tue 14–16",
+                        "Wed 9–11",
+                        "Wed 14–16",
+                        "Thu 10–12",
+                        "Fri 9–11"
+                    ],
+                    "exercisesHours": 6,
+                    "projectHours": 8,
+                    "selfLearningHours": 6
+                },
+                "constraints": [
+                    "Max 6 hours per day",
+                    "At least one free afternoon",
+                    "At least two exercise sessions per week",
+                    "No overlapping tasks",
+                    "All lectures must be attended in real time",
+                    "No work after 18:00",
+                    "Minimum 30-minute break between tasks"
+                ]
+            },
+            "output": {
+                "status": "feasible",
+                "schedule": [
+                    {
+                        "day": "Mon",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Lecture" },
+                            { "time": "15:30–17:30", "task": "Exercises" }
+                        ]
+                    },
+                    {
+                        "day": "Tue",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" }
+                        ]
+                    },
+                    {
+                        "day": "Wed",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" }
+                        ]
+                    },
+                    {
+                        "day": "Thu",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "13–15", "task": "Project" },
+                            { "time": "15:30–17:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Fri",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Self-learning" },
+                            { "time": "15:30–17:30", "task": "Self-learning" }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "scenarioId": 2,
+            "description": "Stricter daily limits and extra constraints make it infeasible.",
+            "input": {
+                "tasks": {
+                    "lectures": [
+                        "Mon 9–11",
+                        "Mon 13–15",
+                        "Tue 10–12",
+                        "Tue 14–16",
+                        "Wed 9–11",
+                        "Wed 14–16",
+                        "Thu 10–12",
+                        "Fri 9–11"
+                    ],
+                    "exercisesHours": 6,
+                    "projectHours": 8,
+                    "selfLearningHours": 6
+                },
+                "constraints": [
+                    "Max 5 hours per day",
+                    "At least two free afternoons",
+                    "No overlapping tasks",
+                    "At least one project block must be 3 hours long",
+                    "No tasks before 8 AM or after 18 PM",
+                    "At least two 1-hour self-learning sessions",
+                    "Lectures must be completed within weekdays only"
+                ]
+            },
+            "output": { "status": "infeasible", "schedule": [] }
+        },
+        {
+            "scenarioId": 3,
+            "description": "Reduced daily workload limit and enforced consecutive study blocks.",
+            "input": {
+                "tasks": {
+                    "lectures": [
+                        "Mon 9–11",
+                        "Mon 13–15",
+                        "Tue 10–12",
+                        "Tue 14–16",
+                        "Wed 9–11",
+                        "Wed 14–16",
+                        "Thu 10–12",
+                        "Fri 9–11"
+                    ],
+                    "exercisesHours": 6,
+                    "projectHours": 8,
+                    "selfLearningHours": 6
+                },
+                "constraints": [
+                    "Max 4 hours per day",
+                    "At least two 2-hour self-learning blocks",
+                    "No overlapping tasks",
+                    "Lectures must be separated by at least 1 hour",
+                    "At least three separate project sessions",
+                    "No tasks on Friday afternoon",
+                    "All study must be in 2+ hour blocks"
+                ]
+            },
+            "output": { "status": "infeasible", "schedule": [] }
+        },
+        {
+            "scenarioId": 4,
+            "description": "Permissive model allowing up to 8-hour days and fewer break constraints.",
+            "input": {
+                "tasks": {
+                    "lectures": [
+                        "Mon 9–11",
+                        "Mon 13–15",
+                        "Tue 10–12",
+                        "Tue 14–16",
+                        "Wed 9–11",
+                        "Wed 14–16",
+                        "Thu 10–12",
+                        "Fri 9–11"
+                    ],
+                    "exercisesHours": 6,
+                    "projectHours": 8,
+                    "selfLearningHours": 6
+                },
+                "constraints": [
+                    "Max 8 hours per day",
+                    "At least one break per day",
+                    "No overlapping tasks",
+                    "Lectures can be attended in recording",
+                    "At least two project blocks of 2 hours",
+                    "Allow tasks till 19:00",
+                    "Must have one day with only lectures"
+                ]
+            },
+            "output": {
+                "status": "feasible",
+                "schedule": [
+                    {
+                        "day": "Mon",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "13–15", "task": "Lecture" },
+                            { "time": "15:30–17:30", "task": "Exercises" },
+                            { "time": "17:30–19:00", "task": "Self-learning" }
+                        ]
+                    },
+                    {
+                        "day": "Tue",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" },
+                            { "time": "16:30–18:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Wed",
+                        "timeBlocks": [
+                            { "time": "9–11", "task": "Lecture" },
+                            { "time": "14–16", "task": "Lecture" },
+                            { "time": "16:30–18:30", "task": "Self-learning" }
+                        ]
+                    },
+                    {
+                        "day": "Thu",
+                        "timeBlocks": [
+                            { "time": "10–12", "task": "Lecture" },
+                            { "time": "13–15", "task": "Project" },
+                            { "time": "15:30–17:30", "task": "Project" }
+                        ]
+                    },
+                    {
+                        "day": "Fri",
+                        "timeBlocks": [{ "time": "9–11", "task": "Lecture" }]
+                    }
+                ]
+            }
+        }
+    ]
+}
+```
