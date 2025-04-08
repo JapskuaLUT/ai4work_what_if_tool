@@ -42,11 +42,17 @@ export function OllamaContextChat() {
     const [context, setContext] = useState<number[]>([]);
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
+    // Track currently streaming message ID
+    const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+        null
+    );
+
     // Initialize Ollama hook
     const {
         loading,
         error,
         streamingResponse,
+        response,
         availableModels,
         loadingModels,
         streamGenerate,
@@ -63,6 +69,34 @@ export function OllamaContextChat() {
     useEffect(() => {
         endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, streamingResponse]);
+
+    // Update the streaming message content as it comes in
+    useEffect(() => {
+        if (streamingMessageId && streamingResponse) {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.id === streamingMessageId
+                        ? { ...msg, content: streamingResponse }
+                        : msg
+                )
+            );
+        }
+    }, [streamingResponse, streamingMessageId]);
+
+    // When streaming completes and we have a final response
+    useEffect(() => {
+        if (!loading && streamingMessageId && response) {
+            // Update with final response
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.id === streamingMessageId
+                        ? { ...msg, content: response }
+                        : msg
+                )
+            );
+            setStreamingMessageId(null);
+        }
+    }, [loading, response, streamingMessageId]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -88,26 +122,15 @@ export function OllamaContextChat() {
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
+        setStreamingMessageId(assistantMessageId);
         setPrompt("");
 
         try {
-            // Prepare full prompt with conversation history
-            let fullPrompt = prompt;
-
-            await streamGenerate(fullPrompt, {
+            await streamGenerate(prompt, {
                 model,
                 context,
                 system: useSystemPrompt ? systemPrompt : undefined
             });
-
-            // Update the assistant message with the response
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg.id === assistantMessageId
-                        ? { ...msg, content: streamingResponse }
-                        : msg
-                )
-            );
         } catch (err) {
             console.error("Failed to generate response:", err);
 
@@ -122,6 +145,7 @@ export function OllamaContextChat() {
                         : msg
                 )
             );
+            setStreamingMessageId(null);
         }
     };
 
@@ -260,26 +284,16 @@ export function OllamaContextChat() {
                                                         <Bot size={20} />
                                                     </div>
                                                     <div className="max-w-full">
+                                                        <MarkdownDisplay
+                                                            content={
+                                                                message.content
+                                                            }
+                                                        />
                                                         {message.id ===
-                                                            messages[
-                                                                messages.length -
-                                                                    1
-                                                            ].id && loading ? (
-                                                            <div>
-                                                                <MarkdownDisplay
-                                                                    content={
-                                                                        streamingResponse
-                                                                    }
-                                                                />
+                                                            streamingMessageId &&
+                                                            loading && (
                                                                 <LoaderCircle className="h-4 w-4 animate-spin mt-2" />
-                                                            </div>
-                                                        ) : (
-                                                            <MarkdownDisplay
-                                                                content={
-                                                                    message.content
-                                                                }
-                                                            />
-                                                        )}
+                                                            )}
                                                     </div>
                                                 </div>
                                             )}
