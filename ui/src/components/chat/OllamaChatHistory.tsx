@@ -250,7 +250,8 @@ export function OllamaChatHistory() {
                                                     <div className="max-w-full">
                                                         <MarkdownDisplay
                                                             content={
-                                                                message.content
+                                                                message.content ||
+                                                                ""
                                                             }
                                                         />
                                                         {message.id ===

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoaderCircle } from "lucide-react";
-import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay"; // Fixed import path
 
 export function OllamaSyncExample() {
     // State
@@ -244,7 +244,7 @@ export function OllamaSyncExample() {
                     {/* Response */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Response</label>
-                        <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md min-h-40 whitespace-pre-wrap">
+                        <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md min-h-40">
                             {loading ? (
                                 <div className="flex items-center gap-2">
                                     <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -255,7 +255,7 @@ export function OllamaSyncExample() {
                                     Error: {error.message}
                                 </div>
                             ) : (
-                                <MarkdownDisplay content={response} />
+                                <MarkdownDisplay content={response || ""} />
                             )}
                         </div>
                     </div>

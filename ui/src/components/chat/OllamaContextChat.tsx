@@ -286,7 +286,8 @@ export function OllamaContextChat() {
                                                     <div className="max-w-full">
                                                         <MarkdownDisplay
                                                             content={
-                                                                message.content
+                                                                message.content ||
+                                                                ""
                                                             }
                                                         />
                                                         {message.id ===
