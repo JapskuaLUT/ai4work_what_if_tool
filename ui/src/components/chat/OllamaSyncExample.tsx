@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoaderCircle } from "lucide-react";
-import { MarkdownDisplay } from "./MarkdownDisplay";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
 
 export function OllamaSyncExample() {
     // State

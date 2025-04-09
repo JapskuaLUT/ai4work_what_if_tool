@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { LoaderCircle, Send, User, Bot } from "lucide-react";
-import { MarkdownDisplay } from "./MarkdownDisplay";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
 
 type Message = {
     id: string;

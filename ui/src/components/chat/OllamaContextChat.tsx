@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { LoaderCircle, Send, User, Bot, Trash2 } from "lucide-react";
-import { MarkdownDisplay } from "./MarkdownDisplay";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
 
 type Message = {
     id: string;

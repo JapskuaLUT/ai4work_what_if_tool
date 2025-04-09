@@ -5,7 +5,7 @@ import { useOllama } from "@/hooks/useOllama";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MarkdownDisplay } from "@/components/chat/MarkdownDisplay";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay"; // Import from correct path
 import {
     LoaderCircle,
     Settings,
@@ -232,6 +232,7 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
                     </div>
                 ) : streamingResponse ? (
                     <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md">
+                        {/* Use MarkdownDisplay to render the markdown content */}
                         <MarkdownDisplay content={streamingResponse} />
                     </div>
                 ) : (
