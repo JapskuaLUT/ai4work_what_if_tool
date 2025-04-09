@@ -12,7 +12,7 @@ export default function MainPage() {
     };
 
     return (
-        <div className="p-10 space-y-8 text-center">
+        <div className="p-10 space-y-4 text-center">
             <div className="flex flex-col items-center">
                 <img
                     src="/what_if_logo.png"
