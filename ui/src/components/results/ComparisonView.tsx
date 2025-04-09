@@ -22,6 +22,8 @@ import {
     MessageSquare
 } from "lucide-react";
 import { useMemo } from "react";
+import { FloatingPlanChat } from "@/components/chat/FloatingPlanChat";
+import { CourseworkPlan } from "@/types/builder";
 
 interface ComparisonViewProps {
     scenarios: Scenario[];
@@ -35,6 +37,18 @@ export function ComparisonView({ scenarios }: ComparisonViewProps) {
     const infeasibleScenarios = scenarios.filter(
         (s) => s.output?.status === "infeasible"
     );
+
+    // Create a plan object to pass to the chat component
+    const plan: CourseworkPlan = {
+        name: "Coursework Schedule Plan",
+        description: "Comparison of different scheduling scenarios",
+        scenarios: scenarios.map((s) => ({
+            scenarioId: s.scenarioId,
+            description: s.description || `Scenario ${s.scenarioId}`,
+            input: s.input,
+            output: s.output
+        }))
+    };
 
     // Calculate statistics for feasible scenarios
     const scenarioStats = useMemo(() => {
@@ -100,7 +114,7 @@ export function ComparisonView({ scenarios }: ComparisonViewProps) {
     }, [feasibleScenarios]);
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-10 relative pb-20">
             {/* Feasible Scenarios Section */}
             <section className="space-y-4">
                 <div className="flex items-center">
@@ -429,6 +443,9 @@ export function ComparisonView({ scenarios }: ComparisonViewProps) {
                     ))}
                 </div>
             </section>
+
+            {/* Add the floating chat component */}
+            <FloatingPlanChat plan={plan} />
         </div>
     );
 }

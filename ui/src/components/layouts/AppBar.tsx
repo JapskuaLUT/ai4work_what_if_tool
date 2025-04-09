@@ -75,7 +75,7 @@ export function AppBar() {
                     className="text-xl font-bold cursor-pointer"
                     onClick={() => navigate("/")}
                 >
-                    🧠 AI Scheduler
+                    🧠 What-If Tool
                 </div>
             </div>
 
