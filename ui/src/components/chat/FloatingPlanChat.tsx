@@ -299,7 +299,7 @@ export function FloatingPlanChat({ plan }: FloatingPlanChatProps) {
                 <Card className="border border-indigo-200 dark:border-indigo-900 h-full">
                     <CardHeader className="bg-indigo-50 dark:bg-indigo-900/20 py-3 px-4 border-b border-indigo-100 dark:border-indigo-800">
                         <ChatHeader
-                            scenarioId={0} // We're not dealing with a specific scenario
+                            headerText="Scenario Comparison" // We're not dealing with a specific scenario
                             description={plan.name}
                             isExpanded={isExpanded}
                             model={model}

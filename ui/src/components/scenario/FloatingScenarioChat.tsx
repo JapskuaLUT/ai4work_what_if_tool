@@ -290,7 +290,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                 <Card className="border border-blue-200 dark:border-blue-900 h-full">
                     <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 px-4 border-b border-blue-100 dark:border-blue-800">
                         <ChatHeader
-                            scenarioId={scenario.scenarioId}
+                            headerText={`Scenario ${scenario.scenarioId}`}
                             description={scenario.description}
                             isExpanded={isExpanded}
                             model={model}

@@ -14,7 +14,7 @@ import { CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
-    scenarioId: number;
+    headerText: string;
     description: string;
     isExpanded: boolean;
     model: string;
@@ -28,7 +28,7 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({
-    scenarioId,
+    headerText,
     description,
     isExpanded,
     model,
@@ -45,9 +45,7 @@ export function ChatHeader({
             <div className="flex items-center">
                 <Bot className="mr-2 h-5 w-5 text-blue-600" />
                 <div>
-                    <CardTitle className="text-lg">
-                        Scenario {scenarioId} Chat
-                    </CardTitle>
+                    <CardTitle className="text-lg">{headerText} Chat</CardTitle>
                     <CardDescription className="text-xs line-clamp-1">
                         Ask about "{description}"
                     </CardDescription>
