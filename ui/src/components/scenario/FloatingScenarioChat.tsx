@@ -1,48 +1,31 @@
 // ui/src/components/scenario/FloatingScenarioChat.tsx
-// This component provides a floating chat button that expands into a scenario-specific chat
+// Main component that orchestrates the chat functionality
 
 import { useState, useEffect, useRef } from "react";
 import { useOllama } from "@/hooks/useOllama";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
-    CardHeader,
-    CardTitle
+    CardHeader
 } from "@/components/ui/card";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from "@/components/ui/select";
-import {
-    LoaderCircle,
-    Send,
-    User,
-    Bot,
-    ChevronDown,
-    ChevronUp,
-    RotateCcw,
-    Square,
-    X,
-    MessageCircle,
-    Maximize2,
-    Minimize2
-} from "lucide-react";
-import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
-import { Scenario } from "@/types/scenario";
 import { cn } from "@/lib/utils";
+import { Scenario } from "@/types/scenario";
 
-type Message = {
-    id: string;
-    role: "user" | "assistant" | "system";
-    content: string;
-};
+// Import sub-components
+import { ChatHeader } from "@/components/chat/ChatHeader";
+import { ChatMessagesContainer } from "@/components/chat/ChatMessagesContainer";
+import { ChatInput } from "@/components/chat/ChatInput";
+import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
+
+// Import types and utilities
+import { Message } from "@/types/chat";
+import {
+    createScenarioContext,
+    createSystemPrompt,
+    getChatStyles,
+    createWelcomeMessage
+} from "@/components/chat/chatUtils";
 
 interface FloatingScenarioChatProps {
     scenario: Scenario;
@@ -53,13 +36,12 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
     const [prompt, setPrompt] = useState("");
     const [model, setModel] = useState("");
     const [systemPrompt, setSystemPrompt] = useState(
-        `You are an AI assistant specialized in academic scheduling. You are analyzing Scenario ${scenario.scenarioId}: "${scenario.description}". Provide helpful explanations and suggestions about this specific scenario. Keep your answers focused on this scenario's tasks, constraints, and schedule.`
+        createSystemPrompt(scenario)
     );
     const [messages, setMessages] = useState<Message[]>([]);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
-    const endOfMessagesRef = useRef<HTMLDivElement>(null);
     const chatCardRef = useRef<HTMLDivElement>(null);
 
     // Track currently streaming message ID
@@ -80,9 +62,12 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         cancelStream
     } = useOllama();
 
-    // Fetch models on component mount - without circular dependencies
+    // Determine if we're on a large screen
+    const isLargeScreen =
+        typeof window !== "undefined" ? window.innerWidth >= 1024 : false;
+
+    // Fetch models on component mount
     useEffect(() => {
-        // Only fetch models once when the component mounts
         fetchModels().catch(console.error);
     }, [fetchModels]);
 
@@ -100,24 +85,13 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
             const initialAssistantMessage: Message = {
                 id: "initial",
                 role: "assistant",
-                content: `I'm analyzing Scenario ${scenario.scenarioId}: "${
-                    scenario.description
-                }". This scenario is ${
-                    scenario.output?.status === "feasible"
-                        ? "feasible"
-                        : "infeasible"
-                }. What would you like to know about it?`
+                content: createWelcomeMessage(scenario)
             };
 
             setMessages([initialAssistantMessage]);
             setIsInitialized(true);
         }
     }, [scenario, model, loading, isInitialized, isChatOpen]);
-
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, streamingResponse]);
 
     // Update the streaming message content as it comes in
     useEffect(() => {
@@ -195,63 +169,15 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         };
     }, [isChatOpen]);
 
-    // Determine if we're on a large screen
-    const isLargeScreen =
-        typeof window !== "undefined" ? window.innerWidth >= 1024 : false;
-
-    const createScenarioContext = () => {
-        // Create a stringified version of the scenario for context
-        let scenarioContext = `Scenario ${scenario.scenarioId}: "${scenario.description}"\n\n`;
-
-        // Add status
-        scenarioContext += `Status: ${
-            scenario.output?.status === "feasible" ? "Feasible" : "Infeasible"
-        }\n\n`;
-
-        // Add tasks
-        scenarioContext += "Tasks:\n";
-        scenarioContext += `- Lectures: ${scenario.input.tasks.lectures.join(
-            ", "
-        )}\n`;
-        scenarioContext += `- Exercise Hours: ${scenario.input.tasks.exercisesHours}\n`;
-        scenarioContext += `- Project Hours: ${scenario.input.tasks.projectHours}\n`;
-        scenarioContext += `- Self-learning Hours: ${scenario.input.tasks.selfLearningHours}\n\n`;
-
-        // Add constraints
-        scenarioContext += "Constraints:\n";
-        scenario.input.constraints.forEach((constraint, index) => {
-            scenarioContext += `${index + 1}. ${constraint}\n`;
-        });
-
-        // Add schedule if available
-        if (
-            scenario.output?.status === "feasible" &&
-            scenario.output.schedule
-        ) {
-            scenarioContext += "\nSchedule:\n";
-            scenario.output.schedule.forEach((day) => {
-                scenarioContext += `${day.day}: `;
-                const blocks = day.timeBlocks
-                    .map((block) => `${block.time} ${block.task}`)
-                    .join(", ");
-                scenarioContext += blocks + "\n";
-            });
-        }
-
-        return scenarioContext;
-    };
-
-    // Handle form submission
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!prompt.trim() || loading || !model) return;
+    // Handle chat submission
+    const handleSubmit = async (message: string) => {
+        if (!message.trim() || loading || !model) return;
 
         // Add user message
         const userMessage: Message = {
             id: Date.now().toString(),
             role: "user",
-            content: prompt
+            content: message
         };
 
         setMessages((prev) => [...prev, userMessage]);
@@ -266,7 +192,6 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
 
         setMessages((prev) => [...prev, assistantMessage]);
         setStreamingMessageId(assistantMessageId);
-        setPrompt("");
 
         try {
             // Create chat messages array
@@ -276,7 +201,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                     content:
                         systemPrompt +
                         "\n\nHere are the details of the scenario:\n" +
-                        createScenarioContext()
+                        createScenarioContext(scenario)
                 }
             ];
 
@@ -293,7 +218,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
             // Add the new user message
             chatMessages.push({
                 role: "user" as const,
-                content: prompt
+                content: message
             });
 
             await streamChat(chatMessages, { model });
@@ -330,54 +255,28 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         const initialAssistantMessage: Message = {
             id: "initial-" + Date.now(),
             role: "assistant",
-            content: `I'm analyzing Scenario ${scenario.scenarioId}: "${
-                scenario.description
-            }". This scenario is ${
-                scenario.output?.status === "feasible"
-                    ? "feasible"
-                    : "infeasible"
-            }. What would you like to know about it?`
+            content: createWelcomeMessage(scenario)
         };
 
         setMessages([initialAssistantMessage]);
         setStreamingMessageId(null);
     };
 
-    // Get dynamic styles based on expanded state
-    const getChatStyles = () => {
-        // Base position is bottom-right
-        if (!isExpanded) {
-            return {
-                width: "400px", // Wider than before but still compact
-                height: "auto"
-            };
-        }
-
-        // If expanded, take up more space (responsive)
-        return {
-            width: isLargeScreen ? "50%" : "90%",
-            height: "auto",
-            maxWidth: "800px" // Cap the maximum width
-        };
+    // Handle close
+    const handleClose = () => {
+        setIsChatOpen(false);
+        setIsExpanded(false);
     };
 
-    // Get message container height based on expanded state
-    const getMessageContainerHeight = () => {
-        return isExpanded ? "400px" : "320px";
+    // Open the chat
+    const openChat = () => {
+        setIsChatOpen(true);
     };
 
     return (
         <>
             {/* Floating chat button */}
-            <Button
-                className={cn(
-                    "fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg",
-                    isChatOpen ? "hidden" : "flex"
-                )}
-                onClick={() => setIsChatOpen(true)}
-            >
-                <MessageCircle className="h-6 w-6" />
-            </Button>
+            <FloatingChatButton isChatOpen={isChatOpen} onClick={openChat} />
 
             {/* Chat dialog */}
             <div
@@ -386,110 +285,23 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                     isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 ref={chatCardRef}
-                style={getChatStyles()}
+                style={getChatStyles(isExpanded, isLargeScreen)}
             >
                 <Card className="border border-blue-200 dark:border-blue-900 h-full">
                     <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 px-4 border-b border-blue-100 dark:border-blue-800">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center">
-                                <Bot className="mr-2 h-5 w-5 text-blue-600" />
-                                <div>
-                                    <CardTitle className="text-lg">
-                                        Scenario {scenario.scenarioId} Chat
-                                    </CardTitle>
-                                    <CardDescription className="text-xs line-clamp-1">
-                                        Ask about "{scenario.description}"
-                                    </CardDescription>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <Select
-                                    value={model}
-                                    onValueChange={(value) => setModel(value)}
-                                    disabled={
-                                        loadingModels ||
-                                        availableModels.length === 0
-                                    }
-                                    // Prevent event propagation when clicking the select or its dropdown
-                                    onOpenChange={(open) => {
-                                        // If necessary, we can do additional handling here
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        className={cn(
-                                            "h-8",
-                                            isExpanded
-                                                ? "w-32 text-sm"
-                                                : "w-24 text-xs"
-                                        )}
-                                    >
-                                        <SelectValue placeholder="Model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {loadingModels ? (
-                                            <SelectItem value="loading">
-                                                Loading models...
-                                            </SelectItem>
-                                        ) : availableModels.length === 0 ? (
-                                            <SelectItem value="none">
-                                                No models found
-                                            </SelectItem>
-                                        ) : (
-                                            availableModels.map((m) => (
-                                                <SelectItem
-                                                    key={m.name}
-                                                    value={m.name}
-                                                >
-                                                    {m.name}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={resetChat}
-                                    title="Reset conversation"
-                                    disabled={loading}
-                                >
-                                    <RotateCcw className="h-4 w-4" />
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={toggleExpanded}
-                                    title={
-                                        isExpanded
-                                            ? "Collapse chat"
-                                            : "Expand chat"
-                                    }
-                                >
-                                    {isExpanded ? (
-                                        <Minimize2 className="h-4 w-4" />
-                                    ) : (
-                                        <Maximize2 className="h-4 w-4" />
-                                    )}
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => {
-                                        setIsChatOpen(false);
-                                        setIsExpanded(false);
-                                    }}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <ChatHeader
+                            scenarioId={scenario.scenarioId}
+                            description={scenario.description}
+                            isExpanded={isExpanded}
+                            model={model}
+                            availableModels={availableModels}
+                            loadingModels={loadingModels}
+                            onModelChange={setModel}
+                            onReset={resetChat}
+                            onToggleExpand={toggleExpanded}
+                            onClose={handleClose}
+                            loading={loading}
+                        />
                     </CardHeader>
 
                     <CardContent className="pt-4 pb-4">
@@ -502,135 +314,21 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                             </div>
                         )}
 
-                        {/* Chat messages */}
-                        <div
-                            className="bg-slate-50 dark:bg-slate-900 rounded-md p-2 overflow-y-auto border border-slate-200 dark:border-slate-700 transition-all duration-300"
-                            style={{ height: getMessageContainerHeight() }}
-                        >
-                            <div className="space-y-4">
-                                {messages.map((message) => (
-                                    <div
-                                        key={message.id}
-                                        className={`flex ${
-                                            message.role === "user"
-                                                ? "justify-end"
-                                                : "justify-start"
-                                        }`}
-                                    >
-                                        <div
-                                            className={`flex max-w-[90%] ${
-                                                message.role === "user"
-                                                    ? "bg-blue-500 text-white"
-                                                    : "bg-slate-200 dark:bg-slate-800"
-                                            } p-3 rounded-lg`}
-                                        >
-                                            {message.role === "user" ? (
-                                                <div className="flex">
-                                                    <div className="mr-2 mt-0.5">
-                                                        <User size={16} />
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            isExpanded
-                                                                ? "text-base"
-                                                                : "text-sm"
-                                                        }
-                                                    >
-                                                        {message.content}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex">
-                                                    <div className="mr-2 mt-0.5">
-                                                        <Bot size={16} />
-                                                    </div>
-                                                    <div
-                                                        className={`max-w-full ${
-                                                            isExpanded
-                                                                ? "text-base"
-                                                                : "text-sm"
-                                                        }`}
-                                                    >
-                                                        <MarkdownDisplay
-                                                            content={
-                                                                message.content ||
-                                                                ""
-                                                            }
-                                                        />
-                                                        {message.id ===
-                                                            streamingMessageId &&
-                                                            loading && (
-                                                                <LoaderCircle className="h-3 w-3 animate-spin mt-1" />
-                                                            )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                <div ref={endOfMessagesRef} />
-                            </div>
-                        </div>
+                        <ChatMessagesContainer
+                            messages={messages}
+                            isExpanded={isExpanded}
+                            isLoading={loading}
+                            streamingMessageId={streamingMessageId}
+                            error={error}
+                        />
 
-                        {/* Error display */}
-                        {error && (
-                            <div className="text-red-500 text-xs p-2">
-                                Error: {error.message}
-                            </div>
-                        )}
-
-                        {/* Prompt input */}
-                        <form onSubmit={handleSubmit} className="relative mt-4">
-                            <Textarea
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="Ask about this scenario..."
-                                className={`pr-12 resize-none ${
-                                    isExpanded
-                                        ? "min-h-16 text-base"
-                                        : "min-h-12 text-sm"
-                                }`}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSubmit(e);
-                                    }
-                                }}
-                            />
-                            {loading ? (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="destructive"
-                                    className={`absolute right-2 bottom-2 ${
-                                        isExpanded ? "h-8 w-8" : "h-6 w-6"
-                                    }`}
-                                    onClick={cancelStream}
-                                    title="Stop generation"
-                                >
-                                    <Square
-                                        className={
-                                            isExpanded ? "h-4 w-4" : "h-3 w-3"
-                                        }
-                                    />
-                                </Button>
-                            ) : (
-                                <Button
-                                    type="submit"
-                                    size="icon"
-                                    className={`absolute right-2 bottom-2 ${
-                                        isExpanded ? "h-8 w-8" : "h-6 w-6"
-                                    }`}
-                                    disabled={!prompt.trim() || !model}
-                                >
-                                    <Send
-                                        className={
-                                            isExpanded ? "h-4 w-4" : "h-3 w-3"
-                                        }
-                                    />
-                                </Button>
-                            )}
-                        </form>
+                        <ChatInput
+                            onSubmit={handleSubmit}
+                            onStop={cancelStream}
+                            isLoading={loading}
+                            isExpanded={isExpanded}
+                            disabled={!model}
+                        />
                     </CardContent>
 
                     <CardFooter className="pt-0 border-t border-slate-200 dark:border-slate-700 px-4 py-2">
