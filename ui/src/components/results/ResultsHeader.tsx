@@ -1,4 +1,4 @@
-// ui/src/components/scenario/ResultsHeader.tsx
+// ui/src/components/results/ResultsHeader.tsx
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";

@@ -1,4 +1,4 @@
-// ui/src/components/scenario/DailyScheduleView.tsx
+// ui/src/components/results/DailyScheduleView.tsx
 
 import { DaySchedule } from "@/types/scenario";
 import { Card, CardContent } from "@/components/ui/card";

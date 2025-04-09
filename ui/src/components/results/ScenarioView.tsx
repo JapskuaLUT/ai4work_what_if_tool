@@ -1,4 +1,4 @@
-// ui/src/components/scenario/ScenarioView.tsx
+// ui/src/components/results/ScenarioView.tsx
 
 import { Scenario } from "@/types/scenario";
 import {
@@ -25,6 +25,7 @@ import {
     ClipboardList
 } from "lucide-react";
 import { DailyScheduleView } from "./DailyScheduleView";
+import { ScenarioChat } from "./ScenarioChat";
 
 interface ScenarioViewProps {
     scenario: Scenario;
@@ -424,6 +425,9 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
                     </Button>
                 </CardFooter>
             </Card>
+
+            {/* AI Chat Component */}
+            <ScenarioChat scenario={scenario} />
         </div>
     );
 }

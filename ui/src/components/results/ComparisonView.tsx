@@ -1,4 +1,4 @@
-// ui/src/components/scenario/ComparisonView.tsx
+// ui/src/components/results/ComparisonView.tsx
 
 import {
     Card,

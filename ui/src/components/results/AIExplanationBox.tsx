@@ -244,8 +244,8 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
                             </div>
                         ) : (
                             <p>
-                                Click "Run Analysis" to get AI insights about
-                                your scheduling plan.
+                                Click "Run Analysis" to get AI insights on the
+                                overall scheduling plan and different scenarios.
                             </p>
                         )}
                     </div>
