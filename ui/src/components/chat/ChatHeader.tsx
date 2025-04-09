@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/select";
 import { CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ModelInfo } from "@/types/chat";
 
 interface ChatHeaderProps {
     headerText: string;
     description: string;
     isExpanded: boolean;
     model: string;
-    availableModels: Array<{ name: string }>;
+    availableModels: ModelInfo[];
     loadingModels: boolean;
     onModelChange: (model: string) => void;
     onReset: () => void;
@@ -45,9 +46,9 @@ export function ChatHeader({
             <div className="flex items-center">
                 <Bot className="mr-2 h-5 w-5 text-blue-600" />
                 <div>
-                    <CardTitle className="text-lg">{headerText} Chat</CardTitle>
+                    <CardTitle className="text-lg">{headerText}</CardTitle>
                     <CardDescription className="text-xs line-clamp-1">
-                        Ask about "{description}"
+                        {description}
                     </CardDescription>
                 </div>
             </div>

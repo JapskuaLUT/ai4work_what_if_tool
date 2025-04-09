@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useOllama } from "@/hooks/useOllama";
+import { useModelContext } from "@/contexts/ModelContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay"; // Import from correct path
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
 import {
     LoaderCircle,
     Settings,
@@ -31,6 +32,9 @@ interface AIExplanationBoxProps {
 }
 
 export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
+    // Access the global model context
+    const { globalModel, availableModels: contextModels } = useModelContext();
+
     const [systemPrompt, setSystemPrompt] = useState(
         "You are an expert scheduler and educational planner. Analyze the following scheduling data and provide insights about feasibility, conflicts, and suggestions for improvement. Focus on the key constraints and issues that impact the schedule."
     );
@@ -51,24 +55,41 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
         cancelStream
     } = useOllama({ defaultModel: selectedModel });
 
-    // Fetch models on component mount
+    // Use the global model when this component initializes
     useEffect(() => {
-        fetchModels()
-            .then(() => {
-                // Set default model after fetching if none is selected
-                if (!selectedModel && availableModels.length > 0) {
-                    setSelectedModel(availableModels[0].name);
-                }
-            })
-            .catch(console.error);
-    }, [fetchModels]);
+        if (globalModel && !selectedModel) {
+            setSelectedModel(globalModel);
+        }
+    }, [globalModel, selectedModel]);
 
-    // Update selectedModel when availableModels changes and none is selected
+    // Fetch models on component mount if needed
+    useEffect(() => {
+        // Only fetch models if we don't have any from context
+        if (contextModels.length === 0) {
+            fetchModels()
+                .then(() => {
+                    // Set default model after fetching if none is selected
+                    if (!selectedModel && availableModels.length > 0) {
+                        setSelectedModel(availableModels[0].name);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [fetchModels, contextModels]);
+
+    // Update selectedModel from locally fetched models if needed
     useEffect(() => {
         if (!selectedModel && availableModels.length > 0) {
             setSelectedModel(availableModels[0].name);
         }
     }, [availableModels, selectedModel]);
+
+    // Run auto-analysis when enabled and plan changes
+    useEffect(() => {
+        if (autoAnalyze && selectedModel && plan) {
+            analyzePlan();
+        }
+    }, [plan, autoAnalyze, selectedModel]);
 
     const analyzePlan = async () => {
         if (!selectedModel) {
@@ -97,6 +118,11 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
     const stopGeneration = () => {
         cancelStream();
     };
+
+    // Combine available models from context and local fetch
+    const mergedAvailableModels =
+        contextModels.length > 0 ? contextModels : availableModels;
+    const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
 
     return (
         <Card className="w-full mt-6">
@@ -182,16 +208,16 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
                                     <SelectValue placeholder="Select a model" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {loadingModels ? (
+                                    {isLoadingModels ? (
                                         <SelectItem value="loading" disabled>
                                             Loading models...
                                         </SelectItem>
-                                    ) : availableModels.length === 0 ? (
+                                    ) : mergedAvailableModels.length === 0 ? (
                                         <SelectItem value="none" disabled>
                                             No models found
                                         </SelectItem>
                                     ) : (
-                                        availableModels.map((m) => (
+                                        mergedAvailableModels.map((m) => (
                                             <SelectItem
                                                 key={m.name}
                                                 value={m.name}

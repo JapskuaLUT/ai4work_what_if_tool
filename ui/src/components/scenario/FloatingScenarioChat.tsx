@@ -1,8 +1,8 @@
 // ui/src/components/scenario/FloatingScenarioChat.tsx
-// Main component that orchestrates the chat functionality
 
 import { useState, useEffect, useRef } from "react";
 import { useOllama } from "@/hooks/useOllama";
+import { useModelContext } from "@/contexts/ModelContext";
 import {
     Card,
     CardContent,
@@ -32,9 +32,11 @@ interface FloatingScenarioChatProps {
 }
 
 export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
+    // Get global model from context
+    const { globalModel, availableModels: contextModels } = useModelContext();
+
     // State
-    const [prompt, setPrompt] = useState("");
-    const [model, setModel] = useState("");
+    const [model, setModel] = useState<string>("");
     const [systemPrompt, setSystemPrompt] = useState(
         createSystemPrompt(scenario)
     );
@@ -66,14 +68,24 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
     const isLargeScreen =
         typeof window !== "undefined" ? window.innerWidth >= 1024 : false;
 
-    // Fetch models on component mount
+    // Use the global model when this component initializes
     useEffect(() => {
-        fetchModels().catch(console.error);
-    }, [fetchModels]);
+        if (globalModel && !model) {
+            setModel(globalModel);
+        }
+    }, [globalModel, model]);
 
-    // Set default model after models are loaded
+    // Fetch models on component mount if needed
     useEffect(() => {
-        if (availableModels.length > 0 && !model) {
+        // Only fetch models if we don't have any from context
+        if (contextModels.length === 0) {
+            fetchModels().catch(console.error);
+        }
+    }, [fetchModels, contextModels]);
+
+    // Set default model from locally fetched models if no global model
+    useEffect(() => {
+        if (!model && availableModels.length > 0) {
             setModel(availableModels[0].name);
         }
     }, [availableModels, model]);
@@ -273,6 +285,11 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         setIsChatOpen(true);
     };
 
+    // Combine available models from context and local fetch
+    const mergedAvailableModels =
+        contextModels.length > 0 ? contextModels : availableModels;
+    const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
+
     return (
         <>
             {/* Floating chat button */}
@@ -294,8 +311,8 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                             description={scenario.description}
                             isExpanded={isExpanded}
                             model={model}
-                            availableModels={availableModels}
-                            loadingModels={loadingModels}
+                            availableModels={mergedAvailableModels}
+                            loadingModels={isLoadingModels}
                             onModelChange={setModel}
                             onReset={resetChat}
                             onToggleExpand={toggleExpanded}
@@ -306,9 +323,10 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
 
                     <CardContent className="pt-4 pb-4">
                         {/* Models debug info - will be removed in production */}
-                        {(loadingModels || availableModels.length === 0) && (
+                        {(isLoadingModels ||
+                            mergedAvailableModels.length === 0) && (
                             <div className="mb-4 p-2 text-xs bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200">
-                                {loadingModels
+                                {isLoadingModels
                                     ? "Loading available models..."
                                     : "No models available. Please make sure Ollama is running."}
                             </div>
