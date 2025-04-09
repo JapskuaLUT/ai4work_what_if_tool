@@ -24,6 +24,7 @@ import {
     SelectValue
 } from "@/components/ui/select";
 import { CourseworkPlan } from "@/types/builder";
+import { explainSchedulingResults } from "@/prompts/explainSchedulingResults";
 
 interface AIExplanationBoxProps {
     plan: CourseworkPlan;
@@ -74,40 +75,14 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
             console.error("No model selected");
             return;
         }
+        if (!plan) {
+            console.error("No plan provided");
+            return;
+        }
 
         try {
-            // Create a simplified version of the plan to avoid overwhelming the model
-            const simplifiedPlan = {
-                name: plan.name,
-                description: plan.description,
-                scenarios: plan.scenarios.map((s) => ({
-                    scenarioId: s.scenarioId,
-                    name: s.name,
-                    constraints: s.constraints,
-                    output: {
-                        status: s.output?.status,
-                        conflictCount: s.output?.conflicts?.length || 0,
-                        conflicts: s.output?.conflicts
-                            ?.slice(0, 5)
-                            .map((c) => ({
-                                type: c.type,
-                                description: c.description
-                            }))
-                    }
-                }))
-            };
-
-            const prompt = `
-Please analyze this scheduling plan data and provide insights:
-
-${JSON.stringify(simplifiedPlan, null, 2)}
-
-Focus on:
-1. Overall feasibility assessment
-2. Common constraints causing conflicts
-3. Differences between scenarios
-4. Practical recommendations for improvement
-`;
+            const prompt = explainSchedulingResults(JSON.stringify(plan));
+            console.log("Prompt:", prompt);
 
             await streamGenerate(prompt, {
                 model: selectedModel,
