@@ -2,7 +2,7 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ComparisonView } from "@/components/results/ComparisonView";
-import { ScenarioView } from "@/components/results/ScenarioView";
+import { ScenarioView } from "@/components/scenario/ScenarioView";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
