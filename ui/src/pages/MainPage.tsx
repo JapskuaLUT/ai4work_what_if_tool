@@ -13,9 +13,16 @@ export default function MainPage() {
 
     return (
         <div className="p-10 space-y-8 text-center">
-            <h1 className="text-4xl font-bold text-primary">
-                Welcome to Explainable What-If Tool
-            </h1>
+            <div className="flex flex-col items-center">
+                <img
+                    src="/what_if_logo.png"
+                    alt="What-If Logo"
+                    className="h-36 w-36 mb-4"
+                />
+                <h1 className="text-4xl font-bold text-primary">
+                    Welcome to Explainable What-If Tool
+                </h1>
+            </div>
             <p className="text-muted-foreground text-lg">
                 This tool helps non-technical users understand and compare
                 AI-generated schedules based on real-world constraints.

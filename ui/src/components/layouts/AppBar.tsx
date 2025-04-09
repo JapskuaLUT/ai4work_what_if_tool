@@ -71,10 +71,16 @@ export function AppBar() {
                     </Button>
                 )}
                 <div
-                    className="text-xl font-bold cursor-pointer"
+                    className="flex items-center cursor-pointer"
                     onClick={() => navigate("/")}
                 >
-                    🧠 AI Scheduler
+                    {/* Add the logo image here */}
+                    <img
+                        src="/what_if_logo.png"
+                        alt="What-If Logo"
+                        className="h-8 w-8 mr-2"
+                    />
+                    <span className="text-xl font-bold">What-If Tool</span>
                 </div>
             </div>
 
