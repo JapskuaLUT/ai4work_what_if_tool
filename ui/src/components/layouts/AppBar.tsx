@@ -1,12 +1,11 @@
 // ui/src/components/layouts/AppBar.tsx
 
-// src/components/layout/AppBar.tsx
-
 import { useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils"; // Optional helper if you're using class merging
+import { cn } from "@/lib/utils";
 import { Fragment } from "react";
 import { Button } from "../ui/button";
 import { ArrowLeft } from "lucide-react";
+import { GlobalModelSelector } from "../global/GlobalModelSelector";
 
 const friendlyNames: Record<string, string> = {
     scheduler: "Scheduler",
@@ -72,24 +71,35 @@ export function AppBar() {
                     </Button>
                 )}
                 <div
-                    className="text-xl font-bold cursor-pointer"
+                    className="flex items-center cursor-pointer"
                     onClick={() => navigate("/")}
                 >
-                    🧠 AI Scheduler
+                    {/* Add the logo image here */}
+                    <img
+                        src="/what_if_logo.png"
+                        alt="What-If Logo"
+                        className="h-8 w-8 mr-2"
+                    />
+                    <span className="text-xl font-bold">What-If Tool</span>
                 </div>
             </div>
 
-            <div className="text-sm flex items-center">
-                <span
-                    className="cursor-pointer hover:underline text-muted-foreground"
-                    onClick={() => navigate("/")}
-                >
-                    Home
-                </span>
-                {pathSegments.length > 0 && (
-                    <span className="mx-1 text-muted-foreground">/</span>
-                )}
-                {breadcrumbs}
+            <div className="flex items-center gap-4">
+                {/* Add the global model selector here */}
+                <GlobalModelSelector />
+
+                <div className="text-sm flex items-center">
+                    <span
+                        className="cursor-pointer hover:underline text-muted-foreground"
+                        onClick={() => navigate("/")}
+                    >
+                        Home
+                    </span>
+                    {pathSegments.length > 0 && (
+                        <span className="mx-1 text-muted-foreground">/</span>
+                    )}
+                    {breadcrumbs}
+                </div>
             </div>
         </div>
     );

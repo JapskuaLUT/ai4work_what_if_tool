@@ -1,4 +1,4 @@
-// ui/src/components/results/ScenarioView.tsx
+// ui/src/components/scenario/ScenarioView.tsx
 
 import { Scenario } from "@/types/scenario";
 import {
@@ -25,7 +25,7 @@ import {
     ClipboardList
 } from "lucide-react";
 import { DailyScheduleView } from "./DailyScheduleView";
-import { ScenarioChat } from "./ScenarioChat";
+import { FloatingScenarioChat } from "./FloatingScenarioChat";
 
 interface ScenarioViewProps {
     scenario: Scenario;
@@ -104,7 +104,7 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative pb-20">
             <Card
                 className={`border-2 ${
                     isFeasible
@@ -426,8 +426,8 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
                 </CardFooter>
             </Card>
 
-            {/* AI Chat Component */}
-            <ScenarioChat scenario={scenario} />
+            {/* Include the floating chat component */}
+            <FloatingScenarioChat scenario={scenario} />
         </div>
     );
 }
