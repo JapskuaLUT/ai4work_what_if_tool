@@ -1,105 +1,81 @@
 // ui/src/pages/BuilderPage.tsx
-// src/pages/BuilderPage.tsx
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-
-const presets = {
-    coursework: {
-        lectures: "Mon 9–11, Wed 14–16",
-        projectHours: "4",
-        constraints:
-            "Max 6h/day\nAt least one free afternoon\nNo overlapping tasks"
-    },
-    "teaching-plan": {
-        lectures: "Tue 10–12, Thu 13–15",
-        projectHours: "6",
-        constraints: "Max 5h/day\nTwo free afternoons\nNo overlapping tasks"
-    }
-};
+import { ChevronLeft, PlayCircle } from "lucide-react";
+import { BuilderPageHeader } from "@/components/builder/BuilderPageHeader";
+import { BuilderScenarioList } from "@/components/builder/BuilderScenarioList";
+import { BuilderScenarioForm } from "@/components/builder/BuilderScenarioForm";
+import { BuilderLoadingState } from "@/components/builder/BuilderLoadingState";
+import { BuilderErrorState } from "@/components/builder/BuilderErrorState";
+import { CourseworkPlan, BuilderScenario } from "@/types/builder";
 
 export default function BuilderPage() {
     const { projectId } = useParams<{ projectId: string }>();
+    const [plan, setPlan] = useState<CourseworkPlan | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    const [form, setForm] = useState({
-        lectures: "",
-        projectHours: "",
-        constraints: ""
-    });
-
-    // Prepopulate form when projectId changes
     useEffect(() => {
-        if (projectId && presets[projectId as keyof typeof presets]) {
-            setForm(presets[projectId as keyof typeof presets]);
+        async function fetchPlan() {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/data/${projectId}.json`);
+                const data = await res.json();
+                setPlan(data);
+            } catch (error) {
+                console.error("Failed to fetch plan:", error);
+            } finally {
+                setIsLoading(false);
+            }
         }
+
+        fetchPlan();
     }, [projectId]);
 
-    const handleChange = (field: string, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
+    const addScenario = (newScenario: BuilderScenario) => {
+        if (!plan) return;
+        const updatedScenarios = [...plan.scenarios, newScenario];
+        setPlan({ ...plan, scenarios: updatedScenarios });
     };
 
-    const handleSubmit = () => {
-        console.log("Submitting scenario:", form);
-        // Simulate navigation to comparison view
-        navigate("/scheduler/compare");
-    };
+    if (isLoading) {
+        return <BuilderLoadingState />;
+    }
 
-    const label =
-        projectId === "coursework"
-            ? "Coursework Scheduling"
-            : "Teaching Plan Scheduling";
+    if (!plan) {
+        return <BuilderErrorState onBack={() => navigate("/")} />;
+    }
 
     return (
-        <div className="max-w-2xl mx-auto p-6 space-y-6">
-            <h1 className="text-2xl font-bold">{label} – Scenario Builder</h1>
-
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium">
-                        Lectures
-                    </label>
-                    <Input
-                        placeholder="e.g. Mon 9–11, Wed 14–16"
-                        value={form.lectures}
-                        onChange={(e) =>
-                            handleChange("lectures", e.target.value)
-                        }
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium">
-                        Project Hours
-                    </label>
-                    <Input
-                        placeholder="e.g. 4"
-                        value={form.projectHours}
-                        onChange={(e) =>
-                            handleChange("projectHours", e.target.value)
-                        }
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium">
-                        Constraints
-                    </label>
-                    <Textarea
-                        placeholder="Max 6h/day, No overlapping tasks..."
-                        value={form.constraints}
-                        onChange={(e) =>
-                            handleChange("constraints", e.target.value)
-                        }
-                    />
-                </div>
-
-                <div className="pt-4">
-                    <Button onClick={handleSubmit}>Generate & Compare</Button>
-                </div>
+        <div className="max-w-5xl mx-auto p-6 space-y-10">
+            <div className="flex items-center mb-4">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/")}
+                    className="mr-4"
+                >
+                    <ChevronLeft className="mr-1 h-4 w-4" /> Back
+                </Button>
+                <Button
+                    onClick={() => navigate(`/results/${projectId}`)}
+                    className="ml-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                >
+                    <PlayCircle className="mr-2 h-5 w-5" /> Run Scenarios
+                </Button>
             </div>
+
+            <BuilderPageHeader
+                title={plan.name}
+                description={plan.description}
+                scenarioCount={plan.scenarios.length}
+            />
+
+            <BuilderScenarioList scenarios={plan.scenarios} />
+
+            <BuilderScenarioForm onAddScenario={addScenario} />
         </div>
     );
 }

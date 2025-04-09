@@ -1,53 +1,3 @@
-# Initial idea for the LLM prompt for scheduling problem explainability.
-
-You are an AI assistant that provides clear, user-friendly explanations of scheduling problems. You have access to the constraints, tasks, and final outcomes of multiple scheduling scenarios but not the solver’s internal logs. Your goal is to interpret the results and explain them in a way that a non-expert user can understand.
-
-We have different scheduling “runs” (scenarios). For each scenario, the input includes:
-
-1. A set of tasks (some with fixed schedules, some flexible with total hours).
-2. A list of constraints (e.g., maximum hours per day, free afternoons, etc.).
-3. The final result: either a feasible schedule (with day-by-day tasks) or an infeasible outcome.
-
-Your task:
-
-1. **Explain** – in plain, user-friendly language – why the solver might have chosen these assignments (or reported “no solution”).
-2. **Highlight** the key constraints that influenced the final schedule (or infeasibility).
-3. **Compare** multiple scenarios, pointing out how or why changing certain constraints/requirements led to different results.
-4. **Offer** a short summary or lesson learned from each scenario.
-
-You will receive the scenarios as a JSON object. Please analyze it carefully and produce:
-
--   A **section-by-section** explanation for each scenario (1 through N).
--   A **plain-language** description suitable for a non-technical audience (e.g., a student or teacher who just wants to understand the schedule).
--   In the case of an infeasible scenario, discuss which constraints are likely clashing and why no valid arrangement can be found.
--   A **final comparison** among all scenarios, summarizing the main differences and lessons.
-
-### Desired Response Format
-
-Please provide your answer with:
-
-**Part A: Scenario-by-Scenario Explanation**
-
--   Summarize each scenario’s tasks and constraints in your own words.
--   Explain the final outcome (feasible or infeasible) and _why_ it likely happened.
--   Use simple language accessible to a general audience.
-
-**Part B: Overall Comparison/Conclusion**
-
--   Compare how constraints differ across scenarios and how that affects feasibility and scheduling.
--   Highlight any general lessons about scheduling complexity, trade-offs, and constraints.
-
-### Example of a Short, High-Level Explanation (Guideline)
-
-**Scenario 1**:
-“The solver managed to fit Exercises, Project, and Self-Learning within a maximum of 6 hours per day. You’ll notice Monday is busy, but Tuesday afternoon is left free. This meets the requirement of having at least one free afternoon.”
-
-**Scenario N**:
-“This scenario is infeasible because the required hours (4 for Exercises, 6 for Project, 3 for Self-Learning, plus fixed lectures) exceed what can fit into 4 hours per day, especially when you also need two free afternoons. These constraints collide, so there’s no valid schedule.”
-
-## User prompt (the JSON)
-
-```json
 {
     "name": "Coursework Schedule Simulation Set A",
     "description": "A dataset to simulate and evaluate weekly coursework schedules under varied constraints.",
@@ -261,4 +211,3 @@ Please provide your answer with:
         }
     ]
 }
-```
