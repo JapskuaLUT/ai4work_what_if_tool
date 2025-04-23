@@ -10,7 +10,6 @@ import {
     CardDescription
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 
 import { CourseScenario } from "@/types/builder";
 
@@ -290,76 +289,84 @@ export function BuilderStressScenarioCard({
 
                 {/* Remaining Course Workload */}
                 <div className="mb-4">
-                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-3">
                         <Clock className="mr-2 h-4 w-4 text-purple-600" />{" "}
                         Remaining Course Workload
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Teaching:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .remaining.teaching_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Lab Work:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .remaining.lab_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Homework:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .remaining.homework_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Assignments:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .remaining.assignment_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <div className="text-center">
-                                <div className="text-sm font-medium mb-1">
-                                    Total Remaining
+                    <div className="bg-slate-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                        <div className="grid grid-cols-4 gap-2">
+                            <div className="col-span-3">
+                                <div className="grid grid-cols-2 gap-y-2">
+                                    <div className="text-sm">Teaching:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .remaining.teaching_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Lab Work:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .remaining.lab_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Homework:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .remaining.homework_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Assignments:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .remaining.assignment_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
                                 </div>
-                                <Badge
-                                    variant="secondary"
-                                    className="text-lg px-3 py-1"
-                                >
-                                    {totalRemaining}h
-                                </Badge>
+                            </div>
+                            <div className="col-span-1 flex items-center justify-center border-l border-gray-200 dark:border-gray-700 pl-2">
+                                <div className="text-center">
+                                    <div className="text-xs text-gray-500 mb-1">
+                                        Total Remaining
+                                    </div>
+                                    <Badge
+                                        variant="secondary"
+                                        className="text-lg px-3 py-1"
+                                    >
+                                        {totalRemaining}h
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -369,62 +376,85 @@ export function BuilderStressScenarioCard({
 
                 {/* Next Week Workload */}
                 <div>
-                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-3">
                         <Clock className="mr-2 h-4 w-4 text-blue-600" /> Next
-                        Week Workload: {nextWeekTotal} hours
+                        Week Workload
                     </h3>
-                    <div className="space-y-2">
-                        <div className="flex items-center text-sm">
-                            <span className="flex-1">Teaching:</span>
-                            <Badge
-                                variant="outline"
-                                className="min-w-12 text-center"
-                            >
-                                {
-                                    scenario.input.hours_distribution.next_week
-                                        .teaching_hours
-                                }
-                                h
-                            </Badge>
-                        </div>
-                        <div className="flex items-center text-sm">
-                            <span className="flex-1">Lab Work:</span>
-                            <Badge
-                                variant="outline"
-                                className="min-w-12 text-center"
-                            >
-                                {
-                                    scenario.input.hours_distribution.next_week
-                                        .lab_hours
-                                }
-                                h
-                            </Badge>
-                        </div>
-                        <div className="flex items-center text-sm">
-                            <span className="flex-1">Homework:</span>
-                            <Badge
-                                variant="outline"
-                                className="min-w-12 text-center"
-                            >
-                                {
-                                    scenario.input.hours_distribution.next_week
-                                        .homework_hours
-                                }
-                                h
-                            </Badge>
-                        </div>
-                        <div className="flex items-center text-sm">
-                            <span className="flex-1">Assignments:</span>
-                            <Badge
-                                variant="outline"
-                                className="min-w-12 text-center"
-                            >
-                                {
-                                    scenario.input.hours_distribution.next_week
-                                        .assignment_hours
-                                }
-                                h
-                            </Badge>
+                    <div className="bg-blue-50 dark:bg-gray-800/50 rounded-lg p-3 border border-blue-100 dark:border-gray-700">
+                        <div className="grid grid-cols-4 gap-2">
+                            <div className="col-span-3">
+                                <div className="grid grid-cols-2 gap-y-2">
+                                    <div className="text-sm">Teaching:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .next_week.teaching_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Lab Work:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .next_week.lab_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Homework:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .next_week.homework_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                    <div className="text-sm">Assignments:</div>
+                                    <div className="text-sm text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className="min-w-12 text-center"
+                                        >
+                                            {
+                                                scenario.input
+                                                    .hours_distribution
+                                                    .next_week.assignment_hours
+                                            }
+                                            h
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="col-span-1 flex items-center justify-center border-l border-gray-200 dark:border-gray-700 pl-2">
+                                <div className="text-center">
+                                    <div className="text-xs text-gray-500 mb-1">
+                                        Total Hours
+                                    </div>
+                                    <Badge
+                                        variant="secondary"
+                                        className="text-lg px-3 py-1"
+                                    >
+                                        {nextWeekTotal}h
+                                    </Badge>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
