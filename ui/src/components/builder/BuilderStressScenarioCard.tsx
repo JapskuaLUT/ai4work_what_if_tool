@@ -171,7 +171,7 @@ export function BuilderStressScenarioCard({
                         <Calendar className="mr-2 h-4 w-4 text-indigo-600" />{" "}
                         Course Schedule
                     </h3>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-sm mb-3">
                         <div>
                             <span className="font-medium">Teaching:</span>{" "}
                             {scenario.input.course_info.teaching.days.join(
@@ -185,6 +185,30 @@ export function BuilderStressScenarioCard({
                             {scenario.input.course_info.lab.time}
                         </div>
                     </div>
+
+                    <h4 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2 mt-4">
+                        <Code className="mr-2 h-4 w-4 text-green-600" />{" "}
+                        Assignments
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {scenario.input.assignments.map((assignment) => (
+                            <div
+                                key={assignment.id}
+                                className="border rounded-md p-2 text-sm"
+                            >
+                                <div className="font-medium">
+                                    Assignment {assignment.id}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    Weeks {assignment.start_week}-
+                                    {assignment.end_week}
+                                </div>
+                                <Badge variant="secondary" className="mt-1">
+                                    {assignment.hours_per_week} hours/week
+                                </Badge>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <Separator className="my-4" />
@@ -197,22 +221,28 @@ export function BuilderStressScenarioCard({
                             Current Progress
                         </h3>
                         <div>
-                            <div className="mb-2">
-                                <span className="font-medium">Progress:</span>{" "}
-                                Week{" "}
-                                {scenario.input.current_status.current_week} of{" "}
-                                {scenario.input.current_status.total_weeks}
+                            <div className="flex justify-between text-xs mb-1">
+                                <span>
+                                    Progress: Week{" "}
+                                    {scenario.input.current_status.current_week}{" "}
+                                    of{" "}
+                                    {scenario.input.current_status.total_weeks}
+                                </span>
                             </div>
-                            <Progress
-                                value={
-                                    (scenario.input.current_status
-                                        .current_week /
-                                        scenario.input.current_status
-                                            .total_weeks) *
-                                    100
-                                }
-                                className="h-2"
-                            />
+                            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-2 bg-purple-600 rounded-full"
+                                    style={{
+                                        width: `${
+                                            (scenario.input.current_status
+                                                .current_week /
+                                                scenario.input.current_status
+                                                    .total_weeks) *
+                                            100
+                                        }%`
+                                    }}
+                                ></div>
+                            </div>
                         </div>
                     </div>
 
@@ -238,7 +268,7 @@ export function BuilderStressScenarioCard({
                                     /10
                                 </span>
                             </div>
-                            <div className="h-2 w-full bg-gray-200 rounded-full">
+                            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                 <div
                                     className={`h-2 rounded-full ${getStressColor(
                                         scenario.output.stress_metrics
@@ -338,93 +368,63 @@ export function BuilderStressScenarioCard({
                 <Separator className="my-4" />
 
                 {/* Next Week Workload */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <Clock className="mr-2 h-4 w-4 text-blue-600" />{" "}
-                            Next Week Workload: {nextWeekTotal} hours
-                        </h3>
-                        <div className="space-y-2">
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Teaching:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .next_week.teaching_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Lab Work:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .next_week.lab_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Homework:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .next_week.homework_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
-                            <div className="flex items-center text-sm">
-                                <span className="flex-1">Assignments:</span>
-                                <Badge
-                                    variant="outline"
-                                    className="min-w-12 text-center"
-                                >
-                                    {
-                                        scenario.input.hours_distribution
-                                            .next_week.assignment_hours
-                                    }
-                                    h
-                                </Badge>
-                            </div>
+                <div>
+                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <Clock className="mr-2 h-4 w-4 text-blue-600" /> Next
+                        Week Workload: {nextWeekTotal} hours
+                    </h3>
+                    <div className="space-y-2">
+                        <div className="flex items-center text-sm">
+                            <span className="flex-1">Teaching:</span>
+                            <Badge
+                                variant="outline"
+                                className="min-w-12 text-center"
+                            >
+                                {
+                                    scenario.input.hours_distribution.next_week
+                                        .teaching_hours
+                                }
+                                h
+                            </Badge>
                         </div>
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <Code className="mr-2 h-4 w-4 text-green-600" />{" "}
-                            Assignments
-                        </h3>
-                        <div className="space-y-2">
-                            {scenario.input.assignments.map((assignment) => (
-                                <div
-                                    key={assignment.id}
-                                    className="border rounded-md p-2 text-sm flex justify-between items-center"
-                                >
-                                    <div>
-                                        <div className="font-medium">
-                                            Assignment {assignment.id}
-                                        </div>
-                                        <div className="text-xs text-gray-600">
-                                            Weeks {assignment.start_week}-
-                                            {assignment.end_week}
-                                        </div>
-                                    </div>
-                                    <Badge variant="secondary">
-                                        {assignment.hours_per_week} hours/week
-                                    </Badge>
-                                </div>
-                            ))}
+                        <div className="flex items-center text-sm">
+                            <span className="flex-1">Lab Work:</span>
+                            <Badge
+                                variant="outline"
+                                className="min-w-12 text-center"
+                            >
+                                {
+                                    scenario.input.hours_distribution.next_week
+                                        .lab_hours
+                                }
+                                h
+                            </Badge>
+                        </div>
+                        <div className="flex items-center text-sm">
+                            <span className="flex-1">Homework:</span>
+                            <Badge
+                                variant="outline"
+                                className="min-w-12 text-center"
+                            >
+                                {
+                                    scenario.input.hours_distribution.next_week
+                                        .homework_hours
+                                }
+                                h
+                            </Badge>
+                        </div>
+                        <div className="flex items-center text-sm">
+                            <span className="flex-1">Assignments:</span>
+                            <Badge
+                                variant="outline"
+                                className="min-w-12 text-center"
+                            >
+                                {
+                                    scenario.input.hours_distribution.next_week
+                                        .assignment_hours
+                                }
+                                h
+                            </Badge>
                         </div>
                     </div>
                 </div>
