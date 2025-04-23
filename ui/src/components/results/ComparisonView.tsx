@@ -3,77 +3,65 @@
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
-    CardTitle,
-    CardFooter
+    CardTitle
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Scenario } from "@/types/scenario";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-    CheckCircle,
-    XCircle,
-    ClipboardList,
+    BarChart,
     Calendar,
     Clock,
-    AlarmClock,
-    Calendar as CalendarIcon,
-    MessageSquare
+    BarChart2,
+    Activity,
+    CheckCircle
 } from "lucide-react";
-import { useMemo } from "react";
-import { FloatingPlanChat } from "@/components/chat/FloatingPlanChat";
-import { CourseworkPlan } from "@/types/builder";
+import { BuilderScenario, CourseScenario } from "@/types/builder";
 
-interface ComparisonViewProps {
-    scenarios: Scenario[];
-}
+// Import visualization components (these would be actual components in your app)
+import { ScheduleComparisonChart } from "@/components/charts/ScheduleComparisonChart";
+import { StressComparisonChart } from "@/components/charts/StressComparisonChart";
 
-export function ComparisonView({ scenarios }: ComparisonViewProps) {
-    // Group scenarios by status
-    const feasibleScenarios = scenarios.filter(
-        (s) => s.output?.status === "feasible"
-    );
-    const infeasibleScenarios = scenarios.filter(
-        (s) => s.output?.status === "infeasible"
-    );
+type ComparisonViewProps = {
+    scenarios: (BuilderScenario | CourseScenario)[];
+    planKind?: "coursework" | "stress";
+};
 
-    // Create a plan object to pass to the chat component
-    const plan: CourseworkPlan = {
-        name: "Coursework Schedule Plan",
-        description: "Comparison of different scheduling scenarios",
-        scenarios: scenarios.map((s) => ({
-            scenarioId: s.scenarioId,
-            description: s.description || `Scenario ${s.scenarioId}`,
-            input: s.input,
-            output: s.output
-        }))
-    };
+export function ComparisonView({
+    scenarios,
+    planKind = "coursework"
+}: ComparisonViewProps) {
+    // Check if we're dealing with a stress plan
+    const isStressPlan = planKind === "stress";
 
-    // Calculate statistics for feasible scenarios
-    const scenarioStats = useMemo(() => {
-        return feasibleScenarios.map((scenario) => {
-            // Calculate total hours per day
-            const dailyHours: Record<string, number> = {};
-            const taskCounts: Record<string, number> = {
-                Lecture: 0,
-                Exercises: 0,
-                Project: 0,
-                "Self-learning": 0
-            };
+    // For coursework plans
+    const courseworkScenarioComparison = () => {
+        const courseworkScenarios = scenarios as BuilderScenario[];
 
-            scenario.output?.schedule.forEach((day) => {
-                let totalHours = 0;
+        // Prepare data for comparison charts
+        const names = courseworkScenarios.map(
+            (s) => `Scenario ${s.scenarioId}`
+        );
 
-                day.timeBlocks.forEach((block) => {
-                    // Very simple duration calculation based on the time format "9–11" or "15:30–17:30"
+        const feasibility = courseworkScenarios.map((s) =>
+            s.output?.status === "feasible" ? "✓ Feasible" : "✗ Infeasible"
+        );
+
+        // Calculate weekly hours comparison
+        const weeklyHours = courseworkScenarios.map((s) => {
+            if (!s.output?.schedule) return 0;
+
+            return s.output.schedule.reduce((total, day) => {
+                const dayHours = day.timeBlocks.reduce((dayTotal, block) => {
+                    // Calculate hours from time range (e.g., "9–11" = 2 hours)
                     const [start, end] = block.time.split("–");
 
-                    // Simple parsing, just for estimation
+                    // Parse hours and minutes
                     let startHour = parseInt(start.split(":")[0]);
                     let endHour = parseInt(end.split(":")[0]);
 
-                    // Adjust if there are minutes
+                    // Adjust for minutes if present
                     if (start.includes(":")) {
                         const startMin = parseInt(start.split(":")[1]) / 60;
                         startHour += startMin;
@@ -84,421 +72,486 @@ export function ComparisonView({ scenarios }: ComparisonViewProps) {
                         endHour += endMin;
                     }
 
-                    const duration = endHour - startHour;
-                    totalHours += duration;
+                    return dayTotal + (endHour - startHour);
+                }, 0);
 
-                    // Count tasks by type
-                    taskCounts[block.task] = (taskCounts[block.task] || 0) + 1;
-                });
+                return total + dayHours;
+            }, 0);
+        });
 
-                dailyHours[day.day] = totalHours;
+        // Get busiest days for each scenario
+        const busiestDays = courseworkScenarios.map((s) => {
+            if (!s.output?.schedule) return { day: "N/A", hours: 0 };
+
+            let busiest = { day: "", hours: 0 };
+
+            s.output.schedule.forEach((day) => {
+                const dayHours = day.timeBlocks.reduce((total, block) => {
+                    const [start, end] = block.time.split("–");
+
+                    // Parse hours and minutes
+                    let startHour = parseInt(start.split(":")[0]);
+                    let endHour = parseInt(end.split(":")[0]);
+
+                    // Adjust for minutes if present
+                    if (start.includes(":")) {
+                        const startMin = parseInt(start.split(":")[1]) / 60;
+                        startHour += startMin;
+                    }
+
+                    if (end.includes(":")) {
+                        const endMin = parseInt(end.split(":")[1]) / 60;
+                        endHour += endMin;
+                    }
+
+                    return total + (endHour - startHour);
+                }, 0);
+
+                if (dayHours > busiest.hours) {
+                    busiest = { day: day.day, hours: dayHours };
+                }
             });
 
-            // Calculate max, min, and average hours per day
-            const hoursValues = Object.values(dailyHours);
-            const maxHours = Math.max(...hoursValues);
-            const minHours = Math.min(...hoursValues);
-            const avgHours =
-                hoursValues.reduce((sum, val) => sum + val, 0) /
-                hoursValues.length;
-
-            return {
-                scenarioId: scenario.scenarioId,
-                maxHours,
-                minHours,
-                avgHours,
-                dailyHours,
-                taskCounts
-            };
+            return busiest;
         });
-    }, [feasibleScenarios]);
 
-    return (
-        <div className="space-y-10 relative pb-20">
-            {/* Feasible Scenarios Section */}
-            <section className="space-y-4">
-                <div className="flex items-center">
-                    <h2 className="text-2xl font-semibold flex items-center">
-                        <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                        Feasible Scenarios
-                    </h2>
-                    <Badge className="ml-3 bg-green-100 text-green-800">
-                        {feasibleScenarios.length} scenarios
-                    </Badge>
-                </div>
-
-                {feasibleScenarios.length === 0 ? (
-                    <Card className="border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                        <CardContent className="py-8 text-center">
-                            <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                            <p className="text-gray-500 dark:text-gray-400">
-                                No feasible scenarios found.
-                            </p>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                                Try adjusting the constraints to create a
-                                workable schedule.
-                            </p>
+        return (
+            <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                                Feasibility
+                            </CardTitle>
+                            <CardDescription>
+                                Scenario feasibility comparison
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {courseworkScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <span className="text-sm font-medium">
+                                            Scenario {s.scenarioId}
+                                        </span>
+                                        <Badge
+                                            variant={
+                                                s.output?.status === "feasible"
+                                                    ? "outline"
+                                                    : "secondary"
+                                            }
+                                            className={
+                                                s.output?.status === "feasible"
+                                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                            }
+                                        >
+                                            {feasibility[idx]}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
-                ) : (
-                    <div className="grid gap-6 md:grid-cols-2">
-                        {feasibleScenarios.map((scenario, index) => {
-                            // Find the stats for this scenario
-                            const stats = scenarioStats.find(
-                                (s) => s.scenarioId === scenario.scenarioId
-                            );
 
-                            return (
-                                <Card
-                                    key={scenario.scenarioId}
-                                    className="border border-green-200 dark:border-green-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-                                >
-                                    <CardHeader className="bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800 pb-4">
-                                        <div className="flex justify-between items-center">
-                                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                                                Feasible
-                                            </Badge>
-                                            <span className="text-sm text-gray-500">
-                                                Scenario {scenario.scenarioId}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <Clock className="h-5 w-5 text-blue-500 mr-2" />
+                                Weekly Hours
+                            </CardTitle>
+                            <CardDescription>
+                                Total time allocation per week
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {courseworkScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="space-y-1"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                Scenario {s.scenarioId}
                                             </span>
+                                            <Badge variant="outline">
+                                                {weeklyHours[idx].toFixed(1)}h
+                                            </Badge>
                                         </div>
-                                        <CardTitle className="text-lg mt-2">
-                                            {scenario.description}
-                                        </CardTitle>
-                                    </CardHeader>
-
-                                    <CardContent className="pt-5 pb-3 space-y-4">
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
-                                                <p className="text-xs text-gray-500 mb-1 flex items-center justify-center">
-                                                    <Clock className="h-3 w-3 mr-1" />{" "}
-                                                    Max Hours
-                                                </p>
-                                                <p className="font-bold text-green-700 dark:text-green-400">
-                                                    {stats?.maxHours.toFixed(1)}
-                                                    h
-                                                </p>
-                                            </div>
-                                            <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
-                                                <p className="text-xs text-gray-500 mb-1 flex items-center justify-center">
-                                                    <AlarmClock className="h-3 w-3 mr-1" />{" "}
-                                                    Avg Hours
-                                                </p>
-                                                <p className="font-bold text-blue-600 dark:text-blue-400">
-                                                    {stats?.avgHours.toFixed(1)}
-                                                    h
-                                                </p>
-                                            </div>
-                                            <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
-                                                <p className="text-xs text-gray-500 mb-1 flex items-center justify-center">
-                                                    <CalendarIcon className="h-3 w-3 mr-1" />{" "}
-                                                    Days
-                                                </p>
-                                                <p className="font-bold text-indigo-600 dark:text-indigo-400">
-                                                    {
-                                                        scenario.output
-                                                            ?.schedule.length
-                                                    }
-                                                </p>
-                                            </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div
+                                                className="bg-blue-500 h-2 rounded-full"
+                                                style={{
+                                                    width: `${
+                                                        (weeklyHours[idx] /
+                                                            Math.max(
+                                                                ...weeklyHours
+                                                            )) *
+                                                        100
+                                                    }%`
+                                                }}
+                                            ></div>
                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                                        <div>
-                                            <h3 className="text-sm font-medium flex items-center mb-2 text-gray-700 dark:text-gray-300">
-                                                <Calendar className="mr-2 h-4 w-4 text-gray-500" />{" "}
-                                                Daily Schedule
-                                            </h3>
-                                            <div className="space-y-1">
-                                                {scenario.output?.schedule
-                                                    .slice(0, 3)
-                                                    .map((day) => (
-                                                        <div
-                                                            key={day.day}
-                                                            className="flex items-center text-sm"
-                                                        >
-                                                            <span className="font-medium w-10">
-                                                                {day.day}:
-                                                            </span>
-                                                            <div className="flex flex-wrap gap-1 flex-1">
-                                                                {day.timeBlocks.map(
-                                                                    (
-                                                                        block,
-                                                                        i
-                                                                    ) => (
-                                                                        <Badge
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                            variant="outline"
-                                                                            className={`text-xs ${getTaskColor(
-                                                                                block.task
-                                                                            )}`}
-                                                                        >
-                                                                            {
-                                                                                block.time
-                                                                            }{" "}
-                                                                            {
-                                                                                block.task
-                                                                            }
-                                                                        </Badge>
-                                                                    )
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                {(scenario.output?.schedule
-                                                    .length || 0) > 3 && (
-                                                    <p className="text-xs text-gray-500 text-right italic">
-                                                        +
-                                                        {(scenario.output
-                                                            ?.schedule.length ||
-                                                            0) - 3}{" "}
-                                                        more days...
-                                                    </p>
-                                                )}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <Calendar className="h-5 w-5 text-purple-500 mr-2" />
+                                Busiest Days
+                            </CardTitle>
+                            <CardDescription>
+                                Day with highest workload
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {courseworkScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <span className="text-sm font-medium">
+                                            Scenario {s.scenarioId}
+                                        </span>
+                                        <div className="text-right">
+                                            <div className="font-medium">
+                                                {busiestDays[idx].day}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {busiestDays[idx].hours.toFixed(
+                                                    1
+                                                )}{" "}
+                                                hours
                                             </div>
                                         </div>
-
-                                        <Separator />
-
-                                        <div>
-                                            <h3 className="text-sm font-medium flex items-center mb-2 text-gray-700 dark:text-gray-300">
-                                                <ClipboardList className="mr-2 h-4 w-4 text-gray-500" />{" "}
-                                                Key Constraints
-                                            </h3>
-                                            <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
-                                                {scenario.input.constraints
-                                                    .slice(0, 3)
-                                                    .map((constraint, idx) => (
-                                                        <li
-                                                            key={idx}
-                                                            className="flex items-start"
-                                                        >
-                                                            <span className="mr-2">
-                                                                •
-                                                            </span>
-                                                            <span className="text-xs">
-                                                                {constraint}
-                                                            </span>
-                                                        </li>
-                                                    ))}
-                                                {scenario.input.constraints
-                                                    .length > 3 && (
-                                                    <li className="text-xs text-gray-500 italic text-right">
-                                                        +
-                                                        {scenario.input
-                                                            .constraints
-                                                            .length - 3}{" "}
-                                                        more constraints...
-                                                    </li>
-                                                )}
-                                            </ul>
-                                        </div>
-                                    </CardContent>
-
-                                    <CardFooter className="bg-gray-50 dark:bg-gray-800/50 pt-3 pb-3 flex justify-between items-center border-t border-gray-100 dark:border-gray-700">
-                                        <div className="flex gap-1">
-                                            {stats && (
-                                                <>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="text-xs border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-400"
-                                                    >
-                                                        {stats.taskCounts
-                                                            .Lecture || 0}{" "}
-                                                        lectures
-                                                    </Badge>
-                                                    {stats.taskCounts.Project >
-                                                        0 && (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-xs border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
-                                                        >
-                                                            {
-                                                                stats.taskCounts
-                                                                    .Project
-                                                            }{" "}
-                                                            projects
-                                                        </Badge>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-xs"
-                                        >
-                                            View Details
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
-
-            {/* Infeasible Scenarios Section */}
-            <section className="space-y-4">
-                <div className="flex items-center">
-                    <h2 className="text-2xl font-semibold flex items-center">
-                        <XCircle className="mr-2 h-5 w-5 text-red-600" />
-                        Infeasible Scenarios
-                    </h2>
-                    <Badge className="ml-3 bg-red-100 text-red-800">
-                        {infeasibleScenarios.length} scenarios
-                    </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                    {infeasibleScenarios.map((scenario) => (
-                        <Card
-                            key={scenario.scenarioId}
-                            className="border border-red-200 dark:border-red-900 shadow-sm hover:shadow-md transition-shadow"
-                        >
-                            <CardHeader className="bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800 pb-4">
-                                <div className="flex justify-between items-center">
-                                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-                                        Infeasible
-                                    </Badge>
-                                    <span className="text-sm text-gray-500">
-                                        Scenario {scenario.scenarioId}
-                                    </span>
-                                </div>
-                                <CardTitle className="text-lg mt-2">
-                                    {scenario.description}
+                <Tabs defaultValue="distribution">
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="distribution">
+                            <BarChart className="h-4 w-4 mr-2" />
+                            Task Distribution
+                        </TabsTrigger>
+                        <TabsTrigger value="daily">
+                            <BarChart2 className="h-4 w-4 mr-2" />
+                            Daily Load
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="distribution">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>
+                                    Task Distribution Comparison
                                 </CardTitle>
+                                <CardDescription>
+                                    Compare how each scenario distributes the
+                                    different task types
+                                </CardDescription>
                             </CardHeader>
-
-                            <CardContent className="pt-5 pb-3">
-                                <div>
-                                    <h3 className="text-sm font-medium flex items-center mb-2 text-gray-700 dark:text-gray-300">
-                                        <ClipboardList className="mr-2 h-4 w-4 text-red-500" />{" "}
-                                        Constraints Causing Conflicts
-                                    </h3>
-                                    <ul className="list-disc pl-5 text-sm space-y-1 text-gray-600 dark:text-gray-400">
-                                        {scenario.input.constraints.map(
-                                            (constraint, idx) => (
-                                                <li
-                                                    key={idx}
-                                                    className="text-xs"
-                                                >
-                                                    {constraint}
-                                                </li>
-                                            )
-                                        )}
-                                    </ul>
-                                </div>
-
-                                <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded p-3">
-                                    <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
-                                        Potential Issues
-                                    </h4>
-                                    <ul className="text-xs text-red-700 dark:text-red-400 space-y-1">
-                                        {isConstraintTooStrict(
-                                            scenario.input.constraints
-                                        ) && (
-                                            <li>
-                                                • Too strict daily hour limits
-                                            </li>
-                                        )}
-                                        {hasConflictingTimeConstraints(
-                                            scenario.input.constraints
-                                        ) && (
-                                            <li>
-                                                • Conflicting time constraints
-                                            </li>
-                                        )}
-                                        {hasTooManyFreeRequirements(
-                                            scenario.input.constraints
-                                        ) && (
-                                            <li>
-                                                • Too many free time
-                                                requirements
-                                            </li>
-                                        )}
-                                        {requiresExcessiveBlocks(
-                                            scenario.input.constraints
-                                        ) && (
-                                            <li>
-                                                • Required task blocks exceed
-                                                available time
-                                            </li>
-                                        )}
-                                    </ul>
-                                </div>
+                            <CardContent className="h-80">
+                                <ScheduleComparisonChart
+                                    scenarios={courseworkScenarios}
+                                    chartType="distribution"
+                                />
                             </CardContent>
-
-                            <CardFooter className="bg-gray-50 dark:bg-gray-800/50 pt-3 pb-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-xs"
-                                >
-                                    Edit Constraints
-                                </Button>
-                            </CardFooter>
                         </Card>
-                    ))}
+                    </TabsContent>
+                    <TabsContent value="daily">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Daily Load Comparison</CardTitle>
+                                <CardDescription>
+                                    Compare the workload distribution across
+                                    days of the week
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-80">
+                                <ScheduleComparisonChart
+                                    scenarios={courseworkScenarios}
+                                    chartType="daily"
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </>
+        );
+    };
+
+    // For stress plans
+    const stressScenarioComparison = () => {
+        const stressScenarios = scenarios as CourseScenario[];
+
+        // Prepare data for comparison charts
+        const names = stressScenarios.map((s) => `Scenario ${s.scenarioId}`);
+
+        // Determine which scenarios have manageable stress levels
+        const stressLevels = stressScenarios.map((s) =>
+            s.output.stress_metrics.predicted_next_week.average < 7
+                ? "✓ Manageable"
+                : "✗ High Stress"
+        );
+
+        // Extract current stress levels
+        const currentStressLevels = stressScenarios.map(
+            (s) => s.output.stress_metrics.current_week.average
+        );
+
+        // Extract predicted stress levels
+        const predictedStressLevels = stressScenarios.map(
+            (s) => s.output.stress_metrics.predicted_next_week.average
+        );
+
+        // Calculate stress change
+        const stressChanges = stressScenarios.map(
+            (s) =>
+                s.output.stress_metrics.predicted_next_week.average -
+                s.output.stress_metrics.current_week.average
+        );
+
+        // Extract next week total hours
+        const nextWeekHours = stressScenarios.map((s) => {
+            const hours =
+                s.input.hours_distribution.next_week.teaching_hours +
+                s.input.hours_distribution.next_week.lab_hours +
+                s.input.hours_distribution.next_week.homework_hours +
+                s.input.hours_distribution.next_week.assignment_hours;
+            return hours;
+        });
+
+        return (
+            <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <Activity className="h-5 w-5 text-red-500 mr-2" />
+                                Stress Level
+                            </CardTitle>
+                            <CardDescription>
+                                Predicted stress levels
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {stressScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="space-y-1"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                Scenario {s.scenarioId}
+                                            </span>
+                                            <Badge
+                                                variant={
+                                                    predictedStressLevels[idx] <
+                                                    7
+                                                        ? "outline"
+                                                        : "secondary"
+                                                }
+                                                className={
+                                                    predictedStressLevels[
+                                                        idx
+                                                    ] >= 7
+                                                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                                        : predictedStressLevels[
+                                                              idx
+                                                          ] >= 5
+                                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                        : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                                }
+                                            >
+                                                {predictedStressLevels[
+                                                    idx
+                                                ].toFixed(1)}
+                                                /10
+                                            </Badge>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div
+                                                className={`h-2 rounded-full ${
+                                                    predictedStressLevels[
+                                                        idx
+                                                    ] >= 7
+                                                        ? "bg-red-500"
+                                                        : predictedStressLevels[
+                                                              idx
+                                                          ] >= 5
+                                                        ? "bg-yellow-500"
+                                                        : "bg-green-500"
+                                                }`}
+                                                style={{
+                                                    width: `${
+                                                        predictedStressLevels[
+                                                            idx
+                                                        ] * 10
+                                                    }%`
+                                                }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <BarChart2 className="h-5 w-5 text-amber-500 mr-2" />
+                                Stress Change
+                            </CardTitle>
+                            <CardDescription>
+                                Predicted increase/decrease
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {stressScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <span className="text-sm font-medium">
+                                            Scenario {s.scenarioId}
+                                        </span>
+                                        <Badge
+                                            variant={
+                                                stressChanges[idx] <= 0
+                                                    ? "outline"
+                                                    : "secondary"
+                                            }
+                                            className={
+                                                stressChanges[idx] > 1
+                                                    ? "bg-red-100 text-red-800"
+                                                    : stressChanges[idx] < 0
+                                                    ? "bg-green-100 text-green-800"
+                                                    : ""
+                                            }
+                                        >
+                                            {stressChanges[idx] > 0 ? "+" : ""}
+                                            {stressChanges[idx].toFixed(1)}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg flex items-center">
+                                <Clock className="h-5 w-5 text-blue-500 mr-2" />
+                                Next Week Hours
+                            </CardTitle>
+                            <CardDescription>
+                                Total weekly workload
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {stressScenarios.map((s, idx) => (
+                                    <div
+                                        key={s.scenarioId}
+                                        className="space-y-1"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                Scenario {s.scenarioId}
+                                            </span>
+                                            <Badge variant="outline">
+                                                {nextWeekHours[idx]}h
+                                            </Badge>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                            <div
+                                                className="bg-blue-500 h-2 rounded-full"
+                                                style={{
+                                                    width: `${
+                                                        (nextWeekHours[idx] /
+                                                            Math.max(
+                                                                ...nextWeekHours
+                                                            )) *
+                                                        100
+                                                    }%`
+                                                }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            </section>
 
-            {/* Add the floating chat component */}
-            <FloatingPlanChat plan={plan} />
-        </div>
-    );
-}
+                <Tabs defaultValue="stress">
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="stress">
+                            <Activity className="h-4 w-4 mr-2" />
+                            Stress Analysis
+                        </TabsTrigger>
+                        <TabsTrigger value="workload">
+                            <BarChart className="h-4 w-4 mr-2" />
+                            Workload Distribution
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="stress">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Stress Level Comparison</CardTitle>
+                                <CardDescription>
+                                    Compare current and predicted stress levels
+                                    across scenarios
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-80">
+                                <StressComparisonChart
+                                    scenarios={stressScenarios}
+                                    chartType="stress"
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="workload">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Workload Distribution</CardTitle>
+                                <CardDescription>
+                                    Compare workload distribution across
+                                    different courses
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-80">
+                                <StressComparisonChart
+                                    scenarios={stressScenarios}
+                                    chartType="workload"
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </>
+        );
+    };
 
-// Helper function to get task-specific colors for badges
-function getTaskColor(task: string): string {
-    switch (task) {
-        case "Lecture":
-            return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300";
-        case "Exercises":
-            return "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300";
-        case "Project":
-            return "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300";
-        case "Self-learning":
-            return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300";
-        default:
-            return "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-900/20 dark:text-gray-300";
-    }
-}
-
-// Simple analysis functions for infeasible scenarios
-function isConstraintTooStrict(constraints: string[]): boolean {
-    return constraints.some(
-        (c) =>
-            c.toLowerCase().includes("max") &&
-            c.includes("hour") &&
-            parseInt(c.match(/\d+/)?.[0] || "10") < 5
-    );
-}
-
-function hasConflictingTimeConstraints(constraints: string[]): boolean {
-    return constraints.some(
-        (c) =>
-            c.toLowerCase().includes("no tasks") &&
-            (c.toLowerCase().includes("before") ||
-                c.toLowerCase().includes("after"))
-    );
-}
-
-function hasTooManyFreeRequirements(constraints: string[]): boolean {
-    return constraints.some(
-        (c) =>
-            c.toLowerCase().includes("free") &&
-            (c.toLowerCase().includes("afternoon") ||
-                c.toLowerCase().includes("day"))
-    );
-}
-
-function requiresExcessiveBlocks(constraints: string[]): boolean {
-    return constraints.some(
-        (c) =>
-            c.toLowerCase().includes("must") &&
-            (c.toLowerCase().includes("block") ||
-                c.toLowerCase().includes("hour"))
-    );
+    // Render the appropriate comparison view based on plan kind
+    return isStressPlan
+        ? stressScenarioComparison()
+        : courseworkScenarioComparison();
 }

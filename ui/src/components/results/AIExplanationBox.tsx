@@ -1,281 +1,225 @@
-// src/components/results/AIExplanationBox.tsx
+// ui/src/components/results/AIExplanationBox.tsx
 
-import { useState, useEffect } from "react";
-import { useOllama } from "@/hooks/useOllama";
-import { useModelContext } from "@/contexts/ModelContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
-import {
-    LoaderCircle,
-    Settings,
-    ChevronDown,
-    ChevronUp,
-    Play,
-    Square
-} from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from "@/components/ui/select";
-import { CourseworkPlan } from "@/types/builder";
-import { explainSchedulingResults } from "@/prompts/explainSchedulingResults";
+import { Plan, CourseworkPlan, StressPlan } from "@/types/builder";
+import { Card, CardContent } from "@/components/ui/card";
+import { Lightbulb } from "lucide-react";
 
-interface AIExplanationBoxProps {
-    plan: CourseworkPlan;
-}
+type AIExplanationBoxProps = {
+    plan: Plan;
+};
 
 export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
-    // Access the global model context
-    const { globalModel, availableModels: contextModels } = useModelContext();
+    const isCourseworkPlan = plan.kind === "coursework";
+    const courseworkPlan = plan as CourseworkPlan;
+    const stressPlan = plan as StressPlan;
 
-    const [systemPrompt, setSystemPrompt] = useState(
-        "You are an expert scheduler and educational planner. Analyze the following scheduling data and provide insights about feasibility, conflicts, and suggestions for improvement. Focus on the key constraints and issues that impact the schedule."
-    );
-    const [showSettings, setShowSettings] = useState(false);
-    const [autoAnalyze, setAutoAnalyze] = useState(false); // Default to false - don't run automatically
-    const [selectedModel, setSelectedModel] = useState("");
+    // Generate explanation for coursework plans
+    const generateCourseworkExplanation = () => {
+        const feasibleCount = courseworkPlan.scenarios.filter(
+            (s) => s.output?.status === "feasible"
+        ).length;
+        const infeasibleCount = courseworkPlan.scenarios.length - feasibleCount;
 
-    // Initialize Ollama hook
-    const {
-        loading,
-        error,
-        streamingResponse,
-        streamGenerate,
-        generateSync,
-        availableModels,
-        loadingModels,
-        fetchModels,
-        cancelStream
-    } = useOllama({ defaultModel: selectedModel });
+        // Find a feasible scenario ID for recommendation
+        const feasibleScenario = courseworkPlan.scenarios.find(
+            (s) => s.output?.status === "feasible"
+        );
+        const recommendedScenarioId =
+            feasibleScenario?.scenarioId ||
+            (courseworkPlan.scenarios.length > 0
+                ? courseworkPlan.scenarios[0].scenarioId
+                : 1);
 
-    // Use the global model when this component initializes
-    useEffect(() => {
-        if (globalModel && !selectedModel) {
-            setSelectedModel(globalModel);
-        }
-    }, [globalModel, selectedModel]);
-
-    // Fetch models on component mount if needed
-    useEffect(() => {
-        // Only fetch models if we don't have any from context
-        if (contextModels.length === 0) {
-            fetchModels()
-                .then(() => {
-                    // Set default model after fetching if none is selected
-                    if (!selectedModel && availableModels.length > 0) {
-                        setSelectedModel(availableModels[0].name);
-                    }
-                })
-                .catch(console.error);
-        }
-    }, [fetchModels, contextModels]);
-
-    // Update selectedModel from locally fetched models if needed
-    useEffect(() => {
-        if (!selectedModel && availableModels.length > 0) {
-            setSelectedModel(availableModels[0].name);
-        }
-    }, [availableModels, selectedModel]);
-
-    // Run auto-analysis when enabled and plan changes
-    useEffect(() => {
-        if (autoAnalyze && selectedModel && plan) {
-            analyzePlan();
-        }
-    }, [plan, autoAnalyze, selectedModel]);
-
-    const analyzePlan = async () => {
-        if (!selectedModel) {
-            console.error("No model selected");
-            return;
-        }
-        if (!plan) {
-            console.error("No plan provided");
-            return;
-        }
-
-        try {
-            const prompt = explainSchedulingResults(JSON.stringify(plan));
-            console.log("Prompt:", prompt);
-
-            await streamGenerate(prompt, {
-                model: selectedModel,
-                system: systemPrompt
-            });
-        } catch (err) {
-            console.error("Failed to analyze plan:", err);
+        if (feasibleCount === 0) {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">AI Analysis</h3>
+                    <p className="mb-2">
+                        All scenarios are{" "}
+                        <span className="font-semibold text-red-600">
+                            infeasible
+                        </span>{" "}
+                        with the current constraints. Consider relaxing some
+                        constraints to create a viable schedule.
+                    </p>
+                    <p>Common issues:</p>
+                    <ul className="list-disc ml-5 mt-1 text-gray-700 dark:text-gray-300">
+                        <li>Too many tasks scheduled in a single day</li>
+                        <li>
+                            Scheduling conflicts between lectures and other
+                            activities
+                        </li>
+                        <li>
+                            Insufficient free time or breaks between activities
+                        </li>
+                    </ul>
+                </>
+            );
+        } else if (infeasibleCount === 0) {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">AI Analysis</h3>
+                    <p className="mb-2">
+                        All scenarios are{" "}
+                        <span className="font-semibold text-green-600">
+                            feasible
+                        </span>{" "}
+                        and meet the given constraints. Scenario{" "}
+                        {recommendedScenarioId} appears to have the most
+                        balanced distribution of tasks throughout the week.
+                    </p>
+                    <p>
+                        Recommendation: Review Scenario {recommendedScenarioId}{" "}
+                        for the most efficient schedule.
+                    </p>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">AI Analysis</h3>
+                    <p className="mb-2">
+                        {feasibleCount} out of {courseworkPlan.scenarios.length}{" "}
+                        scenarios are{" "}
+                        <span className="font-semibold text-green-600">
+                            feasible
+                        </span>
+                        . Scenario {recommendedScenarioId} appears to be the
+                        most promising with a balanced workload distribution.
+                    </p>
+                    <p>
+                        Consider reviewing the infeasible scenarios to
+                        understand what constraints are causing conflicts.
+                    </p>
+                </>
+            );
         }
     };
 
-    // Stop the generation
-    const stopGeneration = () => {
-        cancelStream();
-    };
+    // Generate explanation for stress plans
+    const generateStressExplanation = () => {
+        const manageable = stressPlan.scenarios.filter(
+            (s) => s.output.stress_metrics.predicted_next_week.average < 7
+        ).length;
+        const highStress = stressPlan.scenarios.length - manageable;
 
-    // Combine available models from context and local fetch
-    const mergedAvailableModels =
-        contextModels.length > 0 ? contextModels : availableModels;
-    const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
+        // Find the scenario with the lowest stress increase (or highest decrease)
+        let bestScenario = stressPlan.scenarios[0];
+        let lowestStressChange =
+            bestScenario.output.stress_metrics.predicted_next_week.average -
+            bestScenario.output.stress_metrics.current_week.average;
+
+        stressPlan.scenarios.forEach((scenario) => {
+            const stressChange =
+                scenario.output.stress_metrics.predicted_next_week.average -
+                scenario.output.stress_metrics.current_week.average;
+            if (stressChange < lowestStressChange) {
+                lowestStressChange = stressChange;
+                bestScenario = scenario;
+            }
+        });
+
+        if (manageable === 0) {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">
+                        AI Stress Analysis
+                    </h3>
+                    <p className="mb-2">
+                        All scenarios show{" "}
+                        <span className="font-semibold text-red-600">
+                            high stress levels
+                        </span>{" "}
+                        for the upcoming week. This indicates potential burnout
+                        risk if the current workload continues.
+                    </p>
+                    <p className="mb-2">
+                        Consider redistributing workload or extending deadlines
+                        where possible.
+                    </p>
+                    <p>Recommended actions:</p>
+                    <ul className="list-disc ml-5 mt-1 text-gray-700 dark:text-gray-300">
+                        <li>
+                            Prioritize essential tasks and postpone non-critical
+                            ones
+                        </li>
+                        <li>
+                            Reach out for assistance or delegate tasks where
+                            appropriate
+                        </li>
+                        <li>
+                            Schedule dedicated breaks and self-care activities
+                        </li>
+                    </ul>
+                </>
+            );
+        } else if (highStress === 0) {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">
+                        AI Stress Analysis
+                    </h3>
+                    <p className="mb-2">
+                        All scenarios show{" "}
+                        <span className="font-semibold text-green-600">
+                            manageable stress levels
+                        </span>{" "}
+                        for the upcoming week. Scenario{" "}
+                        {bestScenario.scenarioId} shows the best stress trend
+                        with a
+                        {lowestStressChange <= 0
+                            ? " decrease"
+                            : " minimal increase"}{" "}
+                        in stress levels.
+                    </p>
+                    <p>
+                        The current workload appears sustainable, but continue
+                        monitoring stress levels in future weeks.
+                    </p>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <h3 className="font-medium text-lg mb-2">
+                        AI Stress Analysis
+                    </h3>
+                    <p className="mb-2">
+                        {manageable} out of {stressPlan.scenarios.length}{" "}
+                        scenarios show{" "}
+                        <span className="font-semibold text-green-600">
+                            manageable stress levels
+                        </span>
+                        . Scenario {bestScenario.scenarioId} appears to be the
+                        most promising with the lowest stress increase.
+                    </p>
+                    <p className="mb-2">
+                        Consider reviewing high-stress scenarios to identify
+                        specific stressors that could be mitigated.
+                    </p>
+                    <p>
+                        Recommendation: Focus on the approach in Scenario{" "}
+                        {bestScenario.scenarioId} to manage workload
+                        effectively.
+                    </p>
+                </>
+            );
+        }
+    };
 
     return (
-        <Card className="w-full mt-6">
-            <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg flex items-center">
-                        <span className="mr-2">AI Analysis</span>
-                        {loading && (
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                        )}
-                    </CardTitle>
-                    <div className="flex space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowSettings(!showSettings)}
-                        >
-                            <Settings className="h-4 w-4 mr-2" />
-                            {showSettings ? "Hide Options" : "Options"}
-                            {showSettings ? (
-                                <ChevronUp className="h-4 w-4 ml-1" />
-                            ) : (
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                            )}
-                        </Button>
-
-                        {loading ? (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={stopGeneration}
-                            >
-                                <Square className="h-4 w-4 mr-2" />
-                                Stop
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="default"
-                                size="sm"
-                                onClick={analyzePlan}
-                                disabled={loading || !selectedModel}
-                            >
-                                <Play className="h-4 w-4 mr-2" />
-                                Run Analysis
-                            </Button>
-                        )}
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-6 flex space-x-4">
+                <div className="flex-shrink-0">
+                    <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-full">
+                        <Lightbulb className="h-6 w-6 text-blue-600 dark:text-blue-300" />
                     </div>
                 </div>
-            </CardHeader>
-
-            {showSettings && (
-                <div className="px-6 py-2 border-b border-gray-200 dark:border-gray-800">
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <Label
-                                htmlFor="auto-analyze"
-                                className="text-sm font-medium"
-                            >
-                                Auto-analyze when plan changes
-                            </Label>
-                            <Switch
-                                id="auto-analyze"
-                                checked={autoAnalyze}
-                                onCheckedChange={setAutoAnalyze}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="model-select"
-                                className="text-sm font-medium"
-                            >
-                                Model
-                            </Label>
-                            <Select
-                                value={selectedModel}
-                                onValueChange={setSelectedModel}
-                            >
-                                <SelectTrigger
-                                    id="model-select"
-                                    className="w-full"
-                                >
-                                    <SelectValue placeholder="Select a model" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {isLoadingModels ? (
-                                        <SelectItem value="loading" disabled>
-                                            Loading models...
-                                        </SelectItem>
-                                    ) : mergedAvailableModels.length === 0 ? (
-                                        <SelectItem value="none" disabled>
-                                            No models found
-                                        </SelectItem>
-                                    ) : (
-                                        mergedAvailableModels.map((m) => (
-                                            <SelectItem
-                                                key={m.name}
-                                                value={m.name}
-                                            >
-                                                {m.name}
-                                            </SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="system-prompt"
-                                className="text-sm font-medium"
-                            >
-                                System Prompt
-                            </Label>
-                            <Textarea
-                                id="system-prompt"
-                                value={systemPrompt}
-                                onChange={(e) =>
-                                    setSystemPrompt(e.target.value)
-                                }
-                                className="min-h-20 text-sm"
-                                placeholder="Instructions for the AI analyzer..."
-                            />
-                        </div>
-                    </div>
+                <div className="flex-grow">
+                    {isCourseworkPlan
+                        ? generateCourseworkExplanation()
+                        : generateStressExplanation()}
                 </div>
-            )}
-
-            <CardContent className="pt-4">
-                {error ? (
-                    <div className="text-red-500 p-2 bg-red-50 dark:bg-red-900/20 rounded-md">
-                        Error analyzing plan: {error.message}
-                    </div>
-                ) : streamingResponse ? (
-                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md">
-                        {/* Use MarkdownDisplay to render the markdown content */}
-                        <MarkdownDisplay content={streamingResponse} />
-                    </div>
-                ) : (
-                    <div className="text-center text-gray-500 p-6">
-                        {loading ? (
-                            <div className="flex flex-col items-center">
-                                <LoaderCircle className="h-6 w-6 animate-spin mb-2" />
-                                <p>Analyzing your scheduling plan...</p>
-                            </div>
-                        ) : (
-                            <p>
-                                Click "Run Analysis" to get AI insights on the
-                                overall scheduling plan and different scenarios.
-                            </p>
-                        )}
-                    </div>
-                )}
             </CardContent>
         </Card>
     );
