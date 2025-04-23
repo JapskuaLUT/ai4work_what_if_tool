@@ -4,9 +4,10 @@ import { BuilderScenario, CourseScenario } from "@/types/builder";
 
 // Create a system prompt based on the scenario type
 export function createSystemPrompt(
-    scenario: BuilderScenario | CourseScenario
+    scenario: BuilderScenario | CourseScenario,
+    kind: "coursework" | "stress"
 ): string {
-    if (scenario.kind === "coursework") {
+    if (kind === "coursework") {
         return `You are a helpful educational schedule assistant that can help analyze coursework schedules.
 You can provide insights about optimizing time allocation, balancing workload across days, and meeting all required coursework tasks.
 Answer any questions about the provided schedule scenario clearly and helpfully.`;
@@ -19,9 +20,10 @@ Answer any questions about the provided course scenario clearly and helpfully.`;
 
 // Create a welcome message based on the scenario type
 export function createWelcomeMessage(
-    scenario: BuilderScenario | CourseScenario
+    scenario: BuilderScenario | CourseScenario,
+    kind: "coursework" | "stress"
 ): string {
-    if (scenario.kind === "coursework") {
+    if (kind === "coursework") {
         const courseworkScenario = scenario as BuilderScenario;
         const isFeasible = courseworkScenario.output?.status === "feasible";
 

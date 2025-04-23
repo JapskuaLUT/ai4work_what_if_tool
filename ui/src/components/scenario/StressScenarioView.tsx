@@ -659,7 +659,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
             </Card>
 
             {/* Include the floating chat component */}
-            <FloatingScenarioChat scenario={scenario} />
+            <FloatingScenarioChat scenario={scenario} kind="stress" />
         </div>
     );
 }

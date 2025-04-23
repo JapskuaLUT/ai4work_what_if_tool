@@ -1,6 +1,5 @@
 // ui/src/components/scenario/ScenarioView.tsx
 
-import { Scenario } from "@/types/scenario";
 import {
     Card,
     CardContent,
@@ -26,14 +25,15 @@ import {
 } from "lucide-react";
 import { DailyScheduleView } from "./DailyScheduleView";
 import { FloatingScenarioChat } from "./FloatingScenarioChat";
+import { BuilderScenario } from "@/types/builder";
 
 interface ScenarioViewProps {
-    scenario: Scenario;
+    scenario: BuilderScenario;
 }
 
 export function ScenarioView({ scenario }: ScenarioViewProps) {
     const isFeasible = scenario.output?.status === "feasible";
-    const hasSchedule = isFeasible && scenario.output?.schedule.length > 0;
+    const hasSchedule = isFeasible && scenario.output?.schedule?.length > 0;
 
     // Calculate task statistics
     const taskStats = {
@@ -427,7 +427,7 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
             </Card>
 
             {/* Include the floating chat component */}
-            <FloatingScenarioChat scenario={scenario} />
+            <FloatingScenarioChat scenario={scenario} kind="coursework" />
         </div>
     );
 }

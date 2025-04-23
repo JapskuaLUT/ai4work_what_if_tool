@@ -28,16 +28,20 @@ import {
 
 interface FloatingScenarioChatProps {
     scenario: BuilderScenario | CourseScenario;
+    kind: "coursework" | "stress";
 }
 
-export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
+export function FloatingScenarioChat({
+    scenario,
+    kind
+}: FloatingScenarioChatProps) {
     // Get global model from context
     const { globalModel, availableModels: contextModels } = useModelContext();
 
     // State
     const [model, setModel] = useState<string>("");
     const [systemPrompt, setSystemPrompt] = useState(() =>
-        createSystemPrompt(scenario)
+        createSystemPrompt(scenario, kind)
     );
     const [messages, setMessages] = useState<Message[]>([]);
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -96,13 +100,13 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
             const initialAssistantMessage: Message = {
                 id: "initial",
                 role: "assistant",
-                content: createWelcomeMessage(scenario)
+                content: createWelcomeMessage(scenario, kind)
             };
 
             setMessages([initialAssistantMessage]);
             setIsInitialized(true);
         }
-    }, [scenario, model, loading, isInitialized, isChatOpen]);
+    }, [scenario, kind, model, loading, isInitialized, isChatOpen]);
 
     // Update the streaming message content as it comes in
     useEffect(() => {
@@ -266,7 +270,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         const initialAssistantMessage: Message = {
             id: "initial-" + Date.now(),
             role: "assistant",
-            content: createWelcomeMessage(scenario)
+            content: createWelcomeMessage(scenario, kind)
         };
 
         setMessages([initialAssistantMessage]);
