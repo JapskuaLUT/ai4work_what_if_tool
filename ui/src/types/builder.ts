@@ -1,10 +1,12 @@
 // ui/src/types/builder.ts
 
+export type PlanKind = "coursework" | "stress";
+
 // Common plan interface with kind discriminator
 export interface BasePlan {
     name: string;
     description: string;
-    kind: "coursework" | "stress";
+    kind: PlanKind;
 }
 
 export type BuilderTasks = {
@@ -20,7 +22,6 @@ export type BuilderScenarioInput = {
 };
 
 export type BuilderScenario = {
-    kind: "coursework";
     scenarioId: number;
     description: string;
     input: BuilderScenarioInput;
@@ -53,7 +54,6 @@ export interface StressPlan extends BasePlan {
 
 export interface CourseScenario {
     scenarioId: number;
-    kind: "stress";
     description: string;
     input: {
         course_info: {

@@ -10,7 +10,7 @@ import {
     CardHeader
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { BuilderScenario, CourseScenario } from "@/types/builder";
+import { BuilderScenario, CourseScenario, PlanKind } from "@/types/builder";
 
 // Import sub-components
 import { ChatHeader } from "@/components/chat/ChatHeader";
@@ -28,7 +28,7 @@ import {
 
 interface FloatingScenarioChatProps {
     scenario: BuilderScenario | CourseScenario;
-    kind: "coursework" | "stress";
+    kind: PlanKind;
 }
 
 export function FloatingScenarioChat({

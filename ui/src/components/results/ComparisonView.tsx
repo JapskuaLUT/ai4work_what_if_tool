@@ -17,7 +17,12 @@ import {
     Activity,
     CheckCircle
 } from "lucide-react";
-import { BuilderScenario, CourseScenario, Plan } from "@/types/builder";
+import {
+    BuilderScenario,
+    CourseScenario,
+    Plan,
+    PlanKind
+} from "@/types/builder";
 import { ComparisonChatButton } from "@/components/results/ComparisonChatButton";
 
 // Import visualization components
@@ -26,7 +31,7 @@ import { StressComparisonChart } from "@/components/charts/StressComparisonChart
 
 type ComparisonViewProps = {
     scenarios: (BuilderScenario | CourseScenario)[];
-    planKind?: "coursework" | "stress";
+    planKind: PlanKind;
     plan?: Plan;
 };
 
