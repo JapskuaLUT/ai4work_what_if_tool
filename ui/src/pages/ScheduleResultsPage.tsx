@@ -195,6 +195,7 @@ export default function ScheduleResultsPage() {
                     <ComparisonView
                         scenarios={plan.scenarios}
                         planKind={plan.kind}
+                        plan={plan}
                     />
                 </TabsContent>
 

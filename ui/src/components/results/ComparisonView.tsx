@@ -17,20 +17,23 @@ import {
     Activity,
     CheckCircle
 } from "lucide-react";
-import { BuilderScenario, CourseScenario } from "@/types/builder";
+import { BuilderScenario, CourseScenario, Plan } from "@/types/builder";
+import { ComparisonChatButton } from "@/components/results/ComparisonChatButton";
 
-// Import visualization components (these would be actual components in your app)
+// Import visualization components
 import { ScheduleComparisonChart } from "@/components/charts/ScheduleComparisonChart";
 import { StressComparisonChart } from "@/components/charts/StressComparisonChart";
 
 type ComparisonViewProps = {
     scenarios: (BuilderScenario | CourseScenario)[];
     planKind?: "coursework" | "stress";
+    plan?: Plan;
 };
 
 export function ComparisonView({
     scenarios,
-    planKind = "coursework"
+    planKind = "coursework",
+    plan
 }: ComparisonViewProps) {
     // Check if we're dealing with a stress plan
     const isStressPlan = planKind === "stress";
@@ -551,7 +554,14 @@ export function ComparisonView({
     };
 
     // Render the appropriate comparison view based on plan kind
-    return isStressPlan
-        ? stressScenarioComparison()
-        : courseworkScenarioComparison();
+    return (
+        <div className="relative">
+            {isStressPlan
+                ? stressScenarioComparison()
+                : courseworkScenarioComparison()}
+
+            {/* Add the floating chat button for comparison analysis */}
+            {plan && <ComparisonChatButton plan={plan} />}
+        </div>
+    );
 }
