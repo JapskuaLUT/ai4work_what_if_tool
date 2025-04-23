@@ -23,7 +23,6 @@ import { Message } from "@/types/chat";
 import {
     createScenarioContext,
     createSystemPrompt,
-    getChatStyles,
     createWelcomeMessage
 } from "@/components/chat/chatUtils";
 
@@ -290,6 +289,25 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
         contextModels.length > 0 ? contextModels : availableModels;
     const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
 
+    // Get chat window styles based on expanded state and screen size
+    const getChatStyles = (): React.CSSProperties => {
+        if (isExpanded) {
+            return {
+                width: isLargeScreen ? "800px" : "90vw",
+                height: isLargeScreen ? "80vh" : "80vh",
+                maxWidth: "100vw",
+                maxHeight: "90vh"
+            };
+        }
+
+        return {
+            width: isLargeScreen ? "450px" : "85vw",
+            height: "550px",
+            maxWidth: "100vw",
+            maxHeight: "80vh"
+        };
+    };
+
     return (
         <>
             {/* Floating chat button */}
@@ -302,10 +320,10 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                     isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 ref={chatCardRef}
-                style={getChatStyles(isExpanded, isLargeScreen)}
+                style={getChatStyles()}
             >
-                <Card className="border border-blue-200 dark:border-blue-900 h-full">
-                    <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 px-4 border-b border-blue-100 dark:border-blue-800">
+                <Card className="border border-blue-200 dark:border-blue-900 h-full flex flex-col">
+                    <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 px-4 border-b border-blue-100 dark:border-blue-800 flex-shrink-0">
                         <ChatHeader
                             headerText={`Scenario ${scenario.scenarioId}`}
                             description={scenario.description}
@@ -321,7 +339,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                         />
                     </CardHeader>
 
-                    <CardContent className="pt-4 pb-4">
+                    <CardContent className="flex-grow overflow-auto px-4 py-3">
                         {/* Models debug info - will be removed in production */}
                         {(isLoadingModels ||
                             mergedAvailableModels.length === 0) && (
@@ -339,7 +357,9 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                             streamingMessageId={streamingMessageId}
                             error={error}
                         />
+                    </CardContent>
 
+                    <div className="flex-shrink-0 px-4 pb-3 pt-1">
                         <ChatInput
                             onSubmit={handleSubmit}
                             onStop={cancelStream}
@@ -347,16 +367,16 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
                             isExpanded={isExpanded}
                             disabled={!model}
                         />
-                    </CardContent>
+                    </div>
 
-                    <CardFooter className="pt-0 border-t border-slate-200 dark:border-slate-700 px-4 py-2">
-                        <div className="text-xs text-slate-500">
+                    <CardFooter className="pt-0 border-t border-slate-200 dark:border-slate-700 px-3 py-1 flex-shrink-0 flex justify-between">
+                        <span className="text-xs text-slate-400">
                             Shift+Enter for new line
-                        </div>
+                        </span>
                         {isExpanded && (
-                            <div className="text-xs text-slate-500 ml-auto">
-                                Press ESC to close
-                            </div>
+                            <span className="text-xs text-slate-400">
+                                ESC to close
+                            </span>
                         )}
                     </CardFooter>
                 </Card>
