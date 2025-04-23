@@ -10,7 +10,7 @@ import {
     CardHeader
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Scenario } from "@/types/scenario";
+import { BuilderScenario, CourseScenario } from "@/types/builder";
 
 // Import sub-components
 import { ChatHeader } from "@/components/chat/ChatHeader";
@@ -28,7 +28,7 @@ import {
 } from "@/components/chat/chatUtils";
 
 interface FloatingScenarioChatProps {
-    scenario: Scenario;
+    scenario: BuilderScenario | CourseScenario;
 }
 
 export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
@@ -37,7 +37,7 @@ export function FloatingScenarioChat({ scenario }: FloatingScenarioChatProps) {
 
     // State
     const [model, setModel] = useState<string>("");
-    const [systemPrompt, setSystemPrompt] = useState(
+    const [systemPrompt, setSystemPrompt] = useState(() =>
         createSystemPrompt(scenario)
     );
     const [messages, setMessages] = useState<Message[]>([]);

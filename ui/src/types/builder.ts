@@ -20,6 +20,7 @@ export type BuilderScenarioInput = {
 };
 
 export type BuilderScenario = {
+    kind: "coursework";
     scenarioId: number;
     description: string;
     input: BuilderScenarioInput;
@@ -52,6 +53,7 @@ export interface StressPlan extends BasePlan {
 
 export interface CourseScenario {
     scenarioId: number;
+    kind: "stress";
     description: string;
     input: {
         course_info: {
