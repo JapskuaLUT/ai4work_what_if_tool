@@ -330,6 +330,88 @@ export function BuilderStressScenarioCard({
 
                 <Separator className="my-4" />
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                            <Clock className="mr-2 h-4 w-4 text-purple-600" />{" "}
+                            Remaining Course Workload
+                        </h3>
+                        <div className="space-y-2">
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Teaching:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.input.hours_distribution
+                                            .remaining.teaching_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Lab Work:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.input.hours_distribution
+                                            .remaining.lab_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Homework:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.input.hours_distribution
+                                            .remaining.homework_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Assignments:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.input.hours_distribution
+                                            .remaining.assignment_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm font-medium mt-1">
+                                <span className="flex-1">Total Remaining:</span>
+                                <Badge
+                                    variant="secondary"
+                                    className="min-w-12 text-center"
+                                >
+                                    {scenario.input.hours_distribution.remaining
+                                        .teaching_hours +
+                                        scenario.input.hours_distribution
+                                            .remaining.lab_hours +
+                                        scenario.input.hours_distribution
+                                            .remaining.homework_hours +
+                                        scenario.input.hours_distribution
+                                            .remaining.assignment_hours}
+                                    h
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator className="my-4" />
+
                 <div>
                     <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
                         <Code className="mr-2 h-4 w-4 text-green-600" />{" "}
