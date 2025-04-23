@@ -1,0 +1,351 @@
+// ui/src/components/builder/BuilderStressScenarioCard.tsx
+
+import { BookOpen, Clock, Code, Calendar, Activity, Award } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+
+import { CourseScenario } from "@/types/builder";
+
+type BuilderStressScenarioCardProps = {
+    scenario: CourseScenario;
+};
+
+export function BuilderStressScenarioCard({
+    scenario
+}: BuilderStressScenarioCardProps) {
+    // Calculate total hours for next week
+    const nextWeekTotal =
+        scenario.hours_distribution.next_week.teaching_hours +
+        scenario.hours_distribution.next_week.lab_hours +
+        scenario.hours_distribution.next_week.homework_hours +
+        scenario.hours_distribution.next_week.assignment_hours;
+
+    // Helper function to determine stress color
+    const getStressColor = (value: number) => {
+        if (value < 4) return "bg-green-500";
+        if (value < 7) return "bg-yellow-500";
+        return "bg-red-500";
+    };
+
+    return (
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="bg-slate-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+                        Scenario {scenario.scenarioId}
+                    </CardTitle>
+                    <Badge
+                        variant={
+                            scenario.topic_difficulty > 7
+                                ? "destructive"
+                                : scenario.topic_difficulty > 5
+                                ? "secondary"
+                                : "outline"
+                        }
+                    >
+                        Difficulty: {scenario.course_info.topic_difficulty}/10
+                    </Badge>
+                </div>
+                <CardDescription className="font-medium">
+                    {scenario.description}
+                </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-6">
+                <div className="mb-4">
+                    <h3 className="text-base font-semibold flex items-center text-gray-800 dark:text-gray-200 mb-2">
+                        <BookOpen className="mr-2 h-5 w-5 text-blue-600" />{" "}
+                        {scenario.course_info.course_name} (
+                        {scenario.course_info.course_id})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center">
+                            <span className="text-gray-600 dark:text-gray-400">
+                                ECTS:
+                            </span>
+                            <Badge variant="outline" className="ml-2">
+                                {scenario.course_info.ects}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="text-gray-600 dark:text-gray-400">
+                                Prerequisites:
+                            </span>
+                            <span
+                                className={`ml-2 text-sm ${
+                                    scenario.course_info.prerequisites
+                                        ? "text-blue-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {scenario.course_info.prerequisites
+                                    ? "Required"
+                                    : "None"}
+                            </span>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="text-gray-600 dark:text-gray-400">
+                                Attendance:
+                            </span>
+                            <span className="ml-2 text-sm capitalize">
+                                {scenario.course_info.attendance_method}
+                            </span>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="text-gray-600 dark:text-gray-400">
+                                Students:
+                            </span>
+                            <span className="ml-2 text-sm">
+                                {scenario.students.count}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                            <Calendar className="mr-2 h-4 w-4 text-indigo-600" />{" "}
+                            Schedule
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            <div>
+                                <span className="font-medium">Teaching:</span>{" "}
+                                {scenario.course_info.teaching.days.join(", ")}{" "}
+                                {scenario.course_info.teaching.time}
+                            </div>
+                            <div>
+                                <span className="font-medium">Lab:</span>{" "}
+                                {scenario.course_info.lab.days.join(", ")}{" "}
+                                {scenario.course_info.lab.time}
+                            </div>
+                            <div>
+                                <span className="font-medium">Progress:</span>{" "}
+                                Week {scenario.current_status.current_week} of{" "}
+                                {scenario.current_status.total_weeks}
+                                <Progress
+                                    value={
+                                        (scenario.current_status.current_week /
+                                            scenario.current_status
+                                                .total_weeks) *
+                                        100
+                                    }
+                                    className="h-2 mt-1"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                            <Award className="mr-2 h-4 w-4 text-indigo-600" />{" "}
+                            Performance Stats
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center">
+                                <span className="flex-1">Success Rate:</span>
+                                <Badge
+                                    variant={
+                                        scenario.course_info
+                                            .success_rate_percent > 75
+                                            ? "outline"
+                                            : "secondary"
+                                    }
+                                >
+                                    {scenario.course_info.success_rate_percent}%
+                                </Badge>
+                            </div>
+                            <div className="flex items-center">
+                                <span className="flex-1">Avg. Grade:</span>
+                                <Badge variant="outline">
+                                    {scenario.course_info.average_grade.toFixed(
+                                        1
+                                    )}
+                                    /4.0
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                            <Clock className="mr-2 h-4 w-4 text-blue-600" />{" "}
+                            Next Week Workload: {nextWeekTotal} hours
+                        </h3>
+                        <div className="space-y-2">
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Teaching:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.hours_distribution.next_week
+                                            .teaching_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Lab Work:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.hours_distribution.next_week
+                                            .lab_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Homework:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.hours_distribution.next_week
+                                            .homework_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <span className="flex-1">Assignments:</span>
+                                <Badge
+                                    variant="outline"
+                                    className="min-w-12 text-center"
+                                >
+                                    {
+                                        scenario.hours_distribution.next_week
+                                            .assignment_hours
+                                    }
+                                    h
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                            <Activity className="mr-2 h-4 w-4 text-amber-600" />{" "}
+                            Stress Metrics
+                        </h3>
+                        <div className="space-y-3">
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span>
+                                        Current Week Average:{" "}
+                                        {scenario.stress_metrics.current_week.average.toFixed(
+                                            1
+                                        )}
+                                        /10
+                                    </span>
+                                    <span>
+                                        Max:{" "}
+                                        {scenario.stress_metrics.current_week.maximum.toFixed(
+                                            1
+                                        )}
+                                        /10
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full bg-gray-200 rounded-full">
+                                    <div
+                                        className={`h-2 rounded-full ${getStressColor(
+                                            scenario.stress_metrics.current_week
+                                                .average
+                                        )}`}
+                                        style={{
+                                            width: `${
+                                                scenario.stress_metrics
+                                                    .current_week.average * 10
+                                            }%`
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span>
+                                        Next Week Prediction:{" "}
+                                        {scenario.stress_metrics.predicted_next_week.average.toFixed(
+                                            1
+                                        )}
+                                        /10
+                                    </span>
+                                    <span>
+                                        Max:{" "}
+                                        {scenario.stress_metrics.predicted_next_week.maximum.toFixed(
+                                            1
+                                        )}
+                                        /10
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full bg-gray-200 rounded-full">
+                                    <div
+                                        className={`h-2 rounded-full ${getStressColor(
+                                            scenario.stress_metrics
+                                                .predicted_next_week.average
+                                        )}`}
+                                        style={{
+                                            width: `${
+                                                scenario.stress_metrics
+                                                    .predicted_next_week
+                                                    .average * 10
+                                            }%`
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div>
+                    <h3 className="text-sm font-medium flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <Code className="mr-2 h-4 w-4 text-green-600" />{" "}
+                        Assignments
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {scenario.assignments.map((assignment) => (
+                            <div
+                                key={assignment.id}
+                                className="border rounded-md p-2 text-sm"
+                            >
+                                <div className="font-medium">
+                                    Assignment {assignment.id}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    Weeks {assignment.start_week}-
+                                    {assignment.end_week}
+                                </div>
+                                <Badge variant="secondary" className="mt-1">
+                                    {assignment.hours_per_week} hours/week
+                                </Badge>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
