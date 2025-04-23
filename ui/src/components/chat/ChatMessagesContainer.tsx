@@ -1,9 +1,7 @@
 // ui/src/components/chat/ChatMessagesContainer.tsx
-// Container for all chat messages with scrolling
 
-import { useRef, useEffect } from "react";
 import { Message } from "@/types/chat";
-import { ChatMessage } from "./ChatMessage";
+import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay";
 
 interface ChatMessagesContainerProps {
     messages: Message[];
@@ -15,50 +13,45 @@ interface ChatMessagesContainerProps {
 
 export function ChatMessagesContainer({
     messages,
-    isExpanded,
     isLoading,
     streamingMessageId,
     error
 }: ChatMessagesContainerProps) {
-    const endOfMessagesRef = useRef<HTMLDivElement>(null);
-
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
-
-    // Get message container height based on expanded state
-    const getMessageContainerHeight = () => {
-        return isExpanded ? "400px" : "320px";
-    };
-
     return (
-        <>
-            {/* Chat messages */}
-            <div
-                className="bg-slate-50 dark:bg-slate-900 rounded-md p-2 overflow-y-auto border border-slate-200 dark:border-slate-700 transition-all duration-300"
-                style={{ height: getMessageContainerHeight() }}
-            >
-                <div className="space-y-4">
-                    {messages.map((message) => (
-                        <ChatMessage
-                            key={message.id}
-                            message={message}
-                            isExpanded={isExpanded}
-                            isLoading={isLoading}
-                            streamingMessageId={streamingMessageId}
-                        />
-                    ))}
-                    <div ref={endOfMessagesRef} />
+        <div className="space-y-4 pb-2">
+            {messages.map((message) => (
+                <div
+                    key={message.id}
+                    className={`p-3 rounded-lg ${
+                        message.role === "user"
+                            ? "bg-blue-50 dark:bg-blue-900/30 ml-6"
+                            : "bg-gray-100 dark:bg-gray-800 mr-6"
+                    }`}
+                >
+                    <div className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400">
+                        {message.role === "user" ? "You" : "Assistant"}
+                    </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <MarkdownDisplay content={message.content} />
+                    </div>
+                    {streamingMessageId === message.id && isLoading && (
+                        <div className="mt-1 animate-pulse text-gray-400 dark:text-gray-600">
+                            ●
+                        </div>
+                    )}
                 </div>
-            </div>
+            ))}
 
-            {/* Error display */}
             {error && (
-                <div className="text-red-500 text-xs p-2">
-                    Error: {error.message}
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30">
+                    <div className="text-xs font-semibold mb-1 text-red-600 dark:text-red-400">
+                        Error
+                    </div>
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                        {error.message}
+                    </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

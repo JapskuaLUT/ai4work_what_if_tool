@@ -1,5 +1,6 @@
 {
     "name": "Coursework Schedule Simulation Set A",
+    "kind": "coursework",
     "description": "A dataset to simulate and evaluate weekly coursework schedules under varied constraints.",
     "scenarios": [
         {

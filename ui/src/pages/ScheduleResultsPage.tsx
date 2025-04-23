@@ -3,6 +3,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ComparisonView } from "@/components/results/ComparisonView";
 import { ScenarioView } from "@/components/scenario/ScenarioView";
+import { StressScenarioView } from "@/components/scenario/StressScenarioView";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -11,13 +12,13 @@ import { ResultsHeader } from "@/components/results/ResultsHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CourseworkPlan } from "@/types/builder";
+import { Plan, BuilderScenario, CourseScenario } from "@/types/builder";
 import { AIExplanationBox } from "@/components/results/AIExplanationBox";
 
 export default function ScheduleResultsPage() {
     const { projectId } = useParams<{ projectId: string }>();
     const [activeTab, setActiveTab] = useState("compare");
-    const [plan, setPlan] = useState<CourseworkPlan | null>(null);
+    const [plan, setPlan] = useState<Plan | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -85,12 +86,57 @@ export default function ScheduleResultsPage() {
         );
     }
 
-    // Calculate the feasibility stats
-    const feasibleCount = plan.scenarios.filter(
-        (s) => s.output?.status === "feasible"
-    ).length;
+    // For a "coursework" plan, calculate the feasibility stats
+    const isCourseworkPlan = plan.kind === "coursework";
 
-    const infeasibleCount = plan.scenarios.length - feasibleCount;
+    let feasibleCount = 0;
+    let infeasibleCount = 0;
+
+    if (isCourseworkPlan) {
+        feasibleCount = plan.scenarios.filter(
+            (s) => (s as BuilderScenario).output?.status === "feasible"
+        ).length;
+        infeasibleCount = plan.scenarios.length - feasibleCount;
+    } else {
+        // For stress plans, count scenarios with manageable stress (less than 7) as "feasible"
+        feasibleCount = plan.scenarios.filter(
+            (s) =>
+                (s as CourseScenario).output.stress_metrics.predicted_next_week
+                    .average < 7
+        ).length;
+        infeasibleCount = plan.scenarios.length - feasibleCount;
+    }
+
+    // Helper to render the scenario status indicator
+    const renderScenarioStatus = (
+        scenario: BuilderScenario | CourseScenario
+    ) => {
+        if (isCourseworkPlan) {
+            const courseworkScenario = scenario as BuilderScenario;
+            return courseworkScenario.output?.status === "feasible" ? (
+                <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
+            ) : (
+                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
+            );
+        } else {
+            const stressScenario = scenario as CourseScenario;
+            return stressScenario.output.stress_metrics.predicted_next_week
+                .average < 7 ? (
+                <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
+            ) : (
+                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
+            );
+        }
+    };
+
+    // Helper to render the appropriate scenario view
+    const renderScenarioView = (scenario: BuilderScenario | CourseScenario) => {
+        if (isCourseworkPlan) {
+            return <ScenarioView scenario={scenario as BuilderScenario} />;
+        } else {
+            return <StressScenarioView scenario={scenario as CourseScenario} />;
+        }
+    };
 
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -114,6 +160,7 @@ export default function ScheduleResultsPage() {
                 description={plan.description}
                 feasibleCount={feasibleCount}
                 infeasibleCount={infeasibleCount}
+                planKind={plan.kind}
             />
 
             <AIExplanationBox plan={plan} />
@@ -139,17 +186,17 @@ export default function ScheduleResultsPage() {
                             className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
                         >
                             Scenario {s.scenarioId}
-                            {s.output?.status === "feasible" ? (
-                                <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
-                            ) : (
-                                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                            )}
+                            {renderScenarioStatus(s)}
                         </TabsTrigger>
                     ))}
                 </TabsList>
 
                 <TabsContent value="compare" className="mt-6">
-                    <ComparisonView scenarios={plan.scenarios} />
+                    <ComparisonView
+                        scenarios={plan.scenarios}
+                        planKind={plan.kind}
+                        plan={plan}
+                    />
                 </TabsContent>
 
                 {plan.scenarios.map((s) => (
@@ -158,7 +205,7 @@ export default function ScheduleResultsPage() {
                         value={s.scenarioId.toString()}
                         className="mt-6"
                     >
-                        <ScenarioView scenario={s} />
+                        {renderScenarioView(s)}
                     </TabsContent>
                 ))}
             </Tabs>

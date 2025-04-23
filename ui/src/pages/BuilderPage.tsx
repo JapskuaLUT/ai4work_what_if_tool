@@ -9,11 +9,11 @@ import { BuilderScenarioList } from "@/components/builder/BuilderScenarioList";
 import { BuilderScenarioForm } from "@/components/builder/BuilderScenarioForm";
 import { BuilderLoadingState } from "@/components/builder/BuilderLoadingState";
 import { BuilderErrorState } from "@/components/builder/BuilderErrorState";
-import { CourseworkPlan, BuilderScenario } from "@/types/builder";
+import { Plan, BuilderScenario, CourseScenario } from "@/types/builder";
 
 export default function BuilderPage() {
     const { projectId } = useParams<{ projectId: string }>();
-    const [plan, setPlan] = useState<CourseworkPlan | null>(null);
+    const [plan, setPlan] = useState<Plan | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -34,7 +34,7 @@ export default function BuilderPage() {
         fetchPlan();
     }, [projectId]);
 
-    const addScenario = (newScenario: BuilderScenario) => {
+    const addScenario = (newScenario: BuilderScenario | CourseScenario) => {
         if (!plan) return;
         const updatedScenarios = [...plan.scenarios, newScenario];
         setPlan({ ...plan, scenarios: updatedScenarios });
@@ -73,9 +73,12 @@ export default function BuilderPage() {
                 scenarioCount={plan.scenarios.length}
             />
 
-            <BuilderScenarioList scenarios={plan.scenarios} />
+            <BuilderScenarioList scenarios={plan.scenarios} kind={plan.kind} />
 
-            <BuilderScenarioForm onAddScenario={addScenario} />
+            <BuilderScenarioForm
+                onAddScenario={addScenario}
+                scenarioType={plan.kind}
+            />
         </div>
     );
 }

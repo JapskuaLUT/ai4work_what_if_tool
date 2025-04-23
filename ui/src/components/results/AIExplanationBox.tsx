@@ -1,4 +1,4 @@
-// src/components/results/AIExplanationBox.tsx
+// ui/src/components/results/AIExplanationBox.tsx
 
 import { useState, useEffect } from "react";
 import { useOllama } from "@/hooks/useOllama";
@@ -24,11 +24,11 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { CourseworkPlan } from "@/types/builder";
+import { Plan } from "@/types/builder";
 import { explainSchedulingResults } from "@/prompts/explainSchedulingResults";
 
 interface AIExplanationBoxProps {
-    plan: CourseworkPlan;
+    plan: Plan;
 }
 
 export function AIExplanationBox({ plan }: AIExplanationBoxProps) {

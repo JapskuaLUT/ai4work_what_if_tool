@@ -1,0 +1,256 @@
+{
+    "name": "Course Workload Stress Simulation Set",
+    "kind": "stress",
+    "description": "A dataset to simulate and evaluate university course workloads and student stress under varied conditions.",
+    "scenarios": [
+        {
+            "scenarioId": 1,
+            "description": "Standard workload distribution with moderate assignment schedule.",
+            "input": {
+                "course_info": {
+                    "course_name": "Data Structures and Algorithms",
+                    "course_id": "CS2040",
+                    "teaching": {
+                        "total_hours": 24,
+                        "days": ["Monday", "Wednesday"],
+                        "time": "10:00-12:00"
+                    },
+                    "lab": {
+                        "total_hours": 24,
+                        "days": ["Tuesday", "Thursday"],
+                        "time": "14:00-16:00"
+                    },
+                    "ects": 6,
+                    "topic_difficulty": 7,
+                    "prerequisites": true,
+                    "weekly_homework_hours": 5,
+                    "total_weeks": 12,
+                    "attendance_method": "hybrid",
+                    "success_rate_percent": 78.5,
+                    "average_grade": 3.2
+                },
+                "assignments": [
+                    {
+                        "id": 1,
+                        "start_week": 3,
+                        "end_week": 5,
+                        "hours_per_week": 4
+                    },
+                    {
+                        "id": 2,
+                        "start_week": 7,
+                        "end_week": 9,
+                        "hours_per_week": 6
+                    },
+                    {
+                        "id": 3,
+                        "start_week": 10,
+                        "end_week": 12,
+                        "hours_per_week": 8
+                    }
+                ],
+                "current_status": {
+                    "current_week": 4,
+                    "total_weeks": 12
+                },
+                "hours_distribution": {
+                    "next_week": {
+                        "teaching_hours": 4,
+                        "lab_hours": 4,
+                        "homework_hours": 5,
+                        "assignment_hours": 4
+                    },
+                    "remaining": {
+                        "teaching_hours": 32,
+                        "lab_hours": 32,
+                        "homework_hours": 40,
+                        "assignment_hours": 68
+                    }
+                },
+                "students": {
+                    "count": 65
+                }
+            },
+            "output": {
+                "stress_metrics": {
+                    "current_week": {
+                        "average": 5.8,
+                        "maximum": 8.2
+                    },
+                    "predicted_next_week": {
+                        "average": 6.5,
+                        "maximum": 8.7
+                    }
+                }
+            }
+        },
+        {
+            "scenarioId": 2,
+            "description": "High-intensity workload with overlapping assignments and increased homework.",
+            "input": {
+                "course_info": {
+                    "course_name": "Data Structures and Algorithms",
+                    "course_id": "CS2040",
+                    "teaching": {
+                        "total_hours": 24,
+                        "days": ["Monday", "Wednesday"],
+                        "time": "10:00-12:00"
+                    },
+                    "lab": {
+                        "total_hours": 24,
+                        "days": ["Tuesday", "Thursday"],
+                        "time": "14:00-16:00"
+                    },
+                    "ects": 6,
+                    "topic_difficulty": 7,
+                    "prerequisites": true,
+                    "weekly_homework_hours": 8,
+                    "total_weeks": 12,
+                    "attendance_method": "hybrid",
+                    "success_rate_percent": 78.5,
+                    "average_grade": 3.2
+                },
+                "assignments": [
+                    {
+                        "id": 1,
+                        "start_week": 2,
+                        "end_week": 4,
+                        "hours_per_week": 6
+                    },
+                    {
+                        "id": 2,
+                        "start_week": 3,
+                        "end_week": 5,
+                        "hours_per_week": 7
+                    },
+                    {
+                        "id": 3,
+                        "start_week": 5,
+                        "end_week": 7,
+                        "hours_per_week": 8
+                    },
+                    {
+                        "id": 4,
+                        "start_week": 8,
+                        "end_week": 12,
+                        "hours_per_week": 10
+                    }
+                ],
+                "current_status": {
+                    "current_week": 4,
+                    "total_weeks": 12
+                },
+                "hours_distribution": {
+                    "next_week": {
+                        "teaching_hours": 4,
+                        "lab_hours": 4,
+                        "homework_hours": 8,
+                        "assignment_hours": 15
+                    },
+                    "remaining": {
+                        "teaching_hours": 32,
+                        "lab_hours": 32,
+                        "homework_hours": 64,
+                        "assignment_hours": 118
+                    }
+                },
+                "students": {
+                    "count": 65
+                }
+            },
+            "output": {
+                "stress_metrics": {
+                    "current_week": {
+                        "average": 7.9,
+                        "maximum": 9.5
+                    },
+                    "predicted_next_week": {
+                        "average": 8.4,
+                        "maximum": 9.8
+                    }
+                }
+            }
+        },
+        {
+            "scenarioId": 3,
+            "description": "Light workload with gradual assignment distribution and reduced homework.",
+            "input": {
+                "course_info": {
+                    "course_name": "Data Structures and Algorithms",
+                    "course_id": "CS2040",
+                    "teaching": {
+                        "total_hours": 24,
+                        "days": ["Monday", "Wednesday"],
+                        "time": "10:00-12:00"
+                    },
+                    "lab": {
+                        "total_hours": 24,
+                        "days": ["Tuesday", "Thursday"],
+                        "time": "14:00-16:00"
+                    },
+                    "ects": 6,
+                    "topic_difficulty": 7,
+                    "prerequisites": true,
+                    "weekly_homework_hours": 3,
+                    "total_weeks": 12,
+                    "attendance_method": "hybrid",
+                    "success_rate_percent": 78.5,
+                    "average_grade": 3.2
+                },
+                "assignments": [
+                    {
+                        "id": 1,
+                        "start_week": 4,
+                        "end_week": 6,
+                        "hours_per_week": 2
+                    },
+                    {
+                        "id": 2,
+                        "start_week": 8,
+                        "end_week": 10,
+                        "hours_per_week": 3
+                    },
+                    {
+                        "id": 3,
+                        "start_week": 11,
+                        "end_week": 12,
+                        "hours_per_week": 4
+                    }
+                ],
+                "current_status": {
+                    "current_week": 4,
+                    "total_weeks": 12
+                },
+                "hours_distribution": {
+                    "next_week": {
+                        "teaching_hours": 4,
+                        "lab_hours": 4,
+                        "homework_hours": 3,
+                        "assignment_hours": 2
+                    },
+                    "remaining": {
+                        "teaching_hours": 32,
+                        "lab_hours": 32,
+                        "homework_hours": 24,
+                        "assignment_hours": 26
+                    }
+                },
+                "students": {
+                    "count": 65
+                }
+            },
+            "output": {
+                "stress_metrics": {
+                    "current_week": {
+                        "average": 3.2,
+                        "maximum": 5.5
+                    },
+                    "predicted_next_week": {
+                        "average": 3.5,
+                        "maximum": 5.8
+                    }
+                }
+            }
+        }
+    ]
+}

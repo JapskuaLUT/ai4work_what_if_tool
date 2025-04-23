@@ -1,6 +1,6 @@
-// ui/src/components/scenario/FloatingScenarioChat.tsx
+// ui/src/components/results/ComparisonChatButton.tsx
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useOllama } from "@/hooks/useOllama";
 import { useModelContext } from "@/contexts/ModelContext";
 import {
@@ -9,40 +9,25 @@ import {
     CardFooter,
     CardHeader
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { BuilderScenario, CourseScenario, PlanKind } from "@/types/builder";
-
-// Import sub-components
+import { MessageSquareText, X } from "lucide-react";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessagesContainer } from "@/components/chat/ChatMessagesContainer";
 import { ChatInput } from "@/components/chat/ChatInput";
-import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
-
-// Import types and utilities
 import { Message } from "@/types/chat";
-import {
-    createScenarioContext,
-    createSystemPrompt,
-    createWelcomeMessage
-} from "@/components/chat/chatUtils";
+import { Plan } from "@/types/builder";
 
-interface FloatingScenarioChatProps {
-    scenario: BuilderScenario | CourseScenario;
-    kind: PlanKind;
+interface ComparisonChatButtonProps {
+    plan: Plan;
 }
 
-export function FloatingScenarioChat({
-    scenario,
-    kind
-}: FloatingScenarioChatProps) {
+export function ComparisonChatButton({ plan }: ComparisonChatButtonProps) {
     // Get global model from context
     const { globalModel, availableModels: contextModels } = useModelContext();
 
     // State
     const [model, setModel] = useState<string>("");
-    const [systemPrompt, setSystemPrompt] = useState(() =>
-        createSystemPrompt(scenario, kind)
-    );
     const [messages, setMessages] = useState<Message[]>([]);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -53,6 +38,13 @@ export function FloatingScenarioChat({
     const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
         null
     );
+
+    const isStressPlan = plan.kind === "stress";
+
+    // Create system prompt based on plan type
+    const systemPrompt = isStressPlan
+        ? `You are an expert in educational stress analysis and workload management. You're looking at a comparison of multiple course scenarios with different stress levels. Help the user understand the differences between scenarios, identify patterns, and suggest the best approach for managing their academic workload.`
+        : `You are an expert scheduler and educational planner. You're looking at a comparison of multiple coursework scheduling scenarios. Help the user understand the differences between scenarios, identify key constraints, and provide insights about feasibility and optimizations.`;
 
     // Initialize Ollama hook
     const {
@@ -93,20 +85,36 @@ export function FloatingScenarioChat({
         }
     }, [availableModels, model]);
 
-    // Initialize with a starter message about the scenario
+    // Initialize with a starter message
     useEffect(() => {
         if (!isInitialized && model && !loading && isChatOpen) {
             // Create a welcome message
             const initialAssistantMessage: Message = {
                 id: "initial",
                 role: "assistant",
-                content: createWelcomeMessage(scenario, kind)
+                content: isStressPlan
+                    ? `👋 Hello! I'm here to help you analyze the stress levels across the different course scenarios. You can ask me about:
+
+- Patterns in stress levels across scenarios
+- Which scenario has the most manageable workload
+- Strategies for reducing stress in high-pressure courses
+- How to balance your academic workload effectively
+
+What would you like to know about these scenarios?`
+                    : `👋 Hello! I'm here to help you compare the different scheduling scenarios. You can ask me about:
+
+- Key differences between feasible and infeasible scenarios
+- Which constraints are causing scheduling conflicts
+- How to optimize your schedule for better balance
+- Recommendations for the most efficient schedule
+
+What would you like to know about these scenarios?`
             };
 
             setMessages([initialAssistantMessage]);
             setIsInitialized(true);
         }
-    }, [scenario, kind, model, loading, isInitialized, isChatOpen]);
+    }, [model, loading, isInitialized, isChatOpen, isStressPlan]);
 
     // Update the streaming message content as it comes in
     useEffect(() => {
@@ -215,8 +223,8 @@ export function FloatingScenarioChat({
                     role: "system" as const,
                     content:
                         systemPrompt +
-                        "\n\nHere are the details of the scenario:\n" +
-                        createScenarioContext(scenario)
+                        "\n\nHere are the details of the plan:\n" +
+                        JSON.stringify(plan, null, 2)
                 }
             ];
 
@@ -270,28 +278,28 @@ export function FloatingScenarioChat({
         const initialAssistantMessage: Message = {
             id: "initial-" + Date.now(),
             role: "assistant",
-            content: createWelcomeMessage(scenario, kind)
+            content: isStressPlan
+                ? `👋 Hello! I'm here to help you analyze the stress levels across the different course scenarios. You can ask me about:
+
+- Patterns in stress levels across scenarios
+- Which scenario has the most manageable workload
+- Strategies for reducing stress in high-pressure courses
+- How to balance your academic workload effectively
+
+What would you like to know about these scenarios?`
+                : `👋 Hello! I'm here to help you compare the different scheduling scenarios. You can ask me about:
+
+- Key differences between feasible and infeasible scenarios
+- Which constraints are causing scheduling conflicts
+- How to optimize your schedule for better balance
+- Recommendations for the most efficient schedule
+
+What would you like to know about these scenarios?`
         };
 
         setMessages([initialAssistantMessage]);
         setStreamingMessageId(null);
     };
-
-    // Handle close
-    const handleClose = () => {
-        setIsChatOpen(false);
-        setIsExpanded(false);
-    };
-
-    // Open the chat
-    const openChat = () => {
-        setIsChatOpen(true);
-    };
-
-    // Combine available models from context and local fetch
-    const mergedAvailableModels =
-        contextModels.length > 0 ? contextModels : availableModels;
-    const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
 
     // Get chat window styles based on expanded state and screen size
     const getChatStyles = (): React.CSSProperties => {
@@ -312,15 +320,34 @@ export function FloatingScenarioChat({
         };
     };
 
+    // Combine available models from context and local fetch
+    const mergedAvailableModels =
+        contextModels.length > 0 ? contextModels : availableModels;
+    const isLoadingModels = loadingModels && mergedAvailableModels.length === 0;
+
     return (
         <>
             {/* Floating chat button */}
-            <FloatingChatButton isChatOpen={isChatOpen} onClick={openChat} />
+            <Button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={cn(
+                    "fixed bottom-6 right-6 z-40 shadow-md rounded-full w-14 h-14 p-0",
+                    isChatOpen
+                        ? "bg-gray-700 hover:bg-gray-800"
+                        : "bg-blue-600 hover:bg-blue-700"
+                )}
+            >
+                {isChatOpen ? (
+                    <X className="h-6 w-6" />
+                ) : (
+                    <MessageSquareText className="h-6 w-6" />
+                )}
+            </Button>
 
             {/* Chat dialog */}
             <div
                 className={cn(
-                    "fixed bottom-6 right-6 z-50 shadow-xl transition-all duration-300",
+                    "fixed bottom-6 right-6 z-30 shadow-xl transition-all duration-300",
                     isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 ref={chatCardRef}
@@ -329,8 +356,16 @@ export function FloatingScenarioChat({
                 <Card className="border border-blue-200 dark:border-blue-900 h-full flex flex-col">
                     <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 px-4 border-b border-blue-100 dark:border-blue-800 flex-shrink-0">
                         <ChatHeader
-                            headerText={`Scenario ${scenario.scenarioId}`}
-                            description={scenario.description}
+                            headerText={
+                                isStressPlan
+                                    ? "Stress Analysis Chat"
+                                    : "Schedule Comparison Chat"
+                            }
+                            description={`Ask about ${
+                                isStressPlan
+                                    ? "stress levels"
+                                    : "schedule feasibility"
+                            } across scenarios`}
                             isExpanded={isExpanded}
                             model={model}
                             availableModels={mergedAvailableModels}
@@ -338,7 +373,7 @@ export function FloatingScenarioChat({
                             onModelChange={setModel}
                             onReset={resetChat}
                             onToggleExpand={toggleExpanded}
-                            onClose={handleClose}
+                            onClose={() => setIsChatOpen(false)}
                             loading={loading}
                         />
                     </CardHeader>
