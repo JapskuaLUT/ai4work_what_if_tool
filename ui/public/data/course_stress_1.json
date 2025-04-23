@@ -5,7 +5,7 @@
     "scenarios": [
         {
             "scenarioId": 1,
-            "description": "Standard course load with manageable assignment distribution.",
+            "description": "Standard workload distribution with moderate assignment schedule.",
             "input": {
                 "course_info": {
                     "course_name": "Data Structures and Algorithms",
@@ -86,29 +86,29 @@
         },
         {
             "scenarioId": 2,
-            "description": "High-intensity course with overlapping assignments and increased difficulty.",
+            "description": "High-intensity workload with overlapping assignments and increased homework.",
             "input": {
                 "course_info": {
-                    "course_name": "Advanced Machine Learning",
-                    "course_id": "CS4242",
+                    "course_name": "Data Structures and Algorithms",
+                    "course_id": "CS2040",
                     "teaching": {
-                        "total_hours": 36,
-                        "days": ["Monday", "Wednesday", "Friday"],
-                        "time": "09:00-11:00"
+                        "total_hours": 24,
+                        "days": ["Monday", "Wednesday"],
+                        "time": "10:00-12:00"
                     },
                     "lab": {
-                        "total_hours": 36,
+                        "total_hours": 24,
                         "days": ["Tuesday", "Thursday"],
-                        "time": "13:00-16:00"
+                        "time": "14:00-16:00"
                     },
-                    "ects": 8,
-                    "topic_difficulty": 9,
+                    "ects": 6,
+                    "topic_difficulty": 7,
                     "prerequisites": true,
                     "weekly_homework_hours": 8,
                     "total_weeks": 12,
-                    "attendance_method": "in-person",
-                    "success_rate_percent": 65.2,
-                    "average_grade": 2.9
+                    "attendance_method": "hybrid",
+                    "success_rate_percent": 78.5,
+                    "average_grade": 3.2
                 },
                 "assignments": [
                     {
@@ -142,20 +142,20 @@
                 },
                 "hours_distribution": {
                     "next_week": {
-                        "teaching_hours": 6,
-                        "lab_hours": 6,
+                        "teaching_hours": 4,
+                        "lab_hours": 4,
                         "homework_hours": 8,
                         "assignment_hours": 15
                     },
                     "remaining": {
-                        "teaching_hours": 48,
-                        "lab_hours": 48,
+                        "teaching_hours": 32,
+                        "lab_hours": 32,
                         "homework_hours": 64,
                         "assignment_hours": 118
                     }
                 },
                 "students": {
-                    "count": 42
+                    "count": 65
                 }
             },
             "output": {
@@ -173,29 +173,29 @@
         },
         {
             "scenarioId": 3,
-            "description": "First-year introductory course with gradual workload and strong support structure.",
+            "description": "Light workload with gradual assignment distribution and reduced homework.",
             "input": {
                 "course_info": {
-                    "course_name": "Introduction to Computer Science",
-                    "course_id": "CS1101",
+                    "course_name": "Data Structures and Algorithms",
+                    "course_id": "CS2040",
                     "teaching": {
                         "total_hours": 24,
-                        "days": ["Tuesday", "Thursday"],
+                        "days": ["Monday", "Wednesday"],
                         "time": "10:00-12:00"
                     },
                     "lab": {
-                        "total_hours": 12,
-                        "days": ["Friday"],
+                        "total_hours": 24,
+                        "days": ["Tuesday", "Thursday"],
                         "time": "14:00-16:00"
                     },
-                    "ects": 5,
-                    "topic_difficulty": 4,
-                    "prerequisites": false,
+                    "ects": 6,
+                    "topic_difficulty": 7,
+                    "prerequisites": true,
                     "weekly_homework_hours": 3,
-                    "total_weeks": 14,
+                    "total_weeks": 12,
                     "attendance_method": "hybrid",
-                    "success_rate_percent": 85.3,
-                    "average_grade": 3.5
+                    "success_rate_percent": 78.5,
+                    "average_grade": 3.2
                 },
                 "assignments": [
                     {
@@ -212,31 +212,31 @@
                     },
                     {
                         "id": 3,
-                        "start_week": 12,
-                        "end_week": 14,
+                        "start_week": 11,
+                        "end_week": 12,
                         "hours_per_week": 4
                     }
                 ],
                 "current_status": {
                     "current_week": 4,
-                    "total_weeks": 14
+                    "total_weeks": 12
                 },
                 "hours_distribution": {
                     "next_week": {
                         "teaching_hours": 4,
-                        "lab_hours": 2,
+                        "lab_hours": 4,
                         "homework_hours": 3,
                         "assignment_hours": 2
                     },
                     "remaining": {
-                        "teaching_hours": 40,
-                        "lab_hours": 20,
-                        "homework_hours": 30,
+                        "teaching_hours": 32,
+                        "lab_hours": 32,
+                        "homework_hours": 24,
                         "assignment_hours": 26
                     }
                 },
                 "students": {
-                    "count": 120
+                    "count": 65
                 }
             },
             "output": {
