@@ -1,0 +1,92 @@
+services:
+    traefik:
+        image: traefik:v3.4.1
+        command:
+            - "--configFile=/app/configs/traefik.toml" # This is the traefik configuration file
+        volumes:
+            - ./traefik/traefik.toml:/app/configs/traefik.toml:ro # We want to mount our local traefik.toml file
+            - ./traefik/dynamic_conf.toml:/app/configs/dynamic_conf.toml:ro # We want to mount our local dynamic_conf.toml file
+            - ./traefik/certs:/certs:ro # We are adding the certificates to the container as read only (:ro)
+            - /var/run/docker.sock:/var/run/docker.sock:rw
+        labels:
+            - "traefik.enable=true" # We enable traefik for this service
+            - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)" # This is the traefik service URL
+            - "traefik.http.routers.traefik.entrypoints=websecure" # We want to use websecure as entrypoint (HTTPS)
+            - "traefik.http.routers.traefik.tls=true" # Enable the HTTPS router
+            - "traefik.http.routers.traefik.service=api@internal" # This is just internal configuration
+        ports:
+            - "80:80" # Open port 80 to the outside world
+            - "443:443" # Open port 443 to the outside world
+        networks:
+            - what_if_network # And we use this network to connect to the other services
+    ui:
+        image: whatif-ui:dev # This is the image we have built. If missing, check build_docker_images.sh
+        volumes:
+            - ./ui:/usr/src/app # We want to mount our local ui folder to the container
+            - /usr/src/app/node_modules # A neat trick: We want to make sure the container node_modules does not get written by our local node_modules
+        networks:
+            - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
+        command: bun dev -- --host # We want to add the --host so that we can access the frontend from outside the container
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.ui.rule=Host(`app.localhost`)" # This is the ui service URL
+            - "traefik.http.routers.ui.entrypoints=websecure"
+            - "traefik.http.routers.ui.tls=true"
+            - "traefik.http.services.ui.loadbalancer.server.port=5173"
+    backend:
+        image: whatif-backend:dev # This is the image we have built. If missing, check build_images.sh
+        volumes:
+            - ./backend:/usr/src/app # We want to mount our local backend folder to the container
+        networks:
+            - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
+        command: bun dev # This is the command we want to run. We are now overriding the default command.
+        environment:
+            - SERVER_URL=https://backend.localhost
+            - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
+            - JWT_SECRET=your-SHARED-strong-jwt-secret # We want to set the JWT_SECRET in the environment variables. This must match the one in auth and backend!
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.backend.rule=Host(`backend.localhost`)" # This is the backend service URL
+            - "traefik.http.routers.backend.entrypoints=websecure"
+            - "traefik.http.routers.backend.tls=true"
+            - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    postgres:
+        image: postgres:17.5
+        environment:
+            - POSTGRES_USER=whatifuser
+            - POSTGRES_PASSWORD=whatifpassword
+            - POSTGRES_DB=whatifdatabase
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./postgres_whatif_data:/var/lib/postgresql/data
+            # To automatically initialize DB on first run, uncomment and ensure files exist:
+            - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+            - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U whatifuser -d whatifdatabase"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.postgres.rule=Host(`postgres.localhost`)"
+            - "traefik.http.routers.postgres.entrypoints=websecure"
+            - "traefik.http.routers.postgres.tls=true"
+            - "traefik.http.services.postgres.loadbalancer.server.port=5432"
+        networks:
+            - what_if_network
+    ollama-proxy:
+        image: whatif-ollama-proxy:dev
+        networks:
+            - what_if_network
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.ollama.rule=Host(`ollama.localhost`)"
+            - "traefik.http.routers.ollama.entrypoints=websecure"
+            - "traefik.http.routers.ollama.tls=true"
+            - "traefik.http.services.ollama.loadbalancer.server.port=80"
+networks:
+    what_if_network:
+        name: what_if_network # We are creating a network with the name what_if_network
+        driver: bridge # We are using the bridge driver

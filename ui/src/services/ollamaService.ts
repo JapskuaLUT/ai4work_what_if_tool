@@ -1,7 +1,7 @@
 // ui/src/services/ollamaService.ts
 
 // Default Ollama API URL - using proxy to avoid CORS issues
-const OLLAMA_API_URL = "/api/ollama";
+const OLLAMA_API_URL = "https://ollama.localhost/api";
 
 // Interface for generate request parameters
 export interface GenerateParams {

@@ -1,6 +1,7 @@
 {
     "name": "Course Workload Stress Simulation Set",
     "kind": "stress",
+    "caseId": "10001",
     "description": "A dataset to simulate and evaluate university course workloads and student stress under varied conditions.",
     "scenarios": [
         {

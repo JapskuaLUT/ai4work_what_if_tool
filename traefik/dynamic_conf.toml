@@ -1,0 +1,8 @@
+[tls]
+  [tls.stores]
+    [tls.stores.default]
+      defaultCertificate = { certFile = "/certs/cert.pem", keyFile = "/certs/key.pem" }
+
+  [[tls.certificates]]
+    certFile = "/certs/cert.pem"
+    keyFile = "/certs/key.pem"
