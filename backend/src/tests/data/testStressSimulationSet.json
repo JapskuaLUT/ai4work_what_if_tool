@@ -1,0 +1,57 @@
+{
+    "name": "Test Stress Simulation Set",
+    "kind": "stress",
+    "description": "A test dataset for stress simulation.",
+    "scenarios": [
+        {
+            "scenarioId": 1,
+            "input": {
+                "description": "Standard workload distribution with moderate assignment schedule.",
+                "courseName": "Data Structures and Algorithms",
+                "courseId": "CS2040",
+                "teachingTotalHours": 24,
+                "teachingDays": ["Monday", "Wednesday"],
+                "teachingTime": "10:00-12:00",
+                "labTotalHours": 24,
+                "labDays": ["Tuesday", "Thursday"],
+                "labTime": "14:00-16:00",
+                "ects": 6,
+                "topicDifficulty": 7,
+                "prerequisites": true,
+                "weeklyHomeworkHours": 5,
+                "totalWeeks": 12,
+                "attendanceMethod": "hybrid",
+                "successRatePercent": 78.5,
+                "averageGrade": 3.2,
+                "studentCount": 65,
+                "currentWeek": 4
+            },
+            "assignments": [
+                {
+                    "assignmentNumber": 1,
+                    "startWeek": 3,
+                    "endWeek": 5,
+                    "hoursPerWeek": 4
+                },
+                {
+                    "assignmentNumber": 2,
+                    "startWeek": 7,
+                    "endWeek": 9,
+                    "hoursPerWeek": 6
+                },
+                {
+                    "assignmentNumber": 3,
+                    "startWeek": 10,
+                    "endWeek": 12,
+                    "hoursPerWeek": 8
+                }
+            ],
+            "stressMetrics": {
+                "currentWeekAverage": 5.8,
+                "currentWeekMaximum": 8.2,
+                "predictedNextWeekAverage": 6.5,
+                "predictedNextWeekMaximum": 8.7
+            }
+        }
+    ]
+}
