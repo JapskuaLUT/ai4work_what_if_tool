@@ -48,10 +48,6 @@ export function ComparisonView({
         const courseworkScenarios = scenarios as BuilderScenario[];
 
         // Prepare data for comparison charts
-        const names = courseworkScenarios.map(
-            (s) => `Scenario ${s.scenarioId}`
-        );
-
         const feasibility = courseworkScenarios.map((s) =>
             s.output?.status === "feasible" ? "✓ Feasible" : "✗ Infeasible"
         );
@@ -305,40 +301,26 @@ export function ComparisonView({
     const stressScenarioComparison = () => {
         const stressScenarios = scenarios as CourseScenario[];
 
-        // Prepare data for comparison charts
-        const names = stressScenarios.map((s) => `Scenario ${s.scenarioId}`);
-
-        // Determine which scenarios have manageable stress levels
-        const stressLevels = stressScenarios.map((s) =>
-            s.output.stress_metrics.predicted_next_week.average < 7
-                ? "✓ Manageable"
-                : "✗ High Stress"
-        );
-
-        // Extract current stress levels
-        const currentStressLevels = stressScenarios.map(
-            (s) => s.output.stress_metrics.current_week.average
-        );
-
         // Extract predicted stress levels
         const predictedStressLevels = stressScenarios.map(
-            (s) => s.output.stress_metrics.predicted_next_week.average
+            (s) => s.stressMetrics?.predictedNextWeekAverage || 0
         );
 
         // Calculate stress change
         const stressChanges = stressScenarios.map(
             (s) =>
-                s.output.stress_metrics.predicted_next_week.average -
-                s.output.stress_metrics.current_week.average
+                (s.stressMetrics?.predictedNextWeekAverage || 0) -
+                (s.stressMetrics?.currentWeekAverage || 0)
         );
 
         // Extract next week total hours
         const nextWeekHours = stressScenarios.map((s) => {
             const hours =
-                s.input.hours_distribution.next_week.teaching_hours +
-                s.input.hours_distribution.next_week.lab_hours +
-                s.input.hours_distribution.next_week.homework_hours +
-                s.input.hours_distribution.next_week.assignment_hours;
+                (s.input.teachingTotalHours || 0) +
+                (s.input.labTotalHours || 0) +
+                (s.input.weeklyHomeworkHours || 0) +
+                (s.assignments?.reduce((sum, a) => sum + a.hoursPerWeek, 0) ||
+                    0);
             return hours;
         });
 

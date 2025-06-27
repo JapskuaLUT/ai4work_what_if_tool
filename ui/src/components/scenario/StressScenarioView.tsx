@@ -37,37 +37,30 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
 
     // Calculate total hours for next week
     const nextWeekTotal =
-        scenario.input.hours_distribution.next_week.teaching_hours +
-        scenario.input.hours_distribution.next_week.lab_hours +
-        scenario.input.hours_distribution.next_week.homework_hours +
-        scenario.input.hours_distribution.next_week.assignment_hours;
-
-    // Calculate total remaining hours
-    const totalRemaining =
-        scenario.input.hours_distribution.remaining.teaching_hours +
-        scenario.input.hours_distribution.remaining.lab_hours +
-        scenario.input.hours_distribution.remaining.homework_hours +
-        scenario.input.hours_distribution.remaining.assignment_hours;
+        (scenario.input.teachingTotalHours || 0) +
+        (scenario.input.labTotalHours || 0) +
+        (scenario.input.weeklyHomeworkHours || 0) +
+        (scenario.assignments?.reduce((sum, a) => sum + a.hoursPerWeek, 0) ||
+            0);
 
     // Calculate stress level increase
     const stressIncrease =
-        scenario.output.stress_metrics.predicted_next_week.average -
-        scenario.output.stress_metrics.current_week.average;
+        (scenario.stressMetrics?.predictedNextWeekAverage || 0) -
+        (scenario.stressMetrics?.currentWeekAverage || 0);
 
     return (
         <div className="space-y-6 relative pb-20">
             <Card
                 className={`border-2 ${
-                    scenario.output.stress_metrics.predicted_next_week.average <
-                    7
+                    (scenario.stressMetrics?.predictedNextWeekAverage || 0) < 7
                         ? "border-green-200 dark:border-green-800"
                         : "border-red-200 dark:border-red-800"
                 }`}
             >
                 <CardHeader
                     className={`pb-4 ${
-                        scenario.output.stress_metrics.predicted_next_week
-                            .average < 7
+                        (scenario.stressMetrics?.predictedNextWeekAverage ||
+                            0) < 7
                             ? "bg-green-50 dark:bg-green-900/20 border-b border-green-100 dark:border-green-800"
                             : "bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800"
                     }`}
@@ -75,14 +68,14 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                     <div className="flex items-center justify-between">
                         <Badge
                             className={
-                                scenario.output.stress_metrics
-                                    .predicted_next_week.average < 7
+                                (scenario.stressMetrics
+                                    ?.predictedNextWeekAverage || 0) < 7
                                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
                                     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
                             }
                         >
-                            {scenario.output.stress_metrics.predicted_next_week
-                                .average < 7
+                            {(scenario.stressMetrics
+                                ?.predictedNextWeekAverage || 0) < 7
                                 ? "Manageable"
                                 : "High Stress"}
                         </Badge>
@@ -94,8 +87,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                         {scenario.description}
                     </CardTitle>
                     <CardDescription className="mt-1 text-gray-600">
-                        {scenario.input.course_info.course_name} (
-                        {scenario.input.course_info.course_id})
+                        {scenario.input.courseName} ({scenario.input.courseId})
                     </CardDescription>
                 </CardHeader>
 
@@ -115,7 +107,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             ECTS
                                         </p>
                                         <p className="text-xl font-bold">
-                                            {scenario.input.course_info.ects}
+                                            {scenario.input.ects}
                                         </p>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
@@ -123,10 +115,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Difficulty
                                         </p>
                                         <p className="text-xl font-bold">
-                                            {
-                                                scenario.input.course_info
-                                                    .topic_difficulty
-                                            }
+                                            {scenario.input.topicDifficulty}
                                             /10
                                         </p>
                                     </div>
@@ -141,10 +130,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             variant="outline"
                                             className="capitalize"
                                         >
-                                            {
-                                                scenario.input.course_info
-                                                    .attendance_method
-                                            }
+                                            {scenario.input.attendanceMethod}
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
@@ -153,14 +139,12 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                         </span>
                                         <Badge
                                             variant={
-                                                scenario.input.course_info
-                                                    .prerequisites
+                                                scenario.input.prerequisites
                                                     ? "secondary"
                                                     : "outline"
                                             }
                                         >
-                                            {scenario.input.course_info
-                                                .prerequisites
+                                            {scenario.input.prerequisites
                                                 ? "Required"
                                                 : "None"}
                                         </Badge>
@@ -170,15 +154,8 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Current Week:
                                         </span>
                                         <Badge variant="outline">
-                                            {
-                                                scenario.input.current_status
-                                                    .current_week
-                                            }{" "}
-                                            of{" "}
-                                            {
-                                                scenario.input.current_status
-                                                    .total_weeks
-                                            }
+                                            {scenario.input.currentWeek} of{" "}
+                                            {scenario.input.totalWeeks}
                                         </Badge>
                                     </div>
                                 </div>
@@ -197,11 +174,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Success Rate
                                         </p>
                                         <p className="text-xl font-bold">
-                                            {
-                                                scenario.input.course_info
-                                                    .success_rate_percent
-                                            }
-                                            %
+                                            {scenario.input.successRatePercent}%
                                         </p>
                                     </div>
                                     <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
@@ -209,9 +182,9 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Average Grade
                                         </p>
                                         <p className="text-xl font-bold">
-                                            {scenario.input.course_info.average_grade.toFixed(
+                                            {scenario.input.averageGrade?.toFixed(
                                                 1
-                                            )}
+                                            ) || "N/A"}
                                             /4.0
                                         </p>
                                     </div>
@@ -225,7 +198,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             </span>
                                         </div>
                                         <Badge variant="secondary">
-                                            {scenario.input.students.count}
+                                            {scenario.input.studentCount}
                                         </Badge>
                                     </div>
                                 </div>
@@ -244,20 +217,14 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Teaching Schedule
                                         </p>
                                         <p className="font-medium">
-                                            {scenario.input.course_info.teaching.days.join(
+                                            {scenario.input.teachingDays.join(
                                                 ", "
                                             )}{" "}
-                                            {
-                                                scenario.input.course_info
-                                                    .teaching.time
-                                            }
+                                            {scenario.input.teachingTime}
                                         </p>
                                         <p className="text-sm text-gray-600 mt-1">
                                             Total:{" "}
-                                            {
-                                                scenario.input.course_info
-                                                    .teaching.total_hours
-                                            }{" "}
+                                            {scenario.input.teachingTotalHours}{" "}
                                             hours
                                         </p>
                                     </div>
@@ -266,21 +233,12 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Lab Schedule
                                         </p>
                                         <p className="font-medium">
-                                            {scenario.input.course_info.lab.days.join(
-                                                ", "
-                                            )}{" "}
-                                            {
-                                                scenario.input.course_info.lab
-                                                    .time
-                                            }
+                                            {scenario.input.labDays.join(", ")}{" "}
+                                            {scenario.input.labTime}
                                         </p>
                                         <p className="text-sm text-gray-600 mt-1">
                                             Total:{" "}
-                                            {
-                                                scenario.input.course_info.lab
-                                                    .total_hours
-                                            }{" "}
-                                            hours
+                                            {scenario.input.labTotalHours} hours
                                         </p>
                                     </div>
                                 </div>
@@ -303,25 +261,23 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             </h4>
                                             <Badge
                                                 variant={
-                                                    scenario.output
-                                                        .stress_metrics
-                                                        .current_week.average <
-                                                    5
+                                                    (scenario.stressMetrics
+                                                        ?.currentWeekAverage ||
+                                                        0) < 5
                                                         ? "outline"
                                                         : "secondary"
                                                 }
                                                 className={
-                                                    scenario.output
-                                                        .stress_metrics
-                                                        .current_week.average >
-                                                    7
+                                                    (scenario.stressMetrics
+                                                        ?.currentWeekAverage ||
+                                                        0) > 7
                                                         ? "bg-red-100 text-red-800"
                                                         : ""
                                                 }
                                             >
-                                                {scenario.output.stress_metrics.current_week.average.toFixed(
+                                                {scenario.stressMetrics?.currentWeekAverage?.toFixed(
                                                     1
-                                                )}
+                                                ) || "N/A"}
                                                 /10
                                             </Badge>
                                         </div>
@@ -331,27 +287,26 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <div className="flex justify-between text-xs mb-1">
                                                     <span>Average Stress</span>
                                                     <span>
-                                                        {scenario.output.stress_metrics.current_week.average.toFixed(
+                                                        {scenario.stressMetrics?.currentWeekAverage?.toFixed(
                                                             1
-                                                        )}
+                                                        ) || "N/A"}
                                                         /10
                                                     </span>
                                                 </div>
                                                 <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-2 rounded-full ${getStressColor(
-                                                            scenario.output
-                                                                .stress_metrics
-                                                                .current_week
-                                                                .average
+                                                            scenario
+                                                                .stressMetrics
+                                                                ?.currentWeekAverage ||
+                                                                0
                                                         )}`}
                                                         style={{
                                                             width: `${Math.min(
-                                                                scenario.output
-                                                                    .stress_metrics
-                                                                    .current_week
-                                                                    .average *
-                                                                    10,
+                                                                (scenario
+                                                                    .stressMetrics
+                                                                    ?.currentWeekAverage ||
+                                                                    0) * 10,
                                                                 100
                                                             )}%`
                                                         }}
@@ -363,27 +318,26 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <div className="flex justify-between text-xs mb-1">
                                                     <span>Maximum Stress</span>
                                                     <span>
-                                                        {scenario.output.stress_metrics.current_week.maximum.toFixed(
+                                                        {scenario.stressMetrics?.currentWeekMaximum?.toFixed(
                                                             1
-                                                        )}
+                                                        ) || "N/A"}
                                                         /10
                                                     </span>
                                                 </div>
                                                 <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-2 rounded-full ${getStressColor(
-                                                            scenario.output
-                                                                .stress_metrics
-                                                                .current_week
-                                                                .maximum
+                                                            scenario
+                                                                .stressMetrics
+                                                                ?.currentWeekMaximum ||
+                                                                0
                                                         )}`}
                                                         style={{
                                                             width: `${Math.min(
-                                                                scenario.output
-                                                                    .stress_metrics
-                                                                    .current_week
-                                                                    .maximum *
-                                                                    10,
+                                                                (scenario
+                                                                    .stressMetrics
+                                                                    ?.currentWeekMaximum ||
+                                                                    0) * 10,
                                                                 100
                                                             )}%`
                                                         }}
@@ -400,25 +354,23 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             </h4>
                                             <Badge
                                                 variant={
-                                                    scenario.output
-                                                        .stress_metrics
-                                                        .predicted_next_week
-                                                        .average < 5
+                                                    (scenario.stressMetrics
+                                                        ?.predictedNextWeekAverage ||
+                                                        0) < 5
                                                         ? "outline"
                                                         : "secondary"
                                                 }
                                                 className={
-                                                    scenario.output
-                                                        .stress_metrics
-                                                        .predicted_next_week
-                                                        .average > 7
+                                                    (scenario.stressMetrics
+                                                        ?.predictedNextWeekAverage ||
+                                                        0) > 7
                                                         ? "bg-red-100 text-red-800"
                                                         : ""
                                                 }
                                             >
-                                                {scenario.output.stress_metrics.predicted_next_week.average.toFixed(
+                                                {scenario.stressMetrics?.predictedNextWeekAverage?.toFixed(
                                                     1
-                                                )}
+                                                ) || "N/A"}
                                                 /10
                                             </Badge>
                                         </div>
@@ -428,27 +380,26 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <div className="flex justify-between text-xs mb-1">
                                                     <span>Average Stress</span>
                                                     <span>
-                                                        {scenario.output.stress_metrics.predicted_next_week.average.toFixed(
+                                                        {scenario.stressMetrics?.predictedNextWeekAverage?.toFixed(
                                                             1
-                                                        )}
+                                                        ) || "N/A"}
                                                         /10
                                                     </span>
                                                 </div>
                                                 <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-2 rounded-full ${getStressColor(
-                                                            scenario.output
-                                                                .stress_metrics
-                                                                .predicted_next_week
-                                                                .average
+                                                            scenario
+                                                                .stressMetrics
+                                                                ?.predictedNextWeekAverage ||
+                                                                0
                                                         )}`}
                                                         style={{
                                                             width: `${Math.min(
-                                                                scenario.output
-                                                                    .stress_metrics
-                                                                    .predicted_next_week
-                                                                    .average *
-                                                                    10,
+                                                                (scenario
+                                                                    .stressMetrics
+                                                                    ?.predictedNextWeekAverage ||
+                                                                    0) * 10,
                                                                 100
                                                             )}%`
                                                         }}
@@ -460,27 +411,26 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <div className="flex justify-between text-xs mb-1">
                                                     <span>Maximum Stress</span>
                                                     <span>
-                                                        {scenario.output.stress_metrics.predicted_next_week.maximum.toFixed(
+                                                        {scenario.stressMetrics?.predictedNextWeekMaximum?.toFixed(
                                                             1
-                                                        )}
+                                                        ) || "N/A"}
                                                         /10
                                                     </span>
                                                 </div>
                                                 <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-2 rounded-full ${getStressColor(
-                                                            scenario.output
-                                                                .stress_metrics
-                                                                .predicted_next_week
-                                                                .maximum
+                                                            scenario
+                                                                .stressMetrics
+                                                                ?.predictedNextWeekMaximum ||
+                                                                0
                                                         )}`}
                                                         style={{
                                                             width: `${Math.min(
-                                                                scenario.output
-                                                                    .stress_metrics
-                                                                    .predicted_next_week
-                                                                    .maximum *
-                                                                    10,
+                                                                (scenario
+                                                                    .stressMetrics
+                                                                    ?.predictedNextWeekMaximum ||
+                                                                    0) * 10,
                                                                 100
                                                             )}%`
                                                         }}
@@ -540,9 +490,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <Badge variant="outline">
                                                     {
                                                         scenario.input
-                                                            .hours_distribution
-                                                            .next_week
-                                                            .teaching_hours
+                                                            .teachingTotalHours
                                                     }
                                                     h
                                                 </Badge>
@@ -554,8 +502,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <Badge variant="outline">
                                                     {
                                                         scenario.input
-                                                            .hours_distribution
-                                                            .next_week.lab_hours
+                                                            .labTotalHours
                                                     }
                                                     h
                                                 </Badge>
@@ -567,9 +514,7 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                 <Badge variant="outline">
                                                     {
                                                         scenario.input
-                                                            .hours_distribution
-                                                            .next_week
-                                                            .homework_hours
+                                                            .weeklyHomeworkHours
                                                     }
                                                     h
                                                 </Badge>
@@ -579,12 +524,12 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                                     Assignments:
                                                 </span>
                                                 <Badge variant="outline">
-                                                    {
-                                                        scenario.input
-                                                            .hours_distribution
-                                                            .next_week
-                                                            .assignment_hours
-                                                    }
+                                                    {scenario.assignments?.reduce(
+                                                        (sum, a) =>
+                                                            sum +
+                                                            a.hoursPerWeek,
+                                                        0
+                                                    ) || 0}
                                                     h
                                                 </Badge>
                                             </div>
@@ -604,31 +549,35 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                                             Assignment Schedule
                                         </h4>
                                         <div className="grid grid-cols-1 gap-2">
-                                            {scenario.input.assignments.map(
+                                            {scenario.assignments?.map(
                                                 (assignment) => (
                                                     <div
-                                                        key={assignment.id}
+                                                        key={
+                                                            assignment.assignmentId
+                                                        }
                                                         className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
                                                     >
                                                         <div>
                                                             <span className="font-medium">
                                                                 Assignment{" "}
-                                                                {assignment.id}
+                                                                {
+                                                                    assignment.assignmentNumber
+                                                                }
                                                             </span>
                                                             <div className="text-xs text-gray-500">
                                                                 Weeks{" "}
                                                                 {
-                                                                    assignment.start_week
+                                                                    assignment.startWeek
                                                                 }
                                                                 -
                                                                 {
-                                                                    assignment.end_week
+                                                                    assignment.endWeek
                                                                 }
                                                             </div>
                                                         </div>
                                                         <Badge>
                                                             {
-                                                                assignment.hours_per_week
+                                                                assignment.hoursPerWeek
                                                             }
                                                             h/week
                                                         </Badge>
@@ -648,8 +597,8 @@ export function StressScenarioView({ scenario }: StressScenarioViewProps) {
                         <span className="flex items-center">
                             <BarChart className="h-4 w-4 mr-1 text-indigo-500" />
                             Course stress analysis for{" "}
-                            {scenario.input.current_status.current_week}/
-                            {scenario.input.current_status.total_weeks} weeks
+                            {scenario.input.currentWeek}/
+                            {scenario.input.totalWeeks} weeks
                         </span>
                     </div>
                     <Button variant="outline" size="sm">

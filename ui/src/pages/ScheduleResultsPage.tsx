@@ -14,6 +14,7 @@ import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plan, BuilderScenario, CourseScenario } from "@/types/builder";
 import { AIExplanationBox } from "@/components/results/AIExplanationBox";
+import { getSimulationSet } from "@/services/simulationService";
 
 export default function ScheduleResultsPage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -27,11 +28,16 @@ export default function ScheduleResultsPage() {
         async function fetchPlan() {
             setIsLoading(true);
             try {
-                const res = await fetch(`/data/${projectId}.json`);
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch data: ${res.status}`);
+                let data;
+                if (projectId === "10001") {
+                    data = await getSimulationSet(projectId);
+                } else {
+                    const res = await fetch(`/data/${projectId}.json`);
+                    if (!res.ok) {
+                        throw new Error(`Failed to fetch data: ${res.status}`);
+                    }
+                    data = await res.json();
                 }
-                const data = await res.json();
                 setPlan(data);
                 setError(null);
             } catch (err) {
@@ -101,8 +107,8 @@ export default function ScheduleResultsPage() {
         // For stress plans, count scenarios with manageable stress (less than 7) as "feasible"
         feasibleCount = plan.scenarios.filter(
             (s) =>
-                (s as CourseScenario).output.stress_metrics.predicted_next_week
-                    .average < 7
+                (s as CourseScenario).stressMetrics?.predictedNextWeekAverage <
+                7
         ).length;
         infeasibleCount = plan.scenarios.length - feasibleCount;
     }
@@ -120,8 +126,8 @@ export default function ScheduleResultsPage() {
             );
         } else {
             const stressScenario = scenario as CourseScenario;
-            return stressScenario.output.stress_metrics.predicted_next_week
-                .average < 7 ? (
+            return (stressScenario.stressMetrics?.predictedNextWeekAverage ||
+                0) < 7 ? (
                 <span className="ml-2 w-2 h-2 bg-green-500 rounded-full"></span>
             ) : (
                 <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
