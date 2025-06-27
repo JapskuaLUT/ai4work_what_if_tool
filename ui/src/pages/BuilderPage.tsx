@@ -10,6 +10,7 @@ import { BuilderScenarioForm } from "@/components/builder/BuilderScenarioForm";
 import { BuilderLoadingState } from "@/components/builder/BuilderLoadingState";
 import { BuilderErrorState } from "@/components/builder/BuilderErrorState";
 import { Plan, BuilderScenario, CourseScenario } from "@/types/builder";
+import { getSimulationSet } from "@/services/simulationService";
 
 export default function BuilderPage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -21,8 +22,13 @@ export default function BuilderPage() {
         async function fetchPlan() {
             setIsLoading(true);
             try {
-                const res = await fetch(`/data/${projectId}.json`);
-                const data = await res.json();
+                let data;
+                if (projectId === "10001") {
+                    data = await getSimulationSet(projectId);
+                } else {
+                    const res = await fetch(`/data/${projectId}.json`);
+                    data = await res.json();
+                }
                 setPlan(data);
             } catch (error) {
                 console.error("Failed to fetch plan:", error);

@@ -22,17 +22,15 @@ export function BuilderStressScenarioCard({
 }: BuilderStressScenarioCardProps) {
     // Calculate total hours for next week
     const nextWeekTotal =
-        scenario.input.hours_distribution.next_week.teaching_hours +
-        scenario.input.hours_distribution.next_week.lab_hours +
-        scenario.input.hours_distribution.next_week.homework_hours +
-        scenario.input.hours_distribution.next_week.assignment_hours;
+        (scenario.input.teachingTotalHours || 0) +
+        (scenario.input.labTotalHours || 0) +
+        (scenario.input.weeklyHomeworkHours || 0) +
+        (scenario.assignments?.reduce((sum, a) => sum + a.hoursPerWeek, 0) ||
+            0);
 
-    // Calculate total remaining hours
-    const totalRemaining =
-        scenario.input.hours_distribution.remaining.teaching_hours +
-        scenario.input.hours_distribution.remaining.lab_hours +
-        scenario.input.hours_distribution.remaining.homework_hours +
-        scenario.input.hours_distribution.remaining.assignment_hours;
+    // Calculate total remaining hours (assuming these are not directly provided by API for now, or need calculation)
+    // For simplicity, let's use the same values as nextWeekTotal if not explicitly available
+    const totalRemaining = nextWeekTotal; // Placeholder, adjust if backend provides this
 
     // Helper function to determine stress color
     const getStressColor = (value: number) => {
@@ -58,8 +56,7 @@ export function BuilderStressScenarioCard({
                 <div className="mb-4">
                     <h3 className="text-base font-semibold flex items-center text-gray-800 dark:text-gray-200 mb-2">
                         <BookOpen className="mr-2 h-5 w-5 text-blue-600" />{" "}
-                        {scenario.input.course_info.course_name} (
-                        {scenario.input.course_info.course_id})
+                        {scenario.input.courseName} ({scenario.input.courseId})
                     </h3>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="flex items-center">
@@ -67,7 +64,7 @@ export function BuilderStressScenarioCard({
                                 ECTS:
                             </span>
                             <Badge variant="outline" className="ml-2">
-                                {scenario.input.course_info.ects}
+                                {scenario.input.ects}
                             </Badge>
                         </div>
                         <div className="flex items-center">
@@ -76,17 +73,15 @@ export function BuilderStressScenarioCard({
                             </span>
                             <Badge
                                 variant={
-                                    scenario.input.course_info
-                                        .topic_difficulty > 7
+                                    scenario.input.topicDifficulty > 7
                                         ? "destructive"
-                                        : scenario.input.course_info
-                                              .topic_difficulty > 5
+                                        : scenario.input.topicDifficulty > 5
                                         ? "secondary"
                                         : "outline"
                                 }
                                 className="ml-2"
                             >
-                                {scenario.input.course_info.topic_difficulty}/10
+                                {scenario.input.topicDifficulty}/10
                             </Badge>
                         </div>
                         <div className="flex items-center">
@@ -95,12 +90,12 @@ export function BuilderStressScenarioCard({
                             </span>
                             <span
                                 className={`ml-2 text-sm ${
-                                    scenario.input.course_info.prerequisites
+                                    scenario.input.prerequisites
                                         ? "text-blue-600"
                                         : "text-gray-500"
                                 }`}
                             >
-                                {scenario.input.course_info.prerequisites
+                                {scenario.input.prerequisites
                                     ? "Required"
                                     : "None"}
                             </span>
@@ -110,7 +105,7 @@ export function BuilderStressScenarioCard({
                                 Attendance:
                             </span>
                             <span className="ml-2 text-sm capitalize">
-                                {scenario.input.course_info.attendance_method}
+                                {scenario.input.attendanceMethod}
                             </span>
                         </div>
                         <div className="flex items-center">
@@ -118,7 +113,7 @@ export function BuilderStressScenarioCard({
                                 Students:
                             </span>
                             <span className="ml-2 text-sm">
-                                {scenario.input.students.count}
+                                {scenario.input.studentCount}
                             </span>
                         </div>
                     </div>
@@ -137,25 +132,19 @@ export function BuilderStressScenarioCard({
                             <span className="flex-1">Success Rate:</span>
                             <Badge
                                 variant={
-                                    scenario.input.course_info
-                                        .success_rate_percent > 75
+                                    scenario.input.successRatePercent > 75
                                         ? "outline"
                                         : "secondary"
                                 }
                             >
-                                {
-                                    scenario.input.course_info
-                                        .success_rate_percent
-                                }
-                                %
+                                {scenario.input.successRatePercent}%
                             </Badge>
                         </div>
                         <div className="flex items-center">
                             <span className="flex-1">Avg. Grade:</span>
                             <Badge variant="outline">
-                                {scenario.input.course_info.average_grade.toFixed(
-                                    1
-                                )}
+                                {scenario.input.averageGrade?.toFixed(1) ||
+                                    "N/A"}
                                 /4.0
                             </Badge>
                         </div>
@@ -173,15 +162,13 @@ export function BuilderStressScenarioCard({
                     <div className="space-y-2 text-sm mb-3">
                         <div>
                             <span className="font-medium">Teaching:</span>{" "}
-                            {scenario.input.course_info.teaching.days.join(
-                                ", "
-                            )}{" "}
-                            {scenario.input.course_info.teaching.time}
+                            {scenario.input.teachingDays.join(", ")}{" "}
+                            {scenario.input.teachingTime}
                         </div>
                         <div>
                             <span className="font-medium">Lab:</span>{" "}
-                            {scenario.input.course_info.lab.days.join(", ")}{" "}
-                            {scenario.input.course_info.lab.time}
+                            {scenario.input.labDays.join(", ")}{" "}
+                            {scenario.input.labTime}
                         </div>
                     </div>
 
@@ -190,20 +177,20 @@ export function BuilderStressScenarioCard({
                         Assignments
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        {scenario.input.assignments.map((assignment) => (
+                        {scenario.assignments?.map((assignment) => (
                             <div
-                                key={assignment.id}
+                                key={assignment.assignmentId}
                                 className="border rounded-md p-2 text-sm"
                             >
                                 <div className="font-medium">
-                                    Assignment {assignment.id}
+                                    Assignment {assignment.assignmentNumber}
                                 </div>
                                 <div className="text-xs text-gray-600">
-                                    Weeks {assignment.start_week}-
-                                    {assignment.end_week}
+                                    Weeks {assignment.startWeek}-
+                                    {assignment.endWeek}
                                 </div>
                                 <Badge variant="secondary" className="mt-1">
-                                    {assignment.hours_per_week} hours/week
+                                    {assignment.hoursPerWeek} hours/week
                                 </Badge>
                             </div>
                         ))}
@@ -222,10 +209,8 @@ export function BuilderStressScenarioCard({
                         <div>
                             <div className="flex justify-between text-xs mb-1">
                                 <span>
-                                    Progress: Week{" "}
-                                    {scenario.input.current_status.current_week}{" "}
-                                    of{" "}
-                                    {scenario.input.current_status.total_weeks}
+                                    Progress: Week {scenario.input.currentWeek}{" "}
+                                    of {scenario.input.totalWeeks}
                                 </span>
                             </div>
                             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
@@ -233,10 +218,8 @@ export function BuilderStressScenarioCard({
                                     className="h-2 bg-purple-600 rounded-full"
                                     style={{
                                         width: `${
-                                            (scenario.input.current_status
-                                                .current_week /
-                                                scenario.input.current_status
-                                                    .total_weeks) *
+                                            (scenario.input.currentWeek /
+                                                scenario.input.totalWeeks) *
                                             100
                                         }%`
                                     }}
@@ -254,29 +237,29 @@ export function BuilderStressScenarioCard({
                             <div className="flex justify-between text-xs mb-1">
                                 <span>
                                     Average:{" "}
-                                    {scenario.output.stress_metrics.current_week.average.toFixed(
+                                    {scenario.stressMetrics?.currentWeekAverage?.toFixed(
                                         1
-                                    )}
+                                    ) || "N/A"}
                                     /10
                                 </span>
                                 <span>
                                     Max:{" "}
-                                    {scenario.output.stress_metrics.current_week.maximum.toFixed(
+                                    {scenario.stressMetrics?.currentWeekMaximum?.toFixed(
                                         1
-                                    )}
+                                    ) || "N/A"}
                                     /10
                                 </span>
                             </div>
                             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                 <div
                                     className={`h-2 rounded-full ${getStressColor(
-                                        scenario.output.stress_metrics
-                                            .current_week.average
+                                        scenario.stressMetrics
+                                            ?.currentWeekAverage || 0
                                     )}`}
                                     style={{
                                         width: `${
-                                            scenario.output.stress_metrics
-                                                .current_week.average * 10
+                                            (scenario.stressMetrics
+                                                ?.currentWeekAverage || 0) * 10
                                         }%`
                                     }}
                                 ></div>
@@ -303,12 +286,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .remaining.teaching_hours
-                                            }
-                                            h
+                                            {scenario.input.teachingTotalHours}h
                                         </Badge>
                                     </div>
                                     <div className="text-sm">Lab Work:</div>
@@ -317,12 +295,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .remaining.lab_hours
-                                            }
-                                            h
+                                            {scenario.input.labTotalHours}h
                                         </Badge>
                                     </div>
                                     <div className="text-sm">Homework:</div>
@@ -331,11 +304,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .remaining.homework_hours
-                                            }
+                                            {scenario.input.weeklyHomeworkHours}
                                             h
                                         </Badge>
                                     </div>
@@ -345,11 +314,11 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .remaining.assignment_hours
-                                            }
+                                            {scenario.assignments?.reduce(
+                                                (sum, a) =>
+                                                    sum + a.hoursPerWeek,
+                                                0
+                                            ) || 0}
                                             h
                                         </Badge>
                                     </div>
@@ -390,12 +359,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .next_week.teaching_hours
-                                            }
-                                            h
+                                            {scenario.input.teachingTotalHours}h
                                         </Badge>
                                     </div>
                                     <div className="text-sm">Lab Work:</div>
@@ -404,12 +368,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .next_week.lab_hours
-                                            }
-                                            h
+                                            {scenario.input.labTotalHours}h
                                         </Badge>
                                     </div>
                                     <div className="text-sm">Homework:</div>
@@ -418,11 +377,7 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .next_week.homework_hours
-                                            }
+                                            {scenario.input.weeklyHomeworkHours}
                                             h
                                         </Badge>
                                     </div>
@@ -432,11 +387,11 @@ export function BuilderStressScenarioCard({
                                             variant="outline"
                                             className="min-w-12 text-center"
                                         >
-                                            {
-                                                scenario.input
-                                                    .hours_distribution
-                                                    .next_week.assignment_hours
-                                            }
+                                            {scenario.assignments?.reduce(
+                                                (sum, a) =>
+                                                    sum + a.hoursPerWeek,
+                                                0
+                                            ) || 0}
                                             h
                                         </Badge>
                                     </div>

@@ -1,0 +1,4 @@
+node_modules
+postgres_whatif_data/
+*.DS_Store
+.DS_Store

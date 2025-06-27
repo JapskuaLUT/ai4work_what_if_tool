@@ -20,11 +20,29 @@ type StressComparisonChartProps = {
     chartType: "stress" | "workload";
 };
 
+type StressChartData = {
+    name: string;
+    "Current Week": number;
+    "Next Week": number;
+    "Current Max": number;
+    "Next Week Max": number;
+};
+
+type WorkloadChartData = {
+    name: string;
+    Teaching: number;
+    Lab: number;
+    Homework: number;
+    Assignments: number;
+};
+
 export function StressComparisonChart({
     scenarios,
     chartType
 }: StressComparisonChartProps) {
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<StressChartData[] | WorkloadChartData[]>(
+        []
+    );
 
     useEffect(() => {
         if (chartType === "stress") {
@@ -36,17 +54,15 @@ export function StressComparisonChart({
 
     const prepareStressData = () => {
         // For the stress chart, we'll compare current and predicted stress levels
-        const chartData = scenarios.map((scenario) => {
+        const chartData: StressChartData[] = scenarios.map((scenario) => {
             return {
                 name: `Scenario ${scenario.scenarioId}`,
-                "Current Week":
-                    scenario.output.stress_metrics.current_week.average,
+                "Current Week": scenario.stressMetrics?.currentWeekAverage || 0,
                 "Next Week":
-                    scenario.output.stress_metrics.predicted_next_week.average,
-                "Current Max":
-                    scenario.output.stress_metrics.current_week.maximum,
+                    scenario.stressMetrics?.predictedNextWeekAverage || 0,
+                "Current Max": scenario.stressMetrics?.currentWeekMaximum || 0,
                 "Next Week Max":
-                    scenario.output.stress_metrics.predicted_next_week.maximum
+                    scenario.stressMetrics?.predictedNextWeekMaximum || 0
             };
         });
 
@@ -55,16 +71,17 @@ export function StressComparisonChart({
 
     const prepareWorkloadData = () => {
         // For the workload chart, we'll show the distribution of hours in the next week
-        const chartData = scenarios.map((scenario) => {
+        const chartData: WorkloadChartData[] = scenarios.map((scenario) => {
             return {
                 name: `Scenario ${scenario.scenarioId}`,
-                Teaching:
-                    scenario.input.hours_distribution.next_week.teaching_hours,
-                Lab: scenario.input.hours_distribution.next_week.lab_hours,
-                Homework:
-                    scenario.input.hours_distribution.next_week.homework_hours,
+                Teaching: scenario.input.teachingTotalHours || 0,
+                Lab: scenario.input.labTotalHours || 0,
+                Homework: scenario.input.weeklyHomeworkHours || 0,
                 Assignments:
-                    scenario.input.hours_distribution.next_week.assignment_hours
+                    scenario.assignments?.reduce(
+                        (sum, a) => sum + a.hoursPerWeek,
+                        0
+                    ) || 0
             };
         });
 

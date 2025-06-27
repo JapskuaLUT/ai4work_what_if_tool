@@ -41,7 +41,7 @@ What would you like to know about this scenario?`;
     } else {
         const stressScenario = scenario as CourseScenario;
         const predictedStress =
-            stressScenario.output.stress_metrics.predicted_next_week.average;
+            stressScenario.stressMetrics?.predictedNextWeekAverage || 0;
         const isManageable = predictedStress < 7;
 
         return isManageable
