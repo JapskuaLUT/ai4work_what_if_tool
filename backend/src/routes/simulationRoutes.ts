@@ -108,11 +108,16 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                 }
             });
 
-            return new Response(JSON.stringify({ caseId: caseId }), {
-                // Return caseId
-                status: 201,
-                headers: { "Content-Type": "application/json" }
-            });
+            return new Response(
+                JSON.stringify({
+                    caseId: caseId,
+                    resultsUrl: `https://app.localhost/results/${caseId}`
+                }),
+                {
+                    status: 201,
+                    headers: { "Content-Type": "application/json" }
+                }
+            );
         } catch (error: any) {
             console.error("Failed to save simulation set:", error);
             if (error.code === "23505") {

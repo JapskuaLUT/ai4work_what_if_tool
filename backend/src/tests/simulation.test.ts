@@ -20,6 +20,9 @@ test("POST /api/simulations - Create a new simulation set", async () => {
     expect(postResponse.status).toBe(201);
     const postBody = await postResponse.json();
     expect(postBody.caseId).toBe(testData.caseId); // Expect the same caseId back
+    expect(postBody.resultsUrl).toBe(
+        `https://app.localhost/results/${testData.caseId}`
+    );
 });
 
 test("GET /api/simulations/:caseId - Retrieve a simulation set", async () => {
