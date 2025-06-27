@@ -1,11 +1,11 @@
 {
-    "case_id": "test-case-12345",
+    "caseId": "test-case-10001",
     "name": "Sample Simulation Set",
     "kind": "academic",
     "description": "A sample simulation set for testing API endpoints.",
     "scenarios": [
         {
-            "scenario_id": 1,
+            "scenarioId": 1,
             "input": {
                 "course_name": "Introduction to AI",
                 "course_id": "AI101",
@@ -28,27 +28,27 @@
             },
             "assignments": [
                 {
-                    "assignment_number": 1,
-                    "start_week": 2,
-                    "end_week": 4,
-                    "hours_per_week": 3
+                    "assignmentNumber": 1,
+                    "startWeek": 2,
+                    "endWeek": 4,
+                    "hoursPerWeek": 3
                 },
                 {
-                    "assignment_number": 2,
-                    "start_week": 6,
-                    "end_week": 8,
-                    "hours_per_week": 4
+                    "assignmentNumber": 2,
+                    "startWeek": 6,
+                    "endWeek": 8,
+                    "hoursPerWeek": 4
                 }
             ],
-            "stress_metrics": {
-                "current_week_average": 2.5,
-                "current_week_maximum": 4.0,
-                "predicted_next_week_average": 2.8,
-                "predicted_next_week_maximum": 4.5
+            "stressMetrics": {
+                "currentWeekAverage": 2.5,
+                "currentWeekMaximum": 4.0,
+                "predictedNextWeekAverage": 2.8,
+                "predictedNextWeekMaximum": 4.5
             }
         },
         {
-            "scenario_id": 2,
+            "scenarioId": 2,
             "input": {
                 "course_name": "Advanced Machine Learning",
                 "course_id": "ML500",
@@ -71,17 +71,17 @@
             },
             "assignments": [
                 {
-                    "assignment_number": 1,
-                    "start_week": 3,
-                    "end_week": 5,
-                    "hours_per_week": 5
+                    "assignmentNumber": 1,
+                    "startWeek": 3,
+                    "endWeek": 5,
+                    "hoursPerWeek": 5
                 }
             ],
-            "stress_metrics": {
-                "current_week_average": 3.0,
-                "current_week_maximum": 5.0,
-                "predicted_next_week_average": 3.2,
-                "predicted_next_week_maximum": 5.5
+            "stressMetrics": {
+                "currentWeekAverage": 3.0,
+                "currentWeekMaximum": 5.0,
+                "predictedNextWeekAverage": 3.2,
+                "predictedNextWeekMaximum": 5.5
             }
         }
     ]

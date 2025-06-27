@@ -11,63 +11,71 @@ import { eq } from "drizzle-orm";
 
 export const simulationRoutes = new Elysia({ prefix: "/simulations" })
     .post("/", async (c) => {
-        const simulationSetData = c.body as any; // Elysia uses c.body for POST data
-
-        // Basic validation
-        if (!simulationSetData || !simulationSetData.case_id) {
-            return new Response("Invalid simulation set data provided.", {
-                status: 400
-            });
-        }
-
+        const simulationSetData = c.body as any;
         const {
-            case_id,
+            caseId,
             name,
             kind,
             description,
             scenarios: scenariosData
-        } = simulationSetData;
+        } = simulationSetData; // Expect caseId from client
 
         try {
             await db.transaction(async (tx) => {
-                // 1. Insert into simulation_sets
+                // 1. Insert the main simulation_set using the provided caseId
                 await tx.insert(simulation_sets).values({
-                    case_id,
+                    case_id: caseId, // Use case_id from client
                     name,
                     kind,
                     description
                 });
 
                 if (scenariosData && scenariosData.length > 0) {
-                    // 2. Insert into scenarios
-                    const scenariosToInsert = scenariosData.map((s: any) => ({
-                        ...s.input,
-                        scenario_id: s.scenario_id,
-                        case_id
-                    }));
-                    await tx.insert(scenarios).values(scenariosToInsert);
+                    // 2. Loop through each scenario to insert it and its children
+                    for (const scenarioData of scenariosData) {
+                        // Insert the scenario using provided scenarioId and caseId
+                        await tx.insert(scenarios).values({
+                            ...scenarioData.input,
+                            scenario_id: scenarioData.scenarioId, // Use scenarioId from client
+                            case_id: caseId // Use caseId from client
+                        });
 
-                    // 3. Insert into assignments and stress_metrics for each scenario
-                    for (const scenario of scenariosData) {
+                        // Insert assignments with the correct IDs
                         if (
-                            scenario.assignments &&
-                            scenario.assignments.length > 0
+                            scenarioData.assignments &&
+                            scenarioData.assignments.length > 0
                         ) {
                             const assignmentsToInsert =
-                                scenario.assignments.map((a: any) => ({
-                                    ...a,
-                                    scenario_id: scenario.scenario_id,
-                                    case_id
+                                scenarioData.assignments.map((a: any) => ({
+                                    assignment_number: a.assignmentNumber,
+                                    start_week: a.startWeek,
+                                    end_week: a.endWeek,
+                                    hours_per_week: a.hoursPerWeek,
+                                    scenario_id: scenarioData.scenarioId, // Use scenarioId from client
+                                    case_id: caseId // Use caseId from client
                                 }));
                             await tx
                                 .insert(assignments)
                                 .values(assignmentsToInsert);
                         }
-                        if (scenario.stress_metrics) {
+
+                        // Insert stress metrics with the correct IDs
+                        if (scenarioData.stressMetrics) {
                             const stressMetricsToInsert = {
-                                ...scenario.stress_metrics,
-                                scenario_id: scenario.scenario_id,
-                                case_id
+                                current_week_average:
+                                    scenarioData.stressMetrics
+                                        .currentWeekAverage,
+                                current_week_maximum:
+                                    scenarioData.stressMetrics
+                                        .currentWeekMaximum,
+                                predicted_next_week_average:
+                                    scenarioData.stressMetrics
+                                        .predictedNextWeekAverage,
+                                predicted_next_week_maximum:
+                                    scenarioData.stressMetrics
+                                        .predictedNextWeekMaximum,
+                                scenario_id: scenarioData.scenarioId, // Use scenarioId from client
+                                case_id: caseId // Use caseId from client
                             };
                             await tx
                                 .insert(stress_metrics)
@@ -77,7 +85,8 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                 }
             });
 
-            return new Response(JSON.stringify({ case_id: case_id }), {
+            return new Response(JSON.stringify({ caseId: caseId }), {
+                // Return caseId
                 status: 201,
                 headers: { "Content-Type": "application/json" }
             });
@@ -86,7 +95,7 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
             if (error.code === "23505") {
                 // Unique violation
                 return new Response(
-                    `Simulation set with case_id '${case_id}' already exists.`,
+                    `Simulation set with caseId '${caseId}' already exists.`,
                     { status: 409 }
                 );
             }
@@ -96,12 +105,13 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
             );
         }
     })
-    .get("/:case_id", async (c) => {
-        const { case_id } = c.params; // Elysia uses c.params for path parameters
+    .get("/:caseId", async (c) => {
+        // Changed path parameter to caseId
+        const { caseId } = c.params;
 
         try {
             const simulationSet = await db.query.simulation_sets.findFirst({
-                where: eq(simulation_sets.case_id, case_id),
+                where: eq(simulation_sets.case_id, caseId), // Query by case_id
                 with: {
                     scenarios: {
                         with: {
@@ -121,14 +131,64 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
             // The structure from the DB doesn't perfectly match the desired input/output JSON.
             // We need to re-map it to the expected format.
             const response = {
-                ...simulationSet,
+                caseId: simulationSet.case_id, // Map case_id to caseId
+                name: simulationSet.name,
+                kind: simulationSet.kind,
+                description: simulationSet.description,
+                createdAt: simulationSet.created_at,
+                updatedAt: simulationSet.updated_at,
                 scenarios: simulationSet.scenarios.map((s) => {
-                    const { assignments, stress_metrics, ...input } = s;
+                    const {
+                        assignments,
+                        stress_metrics,
+                        scenario_id,
+                        case_id,
+                        created_at,
+                        updated_at,
+                        ...input
+                    } = s; // Destructure new fields
                     return {
-                        scenario_id: s.scenario_id,
-                        input: input,
-                        assignments: assignments,
-                        stress_metrics: stress_metrics[0] || null // Assuming one-to-one for stress metrics per scenario
+                        scenarioId: scenario_id, // Map scenario_id to scenarioId
+                        input: {
+                            ...input,
+                            createdAt: created_at,
+                            updatedAt: updated_at
+                        },
+                        assignments: assignments.map((a) => ({
+                            assignmentId: a.assignment_id,
+                            scenarioId: a.scenario_id,
+                            caseId: a.case_id,
+                            assignmentNumber: a.assignment_number,
+                            startWeek: a.start_week,
+                            endWeek: a.end_week,
+                            hoursPerWeek: a.hours_per_week,
+                            createdAt: a.created_at
+                        })),
+                        stressMetrics: stress_metrics[0]
+                            ? {
+                                  stressMetricId:
+                                      stress_metrics[0].stress_metric_id,
+                                  scenarioId: stress_metrics[0].scenario_id,
+                                  caseId: stress_metrics[0].case_id,
+                                  currentWeekAverage: parseFloat(
+                                      stress_metrics[0]
+                                          .current_week_average as string
+                                  ),
+                                  currentWeekMaximum: parseFloat(
+                                      stress_metrics[0]
+                                          .current_week_maximum as string
+                                  ),
+                                  predictedNextWeekAverage: parseFloat(
+                                      stress_metrics[0]
+                                          .predicted_next_week_average as string
+                                  ),
+                                  predictedNextWeekMaximum: parseFloat(
+                                      stress_metrics[0]
+                                          .predicted_next_week_maximum as string
+                                  ),
+                                  calculatedAt: stress_metrics[0].calculated_at
+                              }
+                            : null
                     };
                 })
             };
