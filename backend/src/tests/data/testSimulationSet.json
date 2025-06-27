@@ -1,0 +1,88 @@
+{
+    "case_id": "test-case-12345",
+    "name": "Sample Simulation Set",
+    "kind": "academic",
+    "description": "A sample simulation set for testing API endpoints.",
+    "scenarios": [
+        {
+            "scenario_id": 1,
+            "input": {
+                "course_name": "Introduction to AI",
+                "course_id": "AI101",
+                "teaching_total_hours": 40,
+                "teaching_days": ["Monday", "Wednesday"],
+                "teaching_time": "10:00-12:00",
+                "lab_total_hours": 20,
+                "lab_days": ["Friday"],
+                "lab_time": "14:00-16:00",
+                "ects": 5,
+                "topic_difficulty": 3,
+                "prerequisites": true,
+                "weekly_homework_hours": 5,
+                "total_weeks": 10,
+                "attendance_method": "hybrid",
+                "success_rate_percent": 85.5,
+                "average_grade": 4.2,
+                "student_count": 100,
+                "current_week": 1
+            },
+            "assignments": [
+                {
+                    "assignment_number": 1,
+                    "start_week": 2,
+                    "end_week": 4,
+                    "hours_per_week": 3
+                },
+                {
+                    "assignment_number": 2,
+                    "start_week": 6,
+                    "end_week": 8,
+                    "hours_per_week": 4
+                }
+            ],
+            "stress_metrics": {
+                "current_week_average": 2.5,
+                "current_week_maximum": 4.0,
+                "predicted_next_week_average": 2.8,
+                "predicted_next_week_maximum": 4.5
+            }
+        },
+        {
+            "scenario_id": 2,
+            "input": {
+                "course_name": "Advanced Machine Learning",
+                "course_id": "ML500",
+                "teaching_total_hours": 60,
+                "teaching_days": ["Tuesday", "Thursday"],
+                "teaching_time": "09:00-12:00",
+                "lab_total_hours": 30,
+                "lab_days": ["Monday"],
+                "lab_time": "13:00-16:00",
+                "ects": 10,
+                "topic_difficulty": 5,
+                "prerequisites": true,
+                "weekly_homework_hours": 10,
+                "total_weeks": 12,
+                "attendance_method": "online",
+                "success_rate_percent": 70.0,
+                "average_grade": 3.5,
+                "student_count": 50,
+                "current_week": 1
+            },
+            "assignments": [
+                {
+                    "assignment_number": 1,
+                    "start_week": 3,
+                    "end_week": 5,
+                    "hours_per_week": 5
+                }
+            ],
+            "stress_metrics": {
+                "current_week_average": 3.0,
+                "current_week_maximum": 5.0,
+                "predicted_next_week_average": 3.2,
+                "predicted_next_week_maximum": 5.5
+            }
+        }
+    ]
+}
