@@ -13,18 +13,20 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
     .post("/", async (c) => {
         const simulationSetData = c.body as any;
         const {
-            caseId,
             name,
             kind,
             description,
             scenarios: scenariosData
-        } = simulationSetData; // Expect caseId from client
+        } = simulationSetData;
+
+        // Generate a new UUID for caseId
+        const caseId = crypto.randomUUID();
 
         try {
             await db.transaction(async (tx) => {
-                // 1. Insert the main simulation_set using the provided caseId
+                // 1. Insert the main simulation_set using the generated caseId
                 await tx.insert(simulation_sets).values({
-                    case_id: caseId, // Use case_id from client
+                    case_id: caseId,
                     name,
                     kind,
                     description
@@ -33,7 +35,7 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                 if (scenariosData && scenariosData.length > 0) {
                     // 2. Loop through each scenario to insert it and its children
                     for (const scenarioData of scenariosData) {
-                        // Insert the scenario using provided scenarioId and caseId
+                        // Insert the scenario using provided scenarioId and generated caseId
                         await tx.insert(scenarios).values({
                             scenario_id: scenarioData.scenarioId,
                             case_id: caseId,
@@ -74,8 +76,8 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                                     start_week: a.startWeek,
                                     end_week: a.endWeek,
                                     hours_per_week: a.hoursPerWeek,
-                                    scenario_id: scenarioData.scenarioId, // Use scenarioId from client
-                                    case_id: caseId // Use caseId from client
+                                    scenario_id: scenarioData.scenarioId,
+                                    case_id: caseId
                                 }));
                             await tx
                                 .insert(assignments)
@@ -97,8 +99,8 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                                 predicted_next_week_maximum:
                                     scenarioData.stressMetrics
                                         .predictedNextWeekMaximum,
-                                scenario_id: scenarioData.scenarioId, // Use scenarioId from client
-                                case_id: caseId // Use caseId from client
+                                scenario_id: scenarioData.scenarioId,
+                                case_id: caseId
                             };
                             await tx
                                 .insert(stress_metrics)
@@ -120,13 +122,7 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
             );
         } catch (error: any) {
             console.error("Failed to save simulation set:", error);
-            if (error.code === "23505") {
-                // Unique violation
-                return new Response(
-                    `Simulation set with caseId '${caseId}' already exists.`,
-                    { status: 409 }
-                );
-            }
+            // No longer checking for unique violation on caseId from client
             return new Response(
                 "An error occurred while saving the simulation set.",
                 { status: 500 }
