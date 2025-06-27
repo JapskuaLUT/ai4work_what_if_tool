@@ -1,13 +1,25 @@
-export type ScenarioTasks = {
-    lectures: string[];
-    exercisesHours: number;
-    projectHours: number;
-    selfLearningHours: number;
-};
-
 export type ScenarioInput = {
-    tasks: ScenarioTasks;
-    constraints: string[];
+    description: string;
+    courseName: string;
+    courseId: string;
+    teachingTotalHours: number;
+    teachingDays: string[];
+    teachingTime: string;
+    labTotalHours: number;
+    labDays: string[];
+    labTime: string;
+    ects: number;
+    topicDifficulty: number;
+    prerequisites: boolean;
+    weeklyHomeworkHours: number;
+    totalWeeks: number;
+    attendanceMethod: "in_person" | "online" | "hybrid" | "self_paced";
+    successRatePercent: number;
+    averageGrade: number;
+    studentCount: number;
+    currentWeek: number;
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type TimeBlock = {

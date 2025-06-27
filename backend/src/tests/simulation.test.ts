@@ -55,8 +55,8 @@ test("GET /api/simulations/:caseId - Retrieve a simulation set", async () => {
         (s: any) => s.scenarioId === originalScenario1.scenarioId
     );
     expect(retrievedScenario1).toBeDefined();
-    expect(retrievedScenario1.input.course_name).toBe(
-        originalScenario1.input.course_name
+    expect(retrievedScenario1.input.courseName).toBe(
+        originalScenario1.input.courseName
     );
     expect(retrievedScenario1.assignments.length).toBe(
         originalScenario1.assignments.length

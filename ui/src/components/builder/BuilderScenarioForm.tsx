@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
+import { BuilderScenario, CourseScenario } from "@/types/builder";
+import { ScenarioInput } from "@/types/scenario";
 
 type BuilderScenarioFormProps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onAddScenario: (scenario: any) => void;
+    onAddScenario: (scenario: BuilderScenario | CourseScenario) => void;
     scenarioType: "coursework" | "stress";
 };
 
@@ -20,76 +21,47 @@ export function BuilderScenarioForm({
 }: BuilderScenarioFormProps) {
     const [isFormVisible, setIsFormVisible] = useState(false);
 
-    // Create an empty form state for the specified scenario type
-    const getEmptyFormState = () => {
+    const getEmptyFormState = (): BuilderScenario | CourseScenario => {
         if (scenarioType === "stress") {
             return {
                 scenarioId: Date.now(),
                 description: "",
-                course_info: {
-                    course_name: "",
-                    course_id: "",
-                    teaching: {
-                        total_hours: 24,
-                        days: ["Monday", "Wednesday"],
-                        time: "10:00-12:00"
-                    },
-                    lab: {
-                        total_hours: 12,
-                        days: ["Tuesday"],
-                        time: "14:00-16:00"
-                    },
+                input: {
+                    courseName: "",
+                    courseId: "",
+                    teachingTotalHours: 24,
+                    teachingDays: ["Monday", "Wednesday"],
+                    teachingTime: "10:00-12:00",
+                    labTotalHours: 12,
+                    labDays: ["Tuesday"],
+                    labTime: "14:00-16:00",
                     ects: 6,
-                    topic_difficulty: 5,
+                    topicDifficulty: 5,
                     prerequisites: false,
-                    weekly_homework_hours: 4,
-                    total_weeks: 12,
-                    attendance_method: "hybrid",
-                    success_rate_percent: 75.0,
-                    average_grade: 3.0
-                },
+                    weeklyHomeworkHours: 4,
+                    totalWeeks: 12,
+                    attendanceMethod: "hybrid",
+                    successRatePercent: 75.0,
+                    averageGrade: 3.0,
+                    studentCount: 50,
+                    currentWeek: 3
+                } as ScenarioInput,
                 assignments: [
                     {
                         id: 1,
-                        start_week: 3,
-                        end_week: 5,
-                        hours_per_week: 4
+                        startWeek: 3,
+                        endWeek: 5,
+                        hoursPerWeek: 4
                     }
                 ],
-                current_status: {
-                    current_week: 3,
-                    total_weeks: 12
-                },
-                hours_distribution: {
-                    next_week: {
-                        teaching_hours: 4,
-                        lab_hours: 2,
-                        homework_hours: 4,
-                        assignment_hours: 4
-                    },
-                    remaining: {
-                        teaching_hours: 36,
-                        lab_hours: 18,
-                        homework_hours: 36,
-                        assignment_hours: 36
-                    }
-                },
-                students: {
-                    count: 50
-                },
-                stress_metrics: {
-                    current_week: {
-                        average: 5.0,
-                        maximum: 7.0
-                    },
-                    predicted_next_week: {
-                        average: 5.5,
-                        maximum: 7.5
-                    }
+                stressMetrics: {
+                    currentWeekAverage: 5.0,
+                    currentWeekMaximum: 7.0,
+                    predictedNextWeekAverage: 5.5,
+                    predictedNextWeekMaximum: 7.5
                 }
             };
         } else {
-            // Default coursework scenario template
             return {
                 scenarioId: Date.now(),
                 description: "",
@@ -110,23 +82,15 @@ export function BuilderScenarioForm({
         }
     };
 
-    const [formState, setFormState] = useState(getEmptyFormState());
+    const [formState, setFormState] = useState<
+        BuilderScenario | CourseScenario
+    >(getEmptyFormState());
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onAddScenario(formState);
         setFormState(getEmptyFormState());
         setIsFormVisible(false);
-    };
-
-    const updateFormField = (field: string, value: string) => {
-        setFormState((prev) => {
-            if (scenarioType === "stress") {
-                return { ...prev, [field]: value };
-            } else {
-                return { ...prev, [field]: value };
-            }
-        });
     };
 
     if (!isFormVisible) {
@@ -163,7 +127,10 @@ export function BuilderScenarioForm({
                             id="description"
                             value={formState.description}
                             onChange={(e) =>
-                                updateFormField("description", e.target.value)
+                                setFormState((prev) => ({
+                                    ...prev,
+                                    description: e.target.value
+                                }))
                             }
                             placeholder={`Describe your ${
                                 scenarioType === "stress"
@@ -185,16 +152,21 @@ export function BuilderScenarioForm({
                                     <Input
                                         id="courseName"
                                         value={
-                                            formState.course_info
-                                                ?.course_name || ""
+                                            (formState as CourseScenario).input
+                                                .courseName || ""
                                         }
                                         onChange={(e) =>
-                                            setFormState({
-                                                ...formState,
-                                                course_info: {
-                                                    ...formState.course_info,
-                                                    course_name: e.target.value
-                                                }
+                                            setFormState((prev) => {
+                                                const current =
+                                                    prev as CourseScenario;
+                                                return {
+                                                    ...current,
+                                                    input: {
+                                                        ...current.input,
+                                                        courseName:
+                                                            e.target.value
+                                                    }
+                                                };
                                             })
                                         }
                                         placeholder="e.g., Introduction to Computer Science"
@@ -206,16 +178,20 @@ export function BuilderScenarioForm({
                                     <Input
                                         id="courseId"
                                         value={
-                                            formState.course_info?.course_id ||
-                                            ""
+                                            (formState as CourseScenario).input
+                                                .courseId || ""
                                         }
                                         onChange={(e) =>
-                                            setFormState({
-                                                ...formState,
-                                                course_info: {
-                                                    ...formState.course_info,
-                                                    course_id: e.target.value
-                                                }
+                                            setFormState((prev) => {
+                                                const current =
+                                                    prev as CourseScenario;
+                                                return {
+                                                    ...current,
+                                                    input: {
+                                                        ...current.input,
+                                                        courseId: e.target.value
+                                                    }
+                                                };
                                             })
                                         }
                                         placeholder="e.g., CS101"
@@ -237,23 +213,28 @@ export function BuilderScenarioForm({
                                 <Input
                                     id="lectures"
                                     value={
-                                        formState.input?.tasks?.lectures?.join(
-                                            ", "
-                                        ) || ""
+                                        (
+                                            formState as BuilderScenario
+                                        ).input?.tasks?.lectures?.join(", ") ||
+                                        ""
                                     }
                                     onChange={(e) => {
                                         const lectures = e.target.value
                                             .split(",")
                                             .map((l) => l.trim());
-                                        setFormState({
-                                            ...formState,
-                                            input: {
-                                                ...formState.input,
-                                                tasks: {
-                                                    ...formState.input.tasks,
-                                                    lectures
+                                        setFormState((prev) => {
+                                            const current =
+                                                prev as BuilderScenario;
+                                            return {
+                                                ...current,
+                                                input: {
+                                                    ...current.input,
+                                                    tasks: {
+                                                        ...current.input.tasks,
+                                                        lectures
+                                                    }
                                                 }
-                                            }
+                                            };
                                         });
                                     }}
                                     placeholder="e.g., Mon 9-11, Wed 14-16"

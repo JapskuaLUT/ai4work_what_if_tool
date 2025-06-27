@@ -37,6 +37,26 @@ export type BuilderScenario = {
     };
 };
 
+import { ScenarioInput } from "./scenario";
+
+export interface CourseScenario {
+    scenarioId: number;
+    description: string;
+    input: ScenarioInput;
+    assignments: {
+        id: number;
+        startWeek: number;
+        endWeek: number;
+        hoursPerWeek: number;
+    }[];
+    stressMetrics: {
+        currentWeekAverage: number;
+        currentWeekMaximum: number;
+        predictedNextWeekAverage: number;
+        predictedNextWeekMaximum: number;
+    };
+}
+
 // Union type for any plan
 export type Plan = CourseworkPlan | StressPlan;
 
@@ -50,72 +70,4 @@ export interface CourseworkPlan extends BasePlan {
 export interface StressPlan extends BasePlan {
     kind: "stress";
     scenarios: CourseScenario[];
-}
-
-export interface CourseScenario {
-    scenarioId: number;
-    description: string;
-    input: {
-        course_info: {
-            course_name: string;
-            course_id: string;
-            teaching: {
-                total_hours: number;
-                days: string[];
-                time: string;
-            };
-            lab: {
-                total_hours: number;
-                days: string[];
-                time: string;
-            };
-            ects: number;
-            topic_difficulty: number;
-            prerequisites: boolean;
-            weekly_homework_hours: number;
-            total_weeks: number;
-            attendance_method: string;
-            success_rate_percent: number;
-            average_grade: number;
-        };
-        assignments: {
-            id: number;
-            start_week: number;
-            end_week: number;
-            hours_per_week: number;
-        }[];
-        current_status: {
-            current_week: number;
-            total_weeks: number;
-        };
-        hours_distribution: {
-            next_week: {
-                teaching_hours: number;
-                lab_hours: number;
-                homework_hours: number;
-                assignment_hours: number;
-            };
-            remaining: {
-                teaching_hours: number;
-                lab_hours: number;
-                homework_hours: number;
-                assignment_hours: number;
-            };
-        };
-        students: {
-            count: number;
-        };
-    };
-    output: {
-        stress_metrics: {
-            current_week: {
-                average: number;
-                maximum: number;
-            };
-            predicted_next_week: {
-                average: number;
-                maximum: number;
-            };
-        };
-    };
 }

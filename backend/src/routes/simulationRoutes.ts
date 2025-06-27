@@ -35,9 +35,32 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                     for (const scenarioData of scenariosData) {
                         // Insert the scenario using provided scenarioId and caseId
                         await tx.insert(scenarios).values({
-                            ...scenarioData.input,
-                            scenario_id: scenarioData.scenarioId, // Use scenarioId from client
-                            case_id: caseId // Use caseId from client
+                            scenario_id: scenarioData.scenarioId,
+                            case_id: caseId,
+                            description: scenarioData.input.description,
+                            course_name: scenarioData.input.courseName,
+                            course_id: scenarioData.input.courseId,
+                            teaching_total_hours:
+                                scenarioData.input.teachingTotalHours,
+                            teaching_days: scenarioData.input.teachingDays,
+                            teaching_time: scenarioData.input.teachingTime,
+                            lab_total_hours: scenarioData.input.labTotalHours,
+                            lab_days: scenarioData.input.labDays,
+                            lab_time: scenarioData.input.labTime,
+                            ects: scenarioData.input.ects,
+                            topic_difficulty:
+                                scenarioData.input.topicDifficulty,
+                            prerequisites: scenarioData.input.prerequisites,
+                            weekly_homework_hours:
+                                scenarioData.input.weeklyHomeworkHours,
+                            total_weeks: scenarioData.input.totalWeeks,
+                            attendance_method:
+                                scenarioData.input.attendanceMethod,
+                            success_rate_percent:
+                                scenarioData.input.successRatePercent,
+                            average_grade: scenarioData.input.averageGrade,
+                            student_count: scenarioData.input.studentCount,
+                            current_week: scenarioData.input.currentWeek
                         });
 
                         // Insert assignments with the correct IDs
@@ -143,14 +166,50 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                         stress_metrics,
                         scenario_id,
                         case_id,
+                        description,
+                        course_name,
+                        course_id,
+                        teaching_total_hours,
+                        teaching_days,
+                        teaching_time,
+                        lab_total_hours,
+                        lab_days,
+                        lab_time,
+                        ects,
+                        topic_difficulty,
+                        prerequisites,
+                        weekly_homework_hours,
+                        total_weeks,
+                        attendance_method,
+                        success_rate_percent,
+                        average_grade,
+                        student_count,
+                        current_week,
                         created_at,
-                        updated_at,
-                        ...input
-                    } = s; // Destructure new fields
+                        updated_at
+                    } = s;
                     return {
-                        scenarioId: scenario_id, // Map scenario_id to scenarioId
+                        scenarioId: scenario_id,
                         input: {
-                            ...input,
+                            description,
+                            courseName: course_name,
+                            courseId: course_id,
+                            teachingTotalHours: teaching_total_hours,
+                            teachingDays: teaching_days,
+                            teachingTime: teaching_time,
+                            labTotalHours: lab_total_hours,
+                            labDays: lab_days,
+                            labTime: lab_time,
+                            ects,
+                            topicDifficulty: topic_difficulty,
+                            prerequisites,
+                            weeklyHomeworkHours: weekly_homework_hours,
+                            totalWeeks: total_weeks,
+                            attendanceMethod: attendance_method,
+                            successRatePercent: success_rate_percent,
+                            averageGrade: average_grade,
+                            studentCount: student_count,
+                            currentWeek: current_week,
                             createdAt: created_at,
                             updatedAt: updated_at
                         },
