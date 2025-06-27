@@ -7,6 +7,7 @@ export interface BasePlan {
     name: string;
     description: string;
     kind: PlanKind;
+    scenarios: (BuilderScenario | CourseScenario)[];
 }
 
 export type BuilderTasks = {
@@ -44,10 +45,14 @@ export interface CourseScenario {
     description: string;
     input: ScenarioInput;
     assignments: {
-        id: number;
+        assignmentId: number;
+        scenarioId: number;
+        caseId: string;
+        assignmentNumber: number;
         startWeek: number;
         endWeek: number;
         hoursPerWeek: number;
+        createdAt: string;
     }[];
     stressMetrics: {
         currentWeekAverage: number;
@@ -63,11 +68,9 @@ export type Plan = CourseworkPlan | StressPlan;
 // Original coursework types
 export interface CourseworkPlan extends BasePlan {
     kind: "coursework";
-    scenarios: BuilderScenario[];
 }
 
 // New stress scenario types
 export interface StressPlan extends BasePlan {
     kind: "stress";
-    scenarios: CourseScenario[];
 }

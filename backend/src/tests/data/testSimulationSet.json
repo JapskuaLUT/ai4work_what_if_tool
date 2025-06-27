@@ -1,7 +1,7 @@
 {
     "caseId": "test-case-10001",
     "name": "Sample Simulation Set",
-    "kind": "academic",
+    "kind": "coursework",
     "description": "A sample simulation set for testing API endpoints.",
     "scenarios": [
         {

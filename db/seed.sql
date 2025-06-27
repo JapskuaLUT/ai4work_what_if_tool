@@ -3,7 +3,7 @@ TRUNCATE TABLE simulation_sets, scenarios, assignments, stress_metrics RESTART I
 
 -- Insert data into simulation_sets
 INSERT INTO simulation_sets (case_id, name, kind, description) VALUES
-('10001', 'Course Workload Stress Simulation Set', 'research', 'A dataset to simulate and evaluate university course workloads and student stress under varied conditions.');
+('10001', 'Course Workload Stress Simulation Set', 'stress', 'A dataset to simulate and evaluate university course workloads and student stress under varied conditions.');
 
 -- Insert data for Scenario 1
 INSERT INTO scenarios (case_id, scenario_id, description, course_name, course_id, teaching_total_hours, teaching_days, teaching_time, lab_total_hours, lab_days, lab_time, ects, topic_difficulty, prerequisites, weekly_homework_hours, total_weeks, attendance_method, success_rate_percent, average_grade, student_count, current_week) VALUES

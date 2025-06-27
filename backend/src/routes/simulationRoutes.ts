@@ -206,8 +206,10 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                             weeklyHomeworkHours: weekly_homework_hours,
                             totalWeeks: total_weeks,
                             attendanceMethod: attendance_method,
-                            successRatePercent: success_rate_percent,
-                            averageGrade: average_grade,
+                            successRatePercent: parseFloat(
+                                success_rate_percent as string
+                            ),
+                            averageGrade: parseFloat(average_grade as string),
                             studentCount: student_count,
                             currentWeek: current_week,
                             createdAt: created_at,

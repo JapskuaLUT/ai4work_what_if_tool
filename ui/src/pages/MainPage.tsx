@@ -56,6 +56,12 @@ export default function MainPage() {
                 >
                     💬 Test Ollama Chat
                 </Button>
+                <Button
+                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleProjectSelect("10001")}
+                >
+                    📊 Load Simulation from DB
+                </Button>
             </div>
         </div>
     );

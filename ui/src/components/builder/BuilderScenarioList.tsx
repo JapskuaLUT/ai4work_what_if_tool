@@ -1,9 +1,11 @@
 // ui/src/components/builder/BuilderScenarioList.tsx
 
-import { BuilderScenarioItem } from "@/components/builder/BuilderScenarioItem";
+import { BuilderScenarioCard } from "@/components/builder/BuilderScenarioCard";
+import { BuilderStressScenarioCard } from "@/components/builder/BuilderStressScenarioCard";
+import { BuilderScenario, CourseScenario } from "@/types/builder";
 
 type BuilderScenarioListProps = {
-    scenarios: any[]; // Using any[] to support different scenario types
+    scenarios: (BuilderScenario | CourseScenario)[];
     kind: "coursework" | "stress";
 };
 
@@ -30,13 +32,19 @@ export function BuilderScenarioList({
                 Scenarios
             </h2>
             <div className="grid grid-cols-1 gap-6">
-                {scenarios.map((scenario) => (
-                    <BuilderScenarioItem
-                        key={scenario.scenarioId}
-                        scenario={scenario}
-                        kind={kind}
-                    />
-                ))}
+                {scenarios.map((scenario) =>
+                    kind === "stress" ? (
+                        <BuilderStressScenarioCard
+                            key={scenario.scenarioId}
+                            scenario={scenario as CourseScenario}
+                        />
+                    ) : (
+                        <BuilderScenarioCard
+                            key={scenario.scenarioId}
+                            scenario={scenario as BuilderScenario}
+                        />
+                    )
+                )}
             </div>
         </div>
     );
