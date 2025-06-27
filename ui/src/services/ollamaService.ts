@@ -268,6 +268,7 @@ export async function streamCompletion(
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = "";
+        let buffer = ""; // Buffer to hold incomplete JSON lines
 
         try {
             while (true) {
@@ -279,6 +280,22 @@ export async function streamCompletion(
                 const { done, value } = await reader.read();
 
                 if (done) {
+                    // Process any remaining data in the buffer
+                    if (buffer.trim() !== "") {
+                        try {
+                            const data = JSON.parse(buffer) as ModelResponse;
+                            if (callbacks.onToken) {
+                                callbacks.onToken(data.response);
+                            }
+                            fullResponse += data.response;
+                        } catch (error) {
+                            console.error(
+                                "Error parsing remaining JSON from stream:",
+                                error,
+                                buffer
+                            );
+                        }
+                    }
                     if (callbacks.onComplete) {
                         callbacks.onComplete(fullResponse);
                     }
@@ -286,13 +303,18 @@ export async function streamCompletion(
                 }
 
                 const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
 
-                // Handle multiple JSON objects in the chunk
-                const lines = chunk
-                    .split("\n")
-                    .filter((line) => line.trim() !== "");
+                // Process complete JSON objects delimited by newlines
+                let newlineIndex;
+                while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+                    const line = buffer.substring(0, newlineIndex).trim();
+                    buffer = buffer.substring(newlineIndex + 1);
 
-                for (const line of lines) {
+                    if (line === "") {
+                        continue; // Skip empty lines
+                    }
+
                     try {
                         const data = JSON.parse(line) as ModelResponse;
 
@@ -303,9 +325,13 @@ export async function streamCompletion(
                         fullResponse += data.response;
 
                         if (data.done) {
+                            // If the 'done' flag is true, it means this is the last part of the response.
+                            // We can complete here, even if there's more in the buffer (it shouldn't happen with 'done' true).
                             if (callbacks.onComplete) {
                                 callbacks.onComplete(fullResponse);
                             }
+                            reader.cancel(); // Cancel further reads
+                            return; // Exit the function
                         }
                     } catch (error) {
                         console.error(
@@ -389,6 +415,7 @@ export async function streamChatCompletion(
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = "";
+        let buffer = ""; // Buffer to hold incomplete JSON lines
 
         try {
             while (true) {
@@ -400,6 +427,22 @@ export async function streamChatCompletion(
                 const { done, value } = await reader.read();
 
                 if (done) {
+                    // Process any remaining data in the buffer
+                    if (buffer.trim() !== "") {
+                        try {
+                            const data = JSON.parse(buffer) as ChatResponse;
+                            if (callbacks.onToken) {
+                                callbacks.onToken(data.message.content);
+                            }
+                            fullResponse += data.message.content;
+                        } catch (error) {
+                            console.error(
+                                "Error parsing remaining JSON from stream:",
+                                error,
+                                buffer
+                            );
+                        }
+                    }
                     if (callbacks.onComplete) {
                         callbacks.onComplete(fullResponse);
                     }
@@ -407,13 +450,18 @@ export async function streamChatCompletion(
                 }
 
                 const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
 
-                // Handle multiple JSON objects in the chunk
-                const lines = chunk
-                    .split("\n")
-                    .filter((line) => line.trim() !== "");
+                // Process complete JSON objects delimited by newlines
+                let newlineIndex;
+                while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+                    const line = buffer.substring(0, newlineIndex).trim();
+                    buffer = buffer.substring(newlineIndex + 1);
 
-                for (const line of lines) {
+                    if (line === "") {
+                        continue; // Skip empty lines
+                    }
+
                     try {
                         const data = JSON.parse(line) as ChatResponse;
 
@@ -424,9 +472,13 @@ export async function streamChatCompletion(
                         fullResponse += data.message.content;
 
                         if (data.done) {
+                            // If the 'done' flag is true, it means this is the last part of the response.
+                            // We can complete here, even if there's more in the buffer (it shouldn't happen with 'done' true).
                             if (callbacks.onComplete) {
                                 callbacks.onComplete(fullResponse);
                             }
+                            reader.cancel(); // Cancel further reads
+                            return; // Exit the function
                         }
                     } catch (error) {
                         console.error(
