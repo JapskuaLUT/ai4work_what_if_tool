@@ -30,37 +30,16 @@ export default function MainPage() {
 
             <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 justify-center max-w-3xl mx-auto">
                 <Button
-                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
-                    onClick={() => handleProjectSelect("coursework_1")}
+                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleProjectSelect("10001")}
                 >
-                    📘 Coursework Scheduling
-                </Button>
-                <Button
-                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
-                    onClick={() => handleProjectSelect("scenarios")}
-                >
-                    🧑‍🏫 Teaching Plan Scheduling
-                </Button>
-            </div>
-
-            <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 justify-center max-w-3xl mx-auto">
-                <Button
-                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
-                    onClick={() => handleProjectSelect("course_stress_1")}
-                >
-                    📘 Coursework Stress Handling
+                    📊 Load Stress Simulation
                 </Button>
                 <Button
                     className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"
                     onClick={() => navigate("/test/ollama")}
                 >
                     💬 Test Ollama Chat
-                </Button>
-                <Button
-                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleProjectSelect("10001")}
-                >
-                    📊 Load Simulation from DB
                 </Button>
             </div>
         </div>
