@@ -6,7 +6,9 @@ import {
     boolean,
     decimal,
     primaryKey,
-    foreignKey
+    foreignKey,
+    timestamp,
+    unique
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -15,7 +17,9 @@ export const simulation_sets = pgTable("simulation_sets", {
     case_id: text("case_id").primaryKey(),
     name: text("name").notNull(),
     kind: text("kind"),
-    description: text("description")
+    description: text("description"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
 });
 
 export const simulation_sets_relations = relations(
@@ -32,33 +36,39 @@ export const scenarios = pgTable(
         scenario_id: integer("scenario_id").notNull(),
         case_id: text("case_id")
             .notNull()
-            .references(() => simulation_sets.case_id),
+            .references(() => simulation_sets.case_id, { onDelete: "cascade" }),
         description: text("description"),
 
         // Course Info from the 'input' object
-        course_name: text("course_name"),
+        course_name: text("course_name").notNull(),
         course_id: text("course_id"),
-        teaching_total_hours: integer("teaching_total_hours"),
+        teaching_total_hours: integer("teaching_total_hours").notNull(),
         teaching_days: text("teaching_days").array(),
         teaching_time: text("teaching_time"),
-        lab_total_hours: integer("lab_total_hours"),
+        lab_total_hours: integer("lab_total_hours").notNull(),
         lab_days: text("lab_days").array(),
         lab_time: text("lab_time"),
-        ects: integer("ects"),
-        topic_difficulty: integer("topic_difficulty"),
-        prerequisites: boolean("prerequisites"),
-        weekly_homework_hours: integer("weekly_homework_hours"),
-        total_weeks: integer("total_weeks"),
-        attendance_method: text("attendance_method"),
+        ects: integer("ects").notNull(),
+        topic_difficulty: integer("topic_difficulty").notNull(),
+        prerequisites: boolean("prerequisites").notNull().default(false),
+        weekly_homework_hours: integer("weekly_homework_hours").notNull(),
+        total_weeks: integer("total_weeks").notNull(),
+        attendance_method: text("attendance_method").notNull(),
         success_rate_percent: decimal("success_rate_percent", {
             precision: 5,
             scale: 2
-        }),
-        average_grade: decimal("average_grade", { precision: 3, scale: 2 }),
-        student_count: integer("student_count"),
+        }).notNull(),
+        average_grade: decimal("average_grade", {
+            precision: 3,
+            scale: 2
+        }).notNull(),
+        student_count: integer("student_count").notNull(),
 
         // Current Status from the 'input' object
-        current_week: integer("current_week")
+        current_week: integer("current_week").notNull(),
+
+        created_at: timestamp("created_at").defaultNow().notNull(),
+        updated_at: timestamp("updated_at").defaultNow().notNull()
     },
     (table) => {
         return {
@@ -85,15 +95,21 @@ export const assignments = pgTable(
         scenario_id: integer("scenario_id").notNull(),
         assignment_number: integer("assignment_number").notNull(),
         start_week: integer("start_week"),
-        end_week: integer("end_week"),
-        hours_per_week: integer("hours_per_week")
+        end_week: integer("end_week").notNull(),
+        hours_per_week: integer("hours_per_week"),
+        created_at: timestamp("created_at").defaultNow().notNull()
     },
     (table) => {
         return {
             fk: foreignKey({
                 columns: [table.case_id, table.scenario_id],
                 foreignColumns: [scenarios.case_id, scenarios.scenario_id]
-            })
+            }).onDelete("cascade"),
+            unq: unique("case_scenario_assignment_unique").on(
+                table.case_id,
+                table.scenario_id,
+                table.assignment_number
+            )
         };
     }
 );
@@ -127,14 +143,15 @@ export const stress_metrics = pgTable(
         predicted_next_week_maximum: decimal("predicted_next_week_maximum", {
             precision: 4,
             scale: 2
-        })
+        }),
+        calculated_at: timestamp("calculated_at").defaultNow().notNull()
     },
     (table) => {
         return {
             fk: foreignKey({
                 columns: [table.case_id, table.scenario_id],
                 foreignColumns: [scenarios.case_id, scenarios.scenario_id]
-            })
+            }).onDelete("cascade")
         };
     }
 );
