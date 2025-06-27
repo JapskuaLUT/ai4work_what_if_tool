@@ -26,18 +26,15 @@ export default function ScheduleResultsPage() {
 
     useEffect(() => {
         async function fetchPlan() {
+            if (!projectId) {
+                setError("Project ID is missing.");
+                setIsLoading(false);
+                return;
+            }
+
             setIsLoading(true);
             try {
-                let data;
-                if (projectId === "10001") {
-                    data = await getSimulationSet(projectId);
-                } else {
-                    const res = await fetch(`/data/${projectId}.json`);
-                    if (!res.ok) {
-                        throw new Error(`Failed to fetch data: ${res.status}`);
-                    }
-                    data = await res.json();
-                }
+                const data = await getSimulationSet(projectId);
                 setPlan(data);
                 setError(null);
             } catch (err) {
