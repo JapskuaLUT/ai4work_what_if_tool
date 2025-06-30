@@ -231,7 +231,7 @@ Scenario data: <insert JSON>..."`
 
 ### 7.3 Future Extensions
 
-    •	Scenario Builder: Let users create or modify constraints (e.g., “Change max hours to 5/day”) and re-run the solver.
+    •	(**Deprecated**) Scenario Builder: Let users create or modify constraints (e.g., “Change max hours to 5/day”) and re-run the solver.
     •	Advanced Visualization: Add filters (e.g., only show lecture blocks), or color-coded conflict areas if partial constraints are broken.
     •	Multi-User Support: Different roles or permissions for editing constraints vs. viewing schedules.
 
