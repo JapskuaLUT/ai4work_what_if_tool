@@ -3,8 +3,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Fragment } from "react";
-import { Button } from "../ui/button";
-import { ArrowLeft } from "lucide-react";
 import { GlobalModelSelector } from "../global/GlobalModelSelector";
 
 const friendlyNames: Record<string, string> = {
@@ -18,8 +16,6 @@ const friendlyNames: Record<string, string> = {
 export function AppBar() {
     const location = useLocation();
     const navigate = useNavigate();
-
-    const canGoBack = location.pathname !== "/";
 
     const pathSegments = location.pathname.split("/").filter(Boolean); // e.g. ['builder', 'coursework']
 
@@ -60,16 +56,6 @@ export function AppBar() {
     return (
         <div className="border-b bg-background px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
-                {canGoBack && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate(-1)}
-                        aria-label="Go back"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                )}
                 <div
                     className="flex items-center cursor-pointer"
                     onClick={() => navigate("/")}
