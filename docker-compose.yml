@@ -44,6 +44,8 @@ services:
             - SERVER_URL=https://backend.localhost
             - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
             - JWT_SECRET=your-SHARED-strong-jwt-secret # We want to set the JWT_SECRET in the environment variables. This must match the one in auth and backend!
+            - APP_BASE_URL=https://app.localhost
+            - API_BASE_URL=https://backend.localhost
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.backend.rule=Host(`backend.localhost`)" # This is the backend service URL

@@ -1,7 +1,8 @@
 import { test, expect } from "bun:test";
 import fs from "fs/promises";
 import path from "path";
-const API_URL = "https://backend.localhost";
+const API_URL = process.env.API_BASE_URL || "https://backend.localhost";
+const APP_URL = process.env.APP_BASE_URL || "https://app.localhost";
 const SIMULATIONS_ENDPOINT = `${API_URL}/api/simulations`;
 
 test("POST /api/simulations - Create a new simulation set", async () => {
@@ -26,9 +27,7 @@ test("POST /api/simulations - Create a new simulation set", async () => {
     // Expect a caseId to be returned by the backend
     expect(typeof postBody.caseId).toBe("string");
     expect(postBody.caseId.length).toBeGreaterThan(0); // Check if it's not empty
-    expect(postBody.resultsUrl).toBe(
-        `https://app.localhost/results/${postBody.caseId}`
-    );
+    expect(postBody.resultsUrl).toBe(`${APP_URL}/results/${postBody.caseId}`);
 });
 
 test("GET /api/simulations/:caseId - Retrieve a simulation set", async () => {

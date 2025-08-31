@@ -117,6 +117,8 @@ The backend service is defined in the `docker-compose.yml` file with the service
 Key aspects of the Docker configuration include:
 
 -   **Volume Mounting**: The local `./backend` directory is mounted into the container at `/usr/src/app`, allowing for live code changes without rebuilding the image.
--   **Environment Variables**: The `JWT_SECRET`, `SERVER_URL`, and `DATABASE_URL` are passed to the container as environment variables.
+-   **Environment Variables**: The `JWT_SECRET`, `SERVER_URL`, `DATABASE_URL`, `APP_BASE_URL`, and `API_BASE_URL` are passed to the container as environment variables.
+    -   `APP_BASE_URL`: The base URL for the frontend application (e.g., `https://app.localhost`). Used for generating redirect or results URLs.
+    -   `API_BASE_URL`: The base URL for the backend API (e.g., `https://backend.localhost`). Used for internal API calls and testing.
 -   **Networking**: The service is connected to a custom bridge network (`what_if_network`) to communicate with other services.
 -   **Traefik Integration**: Labels are used to configure Traefik as a reverse proxy, making the backend accessible at `https://backend.localhost`.
