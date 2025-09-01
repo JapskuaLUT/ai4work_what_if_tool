@@ -334,7 +334,9 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                 return new Response(
                     JSON.stringify({
                         caseId: caseId,
-                        resultsUrl: `https://app.localhost/results/${caseId}`
+                        resultsUrl: `${
+                            process.env.APP_BASE_URL || "https://app.localhost"
+                        }/results/${caseId}`
                     }),
                     {
                         status: 201,
@@ -367,8 +369,10 @@ export const simulationRoutes = new Elysia({ prefix: "/simulations" })
                                     success: {
                                         value: {
                                             caseId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-                                            resultsUrl:
-                                                "https://app.localhost/results/a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                                            resultsUrl: `${
+                                                process.env.APP_BASE_URL ||
+                                                "https://app.localhost"
+                                            }/results/a1b2c3d4-e5f6-7890-1234-567890abcdef`
                                         }
                                     }
                                 }

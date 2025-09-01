@@ -58,6 +58,20 @@ The `docker-compose.yml` file defines the following services:
 
 All services are connected to a custom bridge network named `what_if_network`. This allows the services to communicate with each other by their service names. For example, the backend can connect to the database using the hostname `postgres`.
 
+### Environment Variables
+
+The UI application uses environment variables for configuration. These can be set in a `.env` file in the UI directory or through Docker Compose:
+
+-   `VITE_BACKEND_API_URL`: The base URL for the backend API (default: `https://backend.localhost/api`)
+-   `VITE_OLLAMA_API_URL`: The base URL for the Ollama API (default: `https://ollama.localhost/api`)
+
+These environment variables are automatically exposed to the client-side code through Vite's `import.meta.env` object.
+
 ### Running in Docker
 
 To run the UI and the entire application stack, you can use the `docker-compose up` command from the root of the project. This will build and start all the services defined in the `docker-compose.yml` file.
+
+The UI service in Docker Compose is configured with the following environment variables:
+
+-   `VITE_BACKEND_API_URL=https://backend.localhost/api`
+-   `VITE_OLLAMA_API_URL=https://ollama.localhost/api`

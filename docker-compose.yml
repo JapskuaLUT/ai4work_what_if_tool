@@ -26,6 +26,9 @@ services:
             - /usr/src/app/node_modules # A neat trick: We want to make sure the container node_modules does not get written by our local node_modules
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
+        environment:
+            - VITE_BACKEND_API_URL=https://backend.localhost/api
+            - VITE_OLLAMA_API_URL=https://ollama.localhost/api
         command: bun dev -- --host # We want to add the --host so that we can access the frontend from outside the container
         labels:
             - "traefik.enable=true"
@@ -44,6 +47,8 @@ services:
             - SERVER_URL=https://backend.localhost
             - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
             - JWT_SECRET=your-SHARED-strong-jwt-secret # We want to set the JWT_SECRET in the environment variables. This must match the one in auth and backend!
+            - APP_BASE_URL=https://app.localhost
+            - API_BASE_URL=https://backend.localhost
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.backend.rule=Host(`backend.localhost`)" # This is the backend service URL

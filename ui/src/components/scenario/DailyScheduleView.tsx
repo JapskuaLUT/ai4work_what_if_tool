@@ -30,12 +30,12 @@ export function DailyScheduleView({ day }: DailyScheduleViewProps) {
         const [startStr, endStr] = timeRange.split("–");
 
         // Parse times (handle both formats: "9" and "9:30")
-        let startHour = startStr.includes(":")
+        const startHour = startStr.includes(":")
             ? parseFloat(startStr.split(":")[0]) +
               parseFloat(startStr.split(":")[1]) / 60
             : parseFloat(startStr);
 
-        let endHour = endStr.includes(":")
+        const endHour = endStr.includes(":")
             ? parseFloat(endStr.split(":")[0]) +
               parseFloat(endStr.split(":")[1]) / 60
             : parseFloat(endStr);

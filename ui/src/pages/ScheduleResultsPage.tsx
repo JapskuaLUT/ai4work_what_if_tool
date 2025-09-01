@@ -143,16 +143,8 @@ export default function ScheduleResultsPage() {
 
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-8">
-            <div className="flex items-center mb-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/builder/${projectId}`)}
-                    className="mr-4"
-                >
-                    <ChevronLeft className="mr-1 h-4 w-4" /> Back to Builder
-                </Button>
-                <div className="flex items-center ml-auto space-x-2 text-sm text-gray-500">
+            <div className="flex justify-end mb-2">
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
                     <Clock className="h-4 w-4" />
                     <span>Generated on {new Date().toLocaleDateString()}</span>
                 </div>
