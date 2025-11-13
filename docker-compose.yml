@@ -1,6 +1,6 @@
 services:
     traefik:
-        image: traefik:v3.4.1
+        image: traefik:v3.5.3
         command:
             - "--configFile=/app/configs/traefik.toml" # This is the traefik configuration file
         volumes:
