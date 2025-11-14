@@ -8,6 +8,7 @@ import BuilderPage from "./pages/BuilderPage";
 import ScheduleResultsPage from "./pages/ScheduleResultsPage";
 import ComparePage from "./pages/ComparePage";
 import OllamaPage from "./pages/OllamaPage";
+import EducationalStressPage from "./pages/EducationalStressPage";
 
 function App() {
     return (
@@ -23,6 +24,10 @@ function App() {
                         <Route
                             path="/results/:projectId"
                             element={<ScheduleResultsPage />}
+                        />
+                        <Route
+                            path="/education/:caseId"
+                            element={<EducationalStressPage />}
                         />
                         <Route path="/compare" element={<ComparePage />} />
                         <Route path="/test/ollama" element={<OllamaPage />} />

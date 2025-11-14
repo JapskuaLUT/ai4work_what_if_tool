@@ -1,0 +1,1153 @@
+openapi: 3.0.3
+info:
+  title: Course Adjustment Simulation API
+  version: 1.0.0
+  description: |
+    This API defines the workflow for running **course adjustment simulations**
+    that redistribute workloads and optimize stress levels.  
+    Communication occurs over **HTTP**, and **security (authentication, authorization)**
+    is handled externally by the orchestrating client or gateway, not within this API.  
+
+    ### Workflow Overview
+    1. The client sends a **POST** request to `/api/simulations/` with course analysis input.  
+    2. The service returns a `caseId` and a `resultsUrl` for retrieving results later.  
+    3. The client then calls **GET** `/api/simulations/{caseId}` to fetch all generated adjustments.  
+    4. Optionally, a single adjustment can be fetched via **GET** `/api/simulations/{caseId}/{adjustmentId}`.
+
+servers:
+  - url: http://localhost
+
+paths:
+  /api/simulations/:
+    post:
+      summary: Start a new course adjustment simulation
+      description: |
+        Creates a new simulation case based on the provided course data.  
+        Returns a unique case identifier (`caseId`) and a `resultsUrl` to retrieve results later.
+      operationId: startSimulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseAnalysisInput'
+            example:
+              name: "Mathematics I Course Analysis"
+              description: "Tool generates multiple scenarios for all remaining weeks based on stress prediction rules"
+              course_info:
+                course_name: "Mathematics I"
+                course_id: "234"
+                teaching_hours: 65
+                lab_hours: 39
+                ects: 6
+                topic_difficulty: 3
+                has_prerequisites: false
+                total_homework_hours: 130
+                total_weeks: 13
+                total_assignments: 2
+                attendance_method: "Physical"
+                success_rate_percent: null
+                average_grade: null
+                course_sessions:
+                  - day: "monday"
+                    start_time: "18:00"
+                    end_time: "21:00"
+                  - day: "wednesday"
+                    start_time: "18:00"
+                    end_time: "20:00"
+                lab_sessions:
+                  - day: "friday"
+                    start_time: "18:00"
+                    end_time: "21:00"
+              assignment_weeks:
+                - id: 1
+                  start_week: 1
+                  end_week: 6
+                  extensions: []
+                - id: 2
+                  start_week: 1
+                  end_week: 10
+                  extensions: []
+              current_status:
+                current_week: 4
+                latest_adjusted_week: 0
+              week_schedules:
+                - week_number: 1
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                  stress_metrics:
+                    average_stress: 45.2
+                    maximum_stress: 62.8
+                - week_number: 2
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                  stress_metrics:
+                    average_stress: 52.0
+                    maximum_stress: 68.5
+                - week_number: 3
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                  stress_metrics:
+                    average_stress: 58.5
+                    maximum_stress: 75.2
+                - week_number: 4
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 5
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 6
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 7
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 8
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 9
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 10
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 11
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 12
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+                - week_number: 13
+                  adjusted: false
+                  teaching_hours: 5
+                  lab_hours: 3
+                  homework_hours: 10
+              optimization_request:
+                optimization_target: "minimize_stress_while_maintaining_learning_outcomes"
+                stress_threshold_warning: 75.0
+                stress_threshold_critical: 85.0
+                allow_extensions: true
+                max_extensions_per_assignment: 3
+                consider_all_remaining_weeks: true
+              students:
+                count: 0
+              metadata:
+                created_at: "2025-09-08T09:10:00.000Z"
+                creator_id: "NTOJyBXOtEOF8TBKn11T66J3wbX2"
+                semester_id: "0DbUGxMf6zFG89U6pQbm"
+
+      responses:
+        '200':
+          description: Simulation successfully initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationStartResponse'
+              example:
+                caseId: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                resultsUrl: "http://localhost/results/a1b2c3d4-e5f6-7890-1234-567890abcdef"
+
+  /api/simulations/{caseId}:
+    get:
+      summary: Retrieve all generated course adjustments
+      description: |
+        Retrieves all generated adjustments and corresponding weekly schedules
+        for a simulation case identified by `caseId`.
+      operationId: getAllAdjustments
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the simulation case
+      responses:
+        '200':
+          description: Successfully retrieved all generated adjustments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseAnalysisOutput'
+              example:
+                name: "Mathematics I Course Analysis"
+                description: "Tool generates multiple adjustments for all remaining weeks based on stress prediction rules"
+                course_info:
+                  course_name: "Mathematics I"
+                  course_id: "234"
+                  teaching_hours: 65
+                  lab_hours: 39
+                  ects: 6
+                  topic_difficulty: 3
+                  has_prerequisites: false
+                  total_homework_hours: 130
+                  total_weeks: 13
+                  total_assignments: 2
+                  attendance_method: "Physical"
+                  success_rate_percent: null
+                  average_grade: null
+                  course_sessions:
+                    - day: "monday"
+                      start_time: "18:00"
+                      end_time: "21:00"
+                    - day: "wednesday"
+                      start_time: "18:00"
+                      end_time: "20:00"
+                  lab_sessions:
+                    - day: "friday"
+                      start_time: "18:00"
+                      end_time: "21:00"
+
+                assignment_weeks:
+                  - id: 1
+                    start_week: 1
+                    end_week: 6
+                    extensions: []
+                  - id: 2
+                    start_week: 1
+                    end_week: 10
+                    extensions: []
+
+                current_status:
+                  current_week: 4
+                  latest_adjusted_week: 0
+
+                week_schedules:
+                  - adjustment_id: "adjustment_1"
+                    week_schedules:
+                      - week_number: 1
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 45.2, maximum_stress: 62.8 }
+                      - week_number: 2
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 52.0, maximum_stress: 68.5 }
+                      - week_number: 3
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 58.5, maximum_stress: 75.2 }
+                      - week_number: 4
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                      - week_number: 5
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 55.3, maximum_stress: 72.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 6
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 53.7, maximum_stress: 70.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 7
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 52.5, maximum_stress: 69.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 8
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 51.3, maximum_stress: 67.8 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 9
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 50.1, maximum_stress: 66.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 10
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 49.0, maximum_stress: 65.2 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 11
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 48.0, maximum_stress: 64.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 12
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 47.2, maximum_stress: 63.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 13
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 46.4, maximum_stress: 62.3 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+
+                  - adjustment_id: "adjustment_2"
+                    week_schedules:
+                      - week_number: 1
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 45.2, maximum_stress: 62.8 }
+                      - week_number: 2
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 52.0, maximum_stress: 68.5 }
+                      - week_number: 3
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 58.5, maximum_stress: 75.2 }
+                      - week_number: 4
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                      - week_number: 5
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 55.3, maximum_stress: 72.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 6
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 53.7, maximum_stress: 70.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 7
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 52.5, maximum_stress: 69.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 8
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 51.3, maximum_stress: 67.8 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 9
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 50.1, maximum_stress: 66.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 10
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 49.0, maximum_stress: 65.2 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 11
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 48.0, maximum_stress: 64.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 12
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 47.2, maximum_stress: 63.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 13
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 46.4, maximum_stress: 62.3 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+
+                  - adjustment_id: "adjustment_3"
+                    week_schedules:
+                      - week_number: 1
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 45.2, maximum_stress: 62.8 }
+                      - week_number: 2
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 52.0, maximum_stress: 68.5 }
+                      - week_number: 3
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                        stress_metrics: { average_stress: 58.5, maximum_stress: 75.2 }
+                      - week_number: 4
+                        adjusted: false
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 10
+                      - week_number: 5
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 55.3, maximum_stress: 72.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 6
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 53.7, maximum_stress: 70.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 7
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 52.5, maximum_stress: 69.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 8
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 51.3, maximum_stress: 67.8 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 9
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 50.1, maximum_stress: 66.4 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 10
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 49.0, maximum_stress: 65.2 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 11
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 48.0, maximum_stress: 64.0 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 12
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 47.2, maximum_stress: 63.1 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+                      - week_number: 13
+                        adjusted: true
+                        teaching_hours: 5
+                        lab_hours: 3
+                        homework_hours: 9
+                        stress_metrics: { average_stress: 46.4, maximum_stress: 62.3 }
+                        optimization_changes:
+                          original_homework_hours: 10
+                          original_teaching_hours: 5
+                          original_lab_hours: 3
+                          hours_redistributed: true
+                          change_reason: "stress_optimization_with_hour_redistribution"
+
+                optimization_request:
+                  optimization_target: "minimize_stress_while_maintaining_learning_outcomes"
+                  stress_threshold_warning: 75.0
+                  stress_threshold_critical: 85.0
+                  allow_extensions: true
+                  max_extensions_per_assignment: 3
+                  consider_all_remaining_weeks: true
+
+                students:
+                  count: 0
+
+                metadata:
+                  created_at: "2025-09-08T09:10:00.000Z"
+                  creator_id: "NTOJyBXOtEOF8TBKn11T66J3wbX2"
+                  semester_id: "0DbUGxMf6zFG89U6pQbm"
+
+
+  /api/simulations/{caseId}/{adjustmentId}:
+    get:
+      summary: Retrieve a specific adjustment result
+      description: |
+        Fetches the full weekly schedule and optimization data for a specific adjustment (scenario) generated under a simulation case.
+        Each adjustment corresponds to a complete set of weekly workload redistributions, stress metrics, and optimization change records.
+      operationId: getAdjustmentById
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          description: Unique simulation case identifier
+          schema:
+            type: string
+            format: uuid
+        - name: adjustmentId
+          in: path
+          required: true
+          description: Identifier of the adjustment (e.g., adjustment_2)
+          schema:
+            type: string
+            example: adjustment_2
+      responses:
+        '200':
+          description: Successfully retrieved the adjustment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdjustmentDetail'
+              example:
+                adjustment_id: "adjustment_2"
+                name: "Balanced Optimization with Redistribution"
+                feasibility_score: 89.2
+                key_changes: "Assignment extensions + strategic hour redistribution"
+                peak_stress: 98.6
+                total_hours_maintained: true
+                optimization_summary:
+                  stress_reduction_achieved: 18.7
+                  learning_outcomes_maintained: true
+                  total_adjustments_made: 12
+                  extensions_used: 2
+                  hours_redistributed: true
+                  total_hours_maintained: true
+                week_schedules:
+                  - week_number: 1
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 11
+                    stress_metrics:
+                      average_stress: 48.1
+                      maximum_stress: 63.4
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 2
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 9
+                    stress_metrics:
+                      average_stress: 46.5
+                      maximum_stress: 61.2
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 3
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 42.8
+                      maximum_stress: 58.3
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 4
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 9
+                    stress_metrics:
+                      average_stress: 40.1
+                      maximum_stress: 56.5
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 5
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 9
+                    stress_metrics:
+                      average_stress: 39.5
+                      maximum_stress: 54.7
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 6
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 9
+                    stress_metrics:
+                      average_stress: 38.8
+                      maximum_stress: 53.2
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 7
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 37.5
+                      maximum_stress: 52.1
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 8
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 36.9
+                      maximum_stress: 50.8
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 9
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 36.5
+                      maximum_stress: 49.7
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 10
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 35.9
+                      maximum_stress: 48.2
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 11
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 35.2
+                      maximum_stress: 47.0
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 12
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 34.8
+                      maximum_stress: 46.5
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+                  - week_number: 13
+                    adjusted: true
+                    teaching_hours: 5
+                    lab_hours: 3
+                    homework_hours: 8
+                    stress_metrics:
+                      average_stress: 34.1
+                      maximum_stress: 45.8
+                    optimization_changes:
+                      original_homework_hours: 10
+                      original_teaching_hours: 5
+                      original_lab_hours: 3
+                      hours_redistributed: true
+                      change_reason: "stress_optimization_with_hour_redistribution"
+        '404':
+          description: Adjustment not found
+        '500':
+          description: Internal server error
+
+
+
+components:
+  schemas:
+    SimulationStartResponse:
+      type: object
+      required: [caseId, resultsUrl]
+      properties:
+        caseId: { type: string, format: uuid }
+        resultsUrl: { type: string, format: uri }
+
+    CourseAnalysisInput:
+      type: object
+      required: [name, course_info, assignment_weeks, current_status, week_schedules, metadata]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        course_info: { $ref: '#/components/schemas/CourseInfoInput' }
+        assignment_weeks:
+          type: array
+          items: { $ref: '#/components/schemas/AssignmentWeekInput' }
+        current_status: { $ref: '#/components/schemas/CurrentStatusInput' }
+        week_schedules:
+          type: array
+          items: { $ref: '#/components/schemas/WeekScheduleInput' }
+        optimization_request: { $ref: '#/components/schemas/OptimizationRequest' }
+        students:
+          type: object
+          properties:
+            count: { type: integer }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+
+    CourseAnalysisOutput:
+      type: object
+      required: [name, description, course_info, assignment_weeks, current_status, week_schedules, optimization_request, metadata]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        course_info: { $ref: '#/components/schemas/CourseInfoInput' }
+        assignment_weeks:
+          type: array
+          items: { $ref: '#/components/schemas/AssignmentWeekInput' }
+        current_status: { $ref: '#/components/schemas/CurrentStatusInput' }
+        week_schedules:
+          type: array
+          items: { $ref: '#/components/schemas/AdjustmentWeekScheduleGroup' }
+        optimization_request: { $ref: '#/components/schemas/OptimizationRequest' }
+        students:
+          type: object
+          properties:
+            count: { type: integer }
+        metadata: { $ref: '#/components/schemas/Metadata' }
+
+    AdjustmentWeekScheduleGroup:
+      type: object
+      required: [adjustment_id, week_schedules]
+      properties:
+        adjustment_id:
+          type: string
+          example: adjustment_1
+        week_schedules:
+          type: array
+          items: { $ref: '#/components/schemas/WeekScheduleInput' }
+
+    AdjustmentDetail:
+      type: object
+      required:
+        - adjustment_id
+        - name
+        - feasibility_score
+        - key_changes
+        - peak_stress
+        - total_hours_maintained
+        - optimization_summary
+        - week_schedules
+      properties:
+        adjustment_id:
+          type: string
+          example: adjustment_2
+        name:
+          type: string
+          example: "Balanced Optimization with Redistribution"
+        feasibility_score:
+          type: number
+          format: float
+          example: 89.2
+        key_changes:
+          type: string
+          example: "Assignment extensions + strategic hour redistribution"
+        peak_stress:
+          type: number
+          format: float
+          example: 98.6
+        total_hours_maintained:
+          type: boolean
+          example: true
+        optimization_summary:
+          $ref: '#/components/schemas/OptimizationSummary'
+        week_schedules:
+          type: array
+          description: Detailed week-by-week schedule for this adjustment
+          items:
+            $ref: '#/components/schemas/WeekScheduleWithChanges'
+    
+    OptimizationSummary:
+      type: object
+      description: Summary of optimization performance and effects.
+      required:
+        - learning_outcomes_maintained
+        - hours_redistributed
+        - total_hours_maintained
+      properties:
+        stress_reduction_achieved:
+          type: number
+          format: float
+          description: Percentage of stress reduction achieved across the adjustment.
+          example: 18.7
+        learning_outcomes_maintained:
+          type: boolean
+          description: Whether the academic learning objectives remained unaffected.
+          example: true
+        total_adjustments_made:
+          type: integer
+          description: Number of week-level adjustments made during optimization.
+          example: 12
+        extensions_used:
+          type: integer
+          description: Number of assignment deadline extensions applied.
+          example: 2
+        hours_redistributed:
+          type: boolean
+          description: Indicates if workload redistribution was applied.
+          example: true
+        total_hours_maintained:
+          type: boolean
+          description: Confirms total teaching/lab/homework hours remain consistent.
+          example: true
+
+
+    WeekScheduleWithChanges:
+      allOf:
+        - $ref: '#/components/schemas/WeekScheduleInput'
+        - type: object
+          properties:
+            optimization_changes:
+              type: object
+              description: Present only if `adjusted` is true. Contains the before/after optimization details.
+              required:
+                - original_homework_hours
+                - original_teaching_hours
+                - original_lab_hours
+                - hours_redistributed
+                - change_reason
+              properties:
+                original_homework_hours:
+                  type: integer
+                  description: Homework hours before optimization
+                  example: 10
+                original_teaching_hours:
+                  type: integer
+                  description: Teaching hours before optimization
+                  example: 5
+                original_lab_hours:
+                  type: integer
+                  description: Lab hours before optimization
+                  example: 3
+                hours_redistributed:
+                  type: boolean
+                  description: Indicates whether workload hours were redistributed
+                  example: true
+                change_reason:
+                  type: string
+                  description: Optimization reason or strategy applied
+                  example: "stress_optimization_with_hour_redistribution"
+
+
+
+    # --- Supporting Schemas ---
+    CourseInfoInput:
+      type: object
+      required: [course_name, course_id, teaching_hours, lab_hours, ects, topic_difficulty, has_prerequisites, total_homework_hours, total_weeks, total_assignments, attendance_method]
+      properties:
+        course_name: { type: string }
+        course_id: { type: string }
+        teaching_hours: { type: integer }
+        lab_hours: { type: integer }
+        ects: { type: integer }
+        topic_difficulty: { type: integer }
+        has_prerequisites: { type: boolean }
+        total_homework_hours: { type: integer }
+        total_weeks: { type: integer }
+        total_assignments: { type: integer }
+        attendance_method: { type: string }
+        success_rate_percent: { type: number, format: float, nullable: true }
+        average_grade: { type: number, format: float, nullable: true }
+        course_sessions:
+          type: array
+          items: { $ref: '#/components/schemas/Session' }
+        lab_sessions:
+          type: array
+          items: { $ref: '#/components/schemas/Session' }
+
+    Session:
+      type: object
+      required: [day, start_time, end_time]
+      properties:
+        day: { type: string }
+        start_time: { type: string, example: "18:00" }
+        end_time: { type: string, example: "21:00" }
+
+    AssignmentWeekInput:
+      type: object
+      required: [id, start_week, end_week, extensions]
+      properties:
+        id: { type: integer }
+        start_week: { type: integer }
+        end_week: { type: integer }
+        extensions:
+          type: array
+          items: { type: object }
+
+    CurrentStatusInput:
+      type: object
+      required: [current_week, latest_adjusted_week]
+      properties:
+        current_week: { type: integer }
+        latest_adjusted_week: { type: integer }
+
+    WeekScheduleInput:
+      type: object
+      required: [week_number, adjusted, teaching_hours, lab_hours, homework_hours, stress_metrics]
+      properties:
+        week_number: { type: integer }
+        adjusted: { type: boolean }
+        teaching_hours: { type: integer }
+        lab_hours: { type: integer }
+        homework_hours: { type: integer }
+        stress_metrics:
+          $ref: '#/components/schemas/StressMetrics'
+
+    StressMetrics:
+      type: object
+      required: [average_stress, maximum_stress]
+      properties:
+        average_stress: { type: number }
+        maximum_stress: { type: number }
+
+    OptimizationRequest:
+      type: object
+      properties:
+        optimization_target: { type: string }
+        stress_threshold_warning: { type: number }
+        stress_threshold_critical: { type: number }
+        allow_extensions: { type: boolean }
+        max_extensions_per_assignment: { type: integer }
+        consider_all_remaining_weeks: { type: boolean }
+
+    Metadata:
+      type: object
+      required: [created_at, creator_id, semester_id]
+      properties:
+        created_at: { type: string, format: date-time }
+        creator_id: { type: string }
+        semester_id: { type: string }
