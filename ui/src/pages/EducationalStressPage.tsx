@@ -16,10 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import {
     ChevronLeft,
     AlertTriangle,
-    TrendingDown,
     Calendar,
     Users,
     BookOpen,
+    Clock,
+    BarChart2,
 } from "lucide-react";
 import type {
     CourseAnalysisOutput,
@@ -31,10 +32,12 @@ import {
     fetchAdjustmentDetails,
     getAdjustmentName,
     getAdjustmentDescription,
-    calculateWeekSummary,
 } from "@/services/educationalStressService";
 import { StressTimelineChart } from "@/components/stress/StressTimelineChart";
 import { WeeklyScheduleTable } from "@/components/stress/WeeklyScheduleTable";
+import { EducationalStressComparisonView } from "@/components/stress/EducationalStressComparisonView";
+import { FloatingStressChat } from "@/components/stress/FloatingStressChat";
+import { AIExplanationBox } from "@/components/results/AIExplanationBox";
 
 export default function EducationalStressPage() {
     const { caseId } = useParams<{ caseId: string }>();
@@ -87,6 +90,7 @@ export default function EducationalStressPage() {
                 !caseId ||
                 !activeTab ||
                 activeTab === "overview" ||
+                activeTab === "comparison" ||
                 !simulation
             ) {
                 return;
@@ -141,189 +145,17 @@ export default function EducationalStressPage() {
         );
     }
 
-    // Render overview tab
-    const renderOverview = () => {
-        return (
-            <div className="space-y-6">
-                {/* Course Information Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <BookOpen className="mr-2 h-5 w-5" />
-                            Course Information
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Course Name
-                                </p>
-                                <p className="font-medium">
-                                    {simulation.course_info.course_name}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Course ID
-                                </p>
-                                <p className="font-medium">
-                                    {simulation.course_info.course_id}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    ECTS Credits
-                                </p>
-                                <p className="font-medium">
-                                    {simulation.course_info.ects}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Teaching Hours
-                                </p>
-                                <p className="font-medium">
-                                    {simulation.course_info.teaching_hours}h
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Lab Hours
-                                </p>
-                                <p className="font-medium">
-                                    {simulation.course_info.lab_hours}h
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Attendance Method
-                                </p>
-                                <Badge>
-                                    {simulation.course_info.attendance_method}
-                                </Badge>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Adjustment Scenarios Comparison */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <TrendingDown className="mr-2 h-5 w-5" />
-                            Optimization Scenarios
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {simulation.week_schedules.map((scenario) => {
-                                const summary = calculateWeekSummary(
-                                    scenario.week_schedules
-                                );
-                                return (
-                                    <Card
-                                        key={scenario.adjustment_id}
-                                        className="cursor-pointer hover:border-purple-300 transition-colors"
-                                        onClick={() =>
-                                            setActiveTab(scenario.adjustment_id)
-                                        }
-                                    >
-                                        <CardContent className="p-4">
-                                            <h4 className="font-semibold text-sm mb-2">
-                                                {getAdjustmentName(
-                                                    scenario.adjustment_id
-                                                )}
-                                            </h4>
-                                            <div className="space-y-2 text-xs">
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-500">
-                                                        Adjusted Weeks:
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {summary.adjustedCount}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-500">
-                                                        Avg Stress:
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {summary.averageStress}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-500">
-                                                        Peak Stress:
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {summary.peakStress}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full mt-3"
-                                            >
-                                                View Details
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Current Status */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Calendar className="mr-2 h-5 w-5" />
-                            Current Status
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                                <p className="text-xs text-gray-500 mb-1">
-                                    Current Week
-                                </p>
-                                <p className="text-2xl font-bold text-blue-600">
-                                    {simulation.current_status.current_week}
-                                </p>
-                            </div>
-                            <div className="bg-purple-50 p-4 rounded-lg">
-                                <p className="text-xs text-gray-500 mb-1">
-                                    Total Weeks
-                                </p>
-                                <p className="text-2xl font-bold text-purple-600">
-                                    {simulation.course_info.total_weeks}
-                                </p>
-                            </div>
-                            <div className="bg-green-50 p-4 rounded-lg">
-                                <p className="text-xs text-gray-500 mb-1">
-                                    Students
-                                </p>
-                                <p className="text-2xl font-bold text-green-600 flex items-center">
-                                    <Users className="mr-2 h-5 w-5" />
-                                    {simulation.students.count}
-                                </p>
-                            </div>
-                            <div className="bg-amber-50 p-4 rounded-lg">
-                                <p className="text-xs text-gray-500 mb-1">
-                                    Assignments
-                                </p>
-                                <p className="text-2xl font-bold text-amber-600">
-                                    {simulation.assignment_weeks.length}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-        );
+    // Convert simulation to Plan format for AI explanation
+    const simulationAsPlan = {
+        name: simulation.name,
+        description: simulation.description,
+        kind: "educational_stress" as const,
+        scenarios: simulation.week_schedules.map((s) => ({
+            scenarioId: s.adjustment_id,
+            description: getAdjustmentName(s.adjustment_id),
+            data: s.week_schedules,
+        })),
+        metadata: simulation.metadata,
     };
 
     // Render individual adjustment scenario
@@ -382,10 +214,19 @@ export default function EducationalStressPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-6 space-y-8">
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                            Created on{" "}
+                            {new Date(
+                                simulation.metadata.created_at
+                            ).toLocaleDateString()}
+                        </span>
+                    </div>
                     <h1 className="text-3xl font-bold">{simulation.name}</h1>
                     <p className="text-gray-600 mt-1">
                         {simulation.description}
@@ -395,6 +236,51 @@ export default function EducationalStressPage() {
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
             </div>
+
+            {/* Course Info Summary */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center text-lg">
+                        <BookOpen className="mr-2 h-5 w-5" />
+                        {simulation.course_info.course_name}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <p className="text-sm text-gray-500">Course ID</p>
+                            <p className="font-medium">
+                                {simulation.course_info.course_id}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">ECTS Credits</p>
+                            <p className="font-medium">
+                                {simulation.course_info.ects}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Current Week
+                            </p>
+                            <p className="font-medium">
+                                {simulation.current_status.current_week} of{" "}
+                                {simulation.course_info.total_weeks}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Students</p>
+                            <p className="font-medium flex items-center">
+                                <Users className="mr-1 h-4 w-4" />
+                                {simulation.students.count}
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* AI Analysis */}
+            <AIExplanationBox plan={simulationAsPlan as any} />
 
             {/* Tabs for different scenarios */}
             <Tabs
@@ -407,7 +293,8 @@ export default function EducationalStressPage() {
                         value="overview"
                         className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
                     >
-                        Overview
+                        <BarChart2 className="h-4 w-4 mr-2" />
+                        Comparison
                     </TabsTrigger>
 
                     {simulation.week_schedules.map((scenario) => (
@@ -416,13 +303,18 @@ export default function EducationalStressPage() {
                             value={scenario.adjustment_id}
                             className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
                         >
-                            {getAdjustmentName(scenario.adjustment_id)}
+                            {getAdjustmentName(scenario.adjustment_id).split(
+                                " - "
+                            )[0]}
                         </TabsTrigger>
                     ))}
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-6">
-                    {renderOverview()}
+                    <EducationalStressComparisonView
+                        simulation={simulation}
+                        thresholds={thresholds}
+                    />
                 </TabsContent>
 
                 {simulation.week_schedules.map((scenario) => (
@@ -435,6 +327,14 @@ export default function EducationalStressPage() {
                     </TabsContent>
                 ))}
             </Tabs>
+
+            {/* Floating Chat */}
+            <FloatingStressChat
+                simulation={simulation}
+                adjustmentId={
+                    activeTab !== "overview" ? activeTab : undefined
+                }
+            />
         </div>
     );
 }
