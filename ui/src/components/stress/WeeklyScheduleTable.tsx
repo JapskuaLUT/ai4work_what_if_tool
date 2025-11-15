@@ -21,7 +21,6 @@ import type {
 } from "@/types/educationalStress";
 import {
     getStressColor,
-    getStressBackgroundColor,
     formatStress,
 } from "@/services/educationalStressService";
 

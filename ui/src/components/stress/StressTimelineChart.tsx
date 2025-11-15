@@ -1,7 +1,6 @@
 // ui/src/components/stress/StressTimelineChart.tsx
 
 import {
-    LineChart,
     Line,
     XAxis,
     YAxis,

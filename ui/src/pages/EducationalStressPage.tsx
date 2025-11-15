@@ -12,11 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import {
     ChevronLeft,
     AlertTriangle,
-    Calendar,
     Users,
     BookOpen,
     Clock,
@@ -24,12 +22,10 @@ import {
 } from "lucide-react";
 import type {
     CourseAnalysisOutput,
-    AdjustmentDetail,
     StressThresholds,
 } from "@/types/educationalStress";
 import {
     fetchEducationalSimulation,
-    fetchAdjustmentDetails,
     getAdjustmentName,
     getAdjustmentDescription,
 } from "@/services/educationalStressService";
@@ -46,8 +42,6 @@ export default function EducationalStressPage() {
     const [simulation, setSimulation] = useState<CourseAnalysisOutput | null>(
         null
     );
-    const [selectedAdjustment, setSelectedAdjustment] =
-        useState<AdjustmentDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -82,34 +76,6 @@ export default function EducationalStressPage() {
 
         loadSimulation();
     }, [caseId]);
-
-    // Fetch adjustment details when tab changes
-    useEffect(() => {
-        async function loadAdjustmentDetails() {
-            if (
-                !caseId ||
-                !activeTab ||
-                activeTab === "overview" ||
-                activeTab === "comparison" ||
-                !simulation
-            ) {
-                return;
-            }
-
-            try {
-                const adjustmentId = activeTab;
-                const details = await fetchAdjustmentDetails(
-                    caseId,
-                    adjustmentId
-                );
-                setSelectedAdjustment(details);
-            } catch (err) {
-                console.error("Failed to load adjustment details:", err);
-            }
-        }
-
-        loadAdjustmentDetails();
-    }, [activeTab, caseId, simulation]);
 
     // Loading state
     if (isLoading) {

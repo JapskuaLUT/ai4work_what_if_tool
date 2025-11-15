@@ -12,8 +12,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
     BarChart,
     Bar,
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -25,7 +23,6 @@ import {
 import { TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
 import type {
     CourseAnalysisOutput,
-    AdjustmentScenario,
     StressThresholds,
 } from "@/types/educationalStress";
 import {

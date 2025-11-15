@@ -222,11 +222,11 @@ export function FloatingStressChat({
                 },
             ];
 
-            // Add conversation history
+            // Add conversation history (excluding system messages)
             messages.forEach((msg) => {
-                if (msg.role !== "system") {
+                if (msg.role === "user" || msg.role === "assistant") {
                     chatMessages.push({
-                        role: msg.role as "user" | "assistant",
+                        role: msg.role,
                         content: msg.content,
                     });
                 }
@@ -234,7 +234,7 @@ export function FloatingStressChat({
 
             // Add the new user message
             chatMessages.push({
-                role: "user" as const,
+                role: "user",
                 content: message,
             });
 
@@ -488,11 +488,6 @@ function createSimulationContext(
                         week.stress_metrics?.maximum_stress || 0
                     ).toFixed(1)}\n`;
                 });
-            }
-
-            if (scenario.optimization_summary) {
-                context += `\nOptimization Summary:\n`;
-                context += `${JSON.stringify(scenario.optimization_summary, null, 2)}\n`;
             }
         }
     } else {
