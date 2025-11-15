@@ -196,6 +196,8 @@ export function StressTimelineChart({
                     fill={colors.safe}
                     fillOpacity={0.05}
                     stroke="none"
+                    name="Safe Zone"
+                    hide={true}
                 />
 
                 {/* Average stress line */}
