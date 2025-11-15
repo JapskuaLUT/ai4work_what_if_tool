@@ -12,6 +12,39 @@ import { CourseOptimizationEngine } from "../services/optimizationEngine";
 import type { CourseAnalysisInput } from "../types/educationalStress";
 
 /**
+ * Helper function to get key changes description for an adjustment
+ */
+function getKeyChanges(adjustmentId: string): string {
+    const changes: Record<string, string> = {
+        adjustment_1: "Targeted homework reductions on critical weeks",
+        adjustment_2: "Balanced hour redistribution + stress smoothing",
+        adjustment_3: "Aggressive homework reductions + strategic redistribution",
+        adjustment_4: "Assignment extensions + moderate redistribution",
+    };
+    return changes[adjustmentId] || "Custom optimization strategy";
+}
+
+/**
+ * Helper function to calculate stress reduction percentage
+ */
+function calculateStressReduction(weekSchedules: any[]): number {
+    const adjustedWeeks = weekSchedules.filter((w: any) => w.adjusted);
+    if (adjustedWeeks.length === 0) return 0;
+
+    let totalReduction = 0;
+    adjustedWeeks.forEach((week: any) => {
+        if (week.optimization_changes) {
+            const originalHours = week.optimization_changes.original_homework_hours;
+            const newHours = week.homework_hours;
+            const reduction = originalHours - newHours;
+            totalReduction += (reduction / originalHours) * 100;
+        }
+    });
+
+    return Math.round((totalReduction / adjustedWeeks.length) * 10) / 10;
+}
+
+/**
  * Educational Stress API Routes
  * Endpoints for creating and retrieving educational stress simulations
  */
@@ -243,11 +276,11 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     adjustment_id: adjustment.adjustment_id,
                     name: adjustmentNames[adjustment.adjustment_id] || "Custom Adjustment",
                     feasibility_score: 85.0, // TODO: Calculate based on stress reduction
-                    key_changes: this.getKeyChanges(adjustment.adjustment_id),
+                    key_changes: getKeyChanges(adjustment.adjustment_id),
                     peak_stress: (summary as any).peak_stress || 0,
                     total_hours_maintained: true,
                     optimization_summary: {
-                        stress_reduction_achieved: this.calculateStressReduction(
+                        stress_reduction_achieved: calculateStressReduction(
                             adjustment.week_schedules as any
                         ),
                         learning_outcomes_maintained: true,
@@ -297,37 +330,4 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 },
             },
         }
-    )
-
-    // Helper methods
-    .derive(() => ({
-        getKeyChanges(adjustmentId: string): string {
-            const changes: Record<string, string> = {
-                adjustment_1: "Targeted homework reductions on critical weeks",
-                adjustment_2: "Balanced hour redistribution + stress smoothing",
-                adjustment_3: "Aggressive homework reductions + strategic redistribution",
-                adjustment_4: "Assignment extensions + moderate redistribution",
-            };
-            return changes[adjustmentId] || "Custom optimization strategy";
-        },
-
-        calculateStressReduction(weekSchedules: any[]): number {
-            // Calculate stress reduction compared to original
-            // This is a simplified version
-            const adjustedWeeks = weekSchedules.filter((w: any) => w.adjusted);
-            if (adjustedWeeks.length === 0) return 0;
-
-            let totalReduction = 0;
-            adjustedWeeks.forEach((week: any) => {
-                if (week.optimization_changes) {
-                    const originalHours =
-                        week.optimization_changes.original_homework_hours;
-                    const newHours = week.homework_hours;
-                    const reduction = originalHours - newHours;
-                    totalReduction += (reduction / originalHours) * 100;
-                }
-            });
-
-            return Math.round((totalReduction / adjustedWeeks.length) * 10) / 10;
-        },
-    }));
+    );
