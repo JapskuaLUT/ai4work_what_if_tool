@@ -16,7 +16,7 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8
 export async function createEducationalSimulation(
     input: CourseAnalysisInput
 ): Promise<SimulationStartResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/simulations/education/`, {
+    const response = await fetch(`${API_BASE_URL}/simulations/education/`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -41,7 +41,7 @@ export async function fetchEducationalSimulation(
     caseId: string
 ): Promise<CourseAnalysisOutput> {
     const response = await fetch(
-        `${API_BASE_URL}/api/simulations/education/${caseId}`
+        `${API_BASE_URL}/simulations/education/${caseId}`
     );
 
     if (!response.ok) {
@@ -65,7 +65,7 @@ export async function fetchAdjustmentDetails(
     adjustmentId: string
 ): Promise<AdjustmentDetail> {
     const response = await fetch(
-        `${API_BASE_URL}/api/simulations/education/${caseId}/${adjustmentId}`
+        `${API_BASE_URL}/simulations/education/${caseId}/${adjustmentId}`
     );
 
     if (!response.ok) {
