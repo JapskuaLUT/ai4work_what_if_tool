@@ -7,7 +7,7 @@ import type {
     SimulationStartResponse,
 } from "../types/educationalStress";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000";
 
 /**
  * Create a new educational stress simulation
