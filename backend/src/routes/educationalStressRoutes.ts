@@ -45,6 +45,77 @@ function calculateStressReduction(weekSchedules: any[]): number {
 }
 
 /**
+ * Calculate feasibility score based on optimization results
+ * Score reflects how well the optimization achieved its goals (0-100)
+ *
+ * Factors considered:
+ * - Average stress relative to warning threshold
+ * - Peak stress relative to critical threshold
+ * - Number of weeks still exceeding critical threshold
+ * - Overall stress reduction achieved
+ */
+function calculateFeasibilityScore(
+    weekSchedules: any[],
+    thresholds: { warning: number; critical: number }
+): number {
+    if (weekSchedules.length === 0) return 0;
+
+    // Calculate key metrics
+    const avgStress =
+        weekSchedules.reduce(
+            (sum: number, w: any) => sum + (w.stress_metrics?.average_stress || 0),
+            0
+        ) / weekSchedules.length;
+
+    const peakStress = Math.max(
+        ...weekSchedules.map((w: any) => w.stress_metrics?.maximum_stress || 0)
+    );
+
+    const weeksAboveCritical = weekSchedules.filter(
+        (w: any) => (w.stress_metrics?.average_stress || 0) > thresholds.critical
+    ).length;
+
+    const weeksAboveWarning = weekSchedules.filter(
+        (w: any) =>
+            (w.stress_metrics?.average_stress || 0) > thresholds.warning &&
+            (w.stress_metrics?.average_stress || 0) <= thresholds.critical
+    ).length;
+
+    // Start with perfect score
+    let score = 100;
+
+    // Deduct points for average stress above warning threshold
+    // The further above warning, the more points deducted
+    if (avgStress > thresholds.warning) {
+        const excessStress = avgStress - thresholds.warning;
+        score -= excessStress * 0.8; // -0.8 points per stress point over warning
+    }
+
+    // Deduct points for peak stress above critical threshold
+    // Peak stress is very important - deduct heavily
+    if (peakStress > thresholds.critical) {
+        const excessPeak = peakStress - thresholds.critical;
+        score -= excessPeak * 1.0; // -1.0 points per stress point over critical
+    }
+
+    // Deduct points for weeks still above critical
+    // Each week above critical is a failure point
+    score -= weeksAboveCritical * 8;
+
+    // Small deduction for weeks above warning (but below critical)
+    score -= weeksAboveWarning * 2;
+
+    // Bonus points if average stress is well below warning threshold
+    if (avgStress < thresholds.warning * 0.8) {
+        const margin = thresholds.warning * 0.8 - avgStress;
+        score += margin * 0.3; // Bonus for comfortable margin
+    }
+
+    // Ensure score is between 0 and 100
+    return Math.max(0, Math.min(100, Math.round(score * 10) / 10));
+}
+
+/**
  * Educational Stress API Routes
  * Endpoints for creating and retrieving educational stress simulations
  */
@@ -234,6 +305,23 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
             const { caseId, adjustmentId } = params;
 
             try {
+                // Fetch the simulation to get thresholds
+                const simulation = await db.query.educational_simulations.findFirst({
+                    where: eq(educational_simulations.case_id, caseId),
+                });
+
+                if (!simulation) {
+                    return new Response(
+                        JSON.stringify({
+                            error: "Simulation not found",
+                        }),
+                        {
+                            status: 404,
+                            headers: { "Content-Type": "application/json" },
+                        }
+                    );
+                }
+
                 // Fetch the specific adjustment
                 const adjustment = await db.query.adjustment_scenarios.findFirst({
                     where: and(
@@ -271,11 +359,23 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     total_hours_maintained: true,
                 };
 
+                // Extract thresholds from simulation
+                const thresholds = {
+                    warning: (simulation.optimization_request as any).stress_threshold_warning || 75,
+                    critical: (simulation.optimization_request as any).stress_threshold_critical || 85,
+                };
+
+                // Calculate feasibility score based on optimization results
+                const feasibilityScore = calculateFeasibilityScore(
+                    adjustment.week_schedules as any[],
+                    thresholds
+                );
+
                 // Build response with detailed information
                 const response = {
                     adjustment_id: adjustment.adjustment_id,
                     name: adjustmentNames[adjustment.adjustment_id] || "Custom Adjustment",
-                    feasibility_score: 85.0, // TODO: Calculate based on stress reduction
+                    feasibility_score: feasibilityScore,
                     key_changes: getKeyChanges(adjustment.adjustment_id),
                     peak_stress: (summary as any).peak_stress || 0,
                     total_hours_maintained: true,
