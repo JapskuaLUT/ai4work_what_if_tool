@@ -61,6 +61,21 @@ export interface Extension {
     extension_id: number;
     new_end_week: number;
     reason: string;
+    weeks_extended: number; // Calculated field for clarity
+    applied_in_scenario?: string; // Track which scenario applied this
+}
+
+/**
+ * Tracks details of an assignment deadline extension
+ * Used to record which assignments were extended and by how much
+ */
+export interface ExtensionApplication {
+    assignment_id: number;
+    original_end_week: number;
+    new_end_week: number;
+    weeks_extended: number;
+    reason: string;
+    homework_hours_affected: number; // How many hours were redistributed
 }
 
 export interface CurrentStatus {
@@ -79,6 +94,7 @@ export interface OptimizationChanges {
     original_lab_hours: number;
     hours_redistributed: boolean;
     change_reason: string;
+    extension_applied?: ExtensionApplication; // Link week changes to extensions
 }
 
 export interface WeekSchedule {
@@ -121,6 +137,8 @@ export interface CourseAnalysisInput {
 export interface AdjustmentScenario {
     adjustment_id: string; // "adjustment_1", "adjustment_2", etc.
     week_schedules: WeekSchedule[];
+    assignment_weeks?: AssignmentWeek[]; // Modified assignments with extensions
+    extensions_applied?: ExtensionApplication[]; // Track all extensions applied
 }
 
 export interface OptimizationSummary {
