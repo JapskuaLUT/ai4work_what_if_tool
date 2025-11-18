@@ -161,6 +161,8 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                             case_id: caseId,
                             adjustment_id: scenario.adjustment_id,
                             week_schedules: scenario.week_schedules,
+                            assignment_weeks: scenario.assignment_weeks || null,
+                            extensions_applied: scenario.extensions_applied || null,
                             summary_metrics: summary,
                         });
                     }
@@ -371,6 +373,10 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     thresholds
                 );
 
+                // Calculate extensions used from extensions_applied field
+                const extensionsApplied = adjustment.extensions_applied as any[];
+                const extensionsUsed = extensionsApplied ? extensionsApplied.length : 0;
+
                 // Build response with detailed information
                 const response = {
                     adjustment_id: adjustment.adjustment_id,
@@ -386,7 +392,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                         learning_outcomes_maintained: true,
                         total_adjustments_made:
                             (summary as any).total_adjustments_made || 0,
-                        extensions_used: 0, // TODO: Calculate from changes
+                        extensions_used: extensionsUsed,
                         hours_redistributed: (summary as any).hours_redistributed || false,
                         total_hours_maintained: true,
                     },

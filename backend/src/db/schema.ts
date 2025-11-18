@@ -219,6 +219,12 @@ export const adjustment_scenarios = pgTable(
         // JSONB column for week schedules array
         week_schedules: jsonb("week_schedules").notNull(), // WeekSchedule[]
 
+        // Optional modified assignments (for extension scenarios)
+        assignment_weeks: jsonb("assignment_weeks"), // AssignmentWeek[] - only populated for extension scenarios
+
+        // Optional extension applications tracking
+        extensions_applied: jsonb("extensions_applied"), // ExtensionApplication[] - tracks all extensions
+
         // Optional summary metrics for quick access
         summary_metrics: jsonb("summary_metrics"), // OptimizationSummary object
 

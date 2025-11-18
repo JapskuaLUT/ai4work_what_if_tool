@@ -8,6 +8,13 @@
       "when": 1763194133161,
       "tag": "0000_same_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763483777020,
+      "tag": "0001_sticky_lester",
+      "breakpoints": true
     }
   ]
 }
