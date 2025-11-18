@@ -182,7 +182,7 @@ export class DeadlineExtensionService {
                     original_teaching_hours: week.teaching_hours,
                     original_lab_hours: week.lab_hours,
                     hours_redistributed: true,
-                    change_reason: "assignment_deadline_extended",
+                    change_reason: "assignment_extension_applied",
                 };
             }
         }
@@ -201,7 +201,7 @@ export class DeadlineExtensionService {
                         original_teaching_hours: week.teaching_hours,
                         original_lab_hours: week.lab_hours,
                         hours_redistributed: true,
-                        change_reason: "received_extended_assignment_hours",
+                        change_reason: "received_extension_hours",
                     };
                 }
             }

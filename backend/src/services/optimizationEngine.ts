@@ -1,12 +1,14 @@
 // backend/src/services/optimizationEngine.ts
 
 import { StressCalculator } from "./stressCalculation";
+import { DeadlineExtensionService } from "./extensionService";
 import type {
     CourseAnalysisInput,
     AdjustmentScenario,
     WeekSchedule,
     StressFactors,
     AssignmentWeek,
+    ExtensionApplication,
 } from "../types/educationalStress";
 
 /**
@@ -17,9 +19,11 @@ import type {
  */
 export class CourseOptimizationEngine {
     private stressCalculator: StressCalculator;
+    private extensionService: DeadlineExtensionService;
 
     constructor() {
         this.stressCalculator = new StressCalculator();
+        this.extensionService = new DeadlineExtensionService();
     }
 
     /**
@@ -254,59 +258,107 @@ export class CourseOptimizationEngine {
     private generateExtensionScenario(
         input: CourseAnalysisInput
     ): AdjustmentScenario {
-        const adjustedWeeks = JSON.parse(
+        let adjustedWeeks = JSON.parse(
             JSON.stringify(input.week_schedules)
         ) as WeekSchedule[];
+        let adjustedAssignments = JSON.parse(
+            JSON.stringify(input.assignment_weeks)
+        ) as AssignmentWeek[];
         const currentWeek = input.current_status.current_week;
+        const extensionsApplied: ExtensionApplication[] = [];
 
-        // Calculate stress for all weeks
+        // Calculate initial stress for all weeks
         for (let i = currentWeek - 1; i < adjustedWeeks.length; i++) {
             const week = adjustedWeeks[i];
-            week.stress_metrics = this.calculateWeekStress(
+            week.stress_metrics = this.calculateWeekStressWithAssignments(
                 week,
                 input,
-                week.week_number
+                week.week_number,
+                adjustedAssignments
             );
         }
 
-        // Note: Extension logic would modify assignment_weeks
-        // For now, we do moderate homework reduction similar to balanced
-        // In a full implementation, this would actually extend deadlines
+        // Calculate optimal extensions using the extension service
+        const recommendations = this.extensionService.calculateOptimalExtensions(
+            adjustedAssignments,
+            adjustedWeeks,
+            currentWeek,
+            input.optimization_request.max_extensions_per_assignment,
+            {
+                warning: input.optimization_request.stress_threshold_warning,
+                critical: input.optimization_request.stress_threshold_critical,
+            }
+        );
 
-        for (let i = currentWeek - 1; i < adjustedWeeks.length; i++) {
-            const week = adjustedWeeks[i];
+        // Apply the recommended extensions
+        for (const recommendation of recommendations) {
+            const assignment = adjustedAssignments[recommendation.assignmentIndex];
 
-            if (
-                week.stress_metrics &&
-                week.stress_metrics.average_stress >
-                    input.optimization_request.stress_threshold_warning
-            ) {
-                const originalHomework = week.homework_hours;
-                const reduction = Math.ceil(originalHomework * 0.25);
-                week.homework_hours = Math.max(0, originalHomework - reduction);
-                week.adjusted = true;
+            const result = this.extensionService.applyExtension(
+                assignment,
+                adjustedWeeks,
+                recommendation.extensionWeeks,
+                currentWeek
+            );
 
-                week.optimization_changes = {
-                    original_homework_hours: originalHomework,
-                    original_teaching_hours: week.teaching_hours,
-                    original_lab_hours: week.lab_hours,
-                    hours_redistributed: true,
-                    change_reason: "deadline_extension_optimization",
-                };
+            // Update the assignment and weeks with the extension results
+            adjustedAssignments[recommendation.assignmentIndex] = result.modifiedAssignment;
+            adjustedWeeks = result.modifiedWeeks;
+            extensionsApplied.push(result.extensionDetails);
 
-                week.stress_metrics = this.calculateWeekStress(
+            // Recalculate stress for all affected weeks
+            for (let i = currentWeek - 1; i < adjustedWeeks.length; i++) {
+                const week = adjustedWeeks[i];
+                week.stress_metrics = this.calculateWeekStressWithAssignments(
                     week,
                     input,
-                    week.week_number
+                    week.week_number,
+                    adjustedAssignments
                 );
             }
         }
 
-        this.redistributeHours(adjustedWeeks, input, currentWeek);
+        // If no extensions were applied, do moderate homework reduction
+        // This ensures the scenario still provides some optimization
+        if (extensionsApplied.length === 0) {
+            for (let i = currentWeek - 1; i < adjustedWeeks.length; i++) {
+                const week = adjustedWeeks[i];
+
+                if (
+                    week.stress_metrics &&
+                    week.stress_metrics.average_stress >
+                        input.optimization_request.stress_threshold_warning
+                ) {
+                    const originalHomework = week.homework_hours;
+                    const reduction = Math.ceil(originalHomework * 0.25);
+                    week.homework_hours = Math.max(0, originalHomework - reduction);
+                    week.adjusted = true;
+
+                    week.optimization_changes = {
+                        original_homework_hours: originalHomework,
+                        original_teaching_hours: week.teaching_hours,
+                        original_lab_hours: week.lab_hours,
+                        hours_redistributed: true,
+                        change_reason: "deadline_extension_optimization",
+                    };
+
+                    week.stress_metrics = this.calculateWeekStressWithAssignments(
+                        week,
+                        input,
+                        week.week_number,
+                        adjustedAssignments
+                    );
+                }
+            }
+
+            this.redistributeHours(adjustedWeeks, input, currentWeek);
+        }
 
         return {
             adjustment_id: "adjustment_4",
             week_schedules: adjustedWeeks,
+            assignment_weeks: adjustedAssignments,
+            extensions_applied: extensionsApplied,
         };
     }
 
@@ -394,11 +446,26 @@ export class CourseOptimizationEngine {
         input: CourseAnalysisInput,
         weekNumber: number
     ): { average_stress: number; maximum_stress: number } {
-        // Count concurrent assignment deadlines
-        const deadlines = this.countDeadlines(
-            input.assignment_weeks,
-            weekNumber
+        return this.calculateWeekStressWithAssignments(
+            week,
+            input,
+            weekNumber,
+            input.assignment_weeks
         );
+    }
+
+    /**
+     * Calculate stress for a specific week with custom assignments
+     * Allows using modified assignment schedules (e.g., with extensions)
+     */
+    private calculateWeekStressWithAssignments(
+        week: WeekSchedule,
+        input: CourseAnalysisInput,
+        weekNumber: number,
+        assignments: AssignmentWeek[]
+    ): { average_stress: number; maximum_stress: number } {
+        // Count concurrent assignment deadlines
+        const deadlines = this.countDeadlines(assignments, weekNumber);
 
         const totalHours =
             week.teaching_hours + week.lab_hours + week.homework_hours;

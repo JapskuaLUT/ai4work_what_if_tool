@@ -625,14 +625,14 @@ describe("DeadlineExtensionService", () => {
             expect(week1.optimization_changes).toBeDefined();
             expect(week1.optimization_changes?.original_homework_hours).toBe(10);
             expect(week1.optimization_changes?.change_reason).toBe(
-                "assignment_deadline_extended"
+                "assignment_extension_applied"
             );
 
             // Extension week should have optimization changes
             const extensionWeek = result.modifiedWeeks[3];
             expect(extensionWeek.optimization_changes).toBeDefined();
             expect(extensionWeek.optimization_changes?.change_reason).toBe(
-                "received_extended_assignment_hours"
+                "received_extension_hours"
             );
         });
 
