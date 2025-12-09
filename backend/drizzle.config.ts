@@ -1,20 +1,17 @@
 // backend/drizzle.config.ts
+//
+// Drizzle Kit configuration for database migrations
+// This file is used by drizzle-kit CLI commands
 
 import type { Config } from "drizzle-kit";
-import * as dotenv from "dotenv";
-
-// Load environment variables
-dotenv.config({ path: "../.env" });
-
-if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL environment variable is not set");
-}
 
 export default {
     schema: "./src/db/schema.ts",
     out: "./drizzle",
-    dialect: "postgresql",
+    driver: "pg",
     dbCredentials: {
-        url: process.env.DATABASE_URL,
+        connectionString:
+            process.env.DATABASE_URL ||
+            "postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase",
     },
 } satisfies Config;

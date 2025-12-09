@@ -89,11 +89,15 @@ docker-compose up -d
 
 This command will build the Docker images (if they don't exist) and start all the services in the background.
 
+**✅ Database migrations run automatically!** The backend service will wait for PostgreSQL to be ready, apply all pending migrations, and then start the server. No manual database setup is required.
+
 You can access the different parts of the application at the following URLs:
 
 -   **UI**: `https://app.localhost`
 -   **Backend**: `https://backend.localhost`
 -   **Traefik Dashboard**: `https://traefik.localhost`
+
+For detailed information about database setup and migrations, see [backend/DATABASE_SETUP.md](backend/DATABASE_SETUP.md).
 
 ## Services
 

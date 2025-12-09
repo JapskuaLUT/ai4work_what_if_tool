@@ -195,19 +195,89 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
             }
         },
         {
+            body: t.Object({
+                name: t.String({ description: "Name of the simulation", examples: ["Web Development - Spring 2025"] }),
+                description: t.Optional(t.String({ description: "Optional description of the simulation" })),
+                course_info: t.Object({
+                    course_name: t.String({ description: "Full course name", examples: ["Introduction to Programming"] }),
+                    course_id: t.String({ description: "Course code", examples: ["CS-101"] }),
+                    teaching_hours: t.Number({ description: "Total lecture hours for semester", examples: [24] }),
+                    lab_hours: t.Number({ description: "Total lab hours for semester", examples: [12] }),
+                    ects: t.Number({ description: "ECTS credits", examples: [5] }),
+                    topic_difficulty: t.Number({ description: "Course difficulty (1=Very Easy, 5=Very Hard)", minimum: 1, maximum: 5, examples: [3] }),
+                    has_prerequisites: t.Boolean({ description: "Does the course have prerequisites?", examples: [true] }),
+                    total_homework_hours: t.Number({ description: "Total homework hours for semester", examples: [100] }),
+                    total_weeks: t.Number({ description: "Duration in weeks", examples: [12] }),
+                    total_assignments: t.Number({ description: "Number of major assignments", examples: [3] }),
+                    attendance_method: t.Union([t.Literal("Physical"), t.Literal("Online"), t.Literal("Hybrid")], { description: "Course delivery method" }),
+                    success_rate_percent: t.Nullable(t.Number({ description: "Historical pass rate percentage", examples: [85.0] })),
+                    average_grade: t.Nullable(t.Number({ description: "Historical average grade (0-5)", examples: [3.5] })),
+                    course_sessions: t.Array(t.Object({
+                        day: t.String({ examples: ["Monday"] }),
+                        start_time: t.String({ examples: ["09:00"] }),
+                        end_time: t.String({ examples: ["11:00"] })
+                    })),
+                    lab_sessions: t.Array(t.Object({
+                        day: t.String({ examples: ["Wednesday"] }),
+                        start_time: t.String({ examples: ["14:00"] }),
+                        end_time: t.String({ examples: ["16:00"] })
+                    }))
+                }),
+                assignment_weeks: t.Array(t.Object({
+                    id: t.Number({ description: "Assignment ID", examples: [1] }),
+                    start_week: t.Number({ description: "Week when assignment starts", examples: [1] }),
+                    end_week: t.Number({ description: "Week when assignment is due", examples: [4] }),
+                    extensions: t.Array(t.Object({
+                        extension_id: t.Number(),
+                        new_end_week: t.Number(),
+                        reason: t.String(),
+                        weeks_extended: t.Number(),
+                        applied_in_scenario: t.Optional(t.String())
+                    }))
+                })),
+                current_status: t.Object({
+                    current_week: t.Number({ description: "Current week of the semester", examples: [1] }),
+                    latest_adjusted_week: t.Number({ description: "Latest week that was adjusted (0 for new simulations)", examples: [0] })
+                }),
+                week_schedules: t.Array(t.Object({
+                    week_number: t.Number({ description: "Week number (1 to total_weeks)", examples: [1] }),
+                    adjusted: t.Boolean({ description: "Has this week been adjusted? (false for input)", examples: [false] }),
+                    teaching_hours: t.Number({ description: "Teaching hours this week", examples: [2] }),
+                    lab_hours: t.Number({ description: "Lab hours this week", examples: [1] }),
+                    homework_hours: t.Number({ description: "Homework hours this week", examples: [8] })
+                })),
+                optimization_request: t.Object({
+                    optimization_target: t.String({ description: "Optimization goal", examples: ["minimize_peak_stress"] }),
+                    stress_threshold_warning: t.Number({ description: "Warning threshold (recommended: 75)", examples: [75] }),
+                    stress_threshold_critical: t.Number({ description: "Critical threshold (recommended: 85)", examples: [85] }),
+                    allow_extensions: t.Boolean({ description: "Allow assignment deadline extensions?", examples: [true] }),
+                    max_extensions_per_assignment: t.Number({ description: "Maximum weeks to extend each assignment", examples: [2] }),
+                    consider_all_remaining_weeks: t.Boolean({ description: "Consider all remaining weeks (always true)", examples: [true] })
+                }),
+                students: t.Object({
+                    count: t.Number({ description: "Number of students enrolled", examples: [50] })
+                }),
+                metadata: t.Object({
+                    created_at: t.String({ description: "ISO 8601 timestamp", examples: ["2025-01-13T10:00:00Z"] }),
+                    creator_id: t.String({ description: "ID of the creator", examples: ["instructor_1"] }),
+                    semester_id: t.String({ description: "Semester/term identifier", examples: ["spring_2025"] })
+                })
+            }),
+            response: {
+                201: t.Object({
+                    caseId: t.String({ description: "Unique identifier for this simulation", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
+                    resultsUrl: t.String({ description: "URL to view results", examples: ["http://localhost/results/6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] })
+                }, { description: "Simulation successfully created" }),
+                500: t.Object({
+                    error: t.String({ examples: ["An error occurred while saving the simulation."] }),
+                    message: t.String({ examples: ["Database connection failed"] })
+                }, { description: "Internal server error" })
+            },
             detail: {
                 summary: "Create a new educational stress simulation",
                 description:
-                    "Creates a new simulation case with multiple optimization scenarios for reducing student stress.",
+                    "Analyzes course workload and generates 4 optimization scenarios (Minimal, Balanced, Aggressive, Extension-Based) that suggest how to reduce student stress while maintaining learning outcomes. Each scenario provides week-by-week stress calculations and specific recommendations for homework hour adjustments or deadline extensions.",
                 tags: ["Educational Stress"],
-                responses: {
-                    201: {
-                        description: "Simulation successfully created",
-                    },
-                    500: {
-                        description: "Internal Server Error",
-                    },
-                },
             },
         }
     )
@@ -218,7 +288,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
      */
     .get(
         "/:caseId",
-        async ({ params }) => {
+        async ({ params, set }) => {
             const { caseId } = params;
 
             try {
@@ -231,21 +301,16 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 });
 
                 if (!simulation) {
-                    return new Response(
-                        JSON.stringify({
-                            error: "Simulation not found",
-                        }),
-                        {
-                            status: 404,
-                            headers: { "Content-Type": "application/json" },
-                        }
-                    );
+                    set.status = 404;
+                    return {
+                        error: "Simulation not found",
+                    };
                 }
 
                 // Transform to match API specification
-                const response = {
+                return {
                     name: simulation.name,
-                    description: simulation.description,
+                    description: simulation.description || "",
                     course_info: simulation.course_info,
                     assignment_weeks: simulation.assignment_weeks,
                     current_status: simulation.current_status,
@@ -257,42 +322,47 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     students: simulation.students,
                     metadata: simulation.metadata,
                 };
-
-                return new Response(JSON.stringify(response), {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" },
-                });
             } catch (error: any) {
                 console.error("Failed to retrieve simulation:", error);
-                return new Response(
-                    JSON.stringify({
-                        error: "An error occurred while retrieving the simulation.",
-                        message: error.message,
-                    }),
-                    {
-                        status: 500,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
+                set.status = 500;
+                return {
+                    error: "An error occurred while retrieving the simulation.",
+                    message: error.message,
+                };
             }
         },
         {
+            params: t.Object({
+                caseId: t.String({ description: "Unique simulation case identifier (UUID)", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] })
+            }),
+            response: {
+                200: t.Object({
+                    name: t.String({ description: "Simulation name" }),
+                    description: t.String({ description: "Simulation description" }),
+                    course_info: t.Any({ description: "Course information object" }),
+                    assignment_weeks: t.Any({ description: "Assignment schedules" }),
+                    current_status: t.Any({ description: "Current status object" }),
+                    week_schedules: t.Array(t.Object({
+                        adjustment_id: t.String({ description: "Scenario identifier", examples: ["adjustment_1", "adjustment_2", "adjustment_3", "adjustment_4"] }),
+                        week_schedules: t.Any({ description: "Array of week schedules for this scenario" })
+                    })),
+                    optimization_request: t.Any({ description: "Optimization configuration" }),
+                    students: t.Any({ description: "Student information" }),
+                    metadata: t.Any({ description: "Simulation metadata" })
+                }, { description: "Complete simulation with all scenarios" }),
+                404: t.Object({
+                    error: t.String({ examples: ["Simulation not found"] })
+                }, { description: "Case ID not found in database" }),
+                500: t.Object({
+                    error: t.String({ examples: ["An error occurred while retrieving the simulation."] }),
+                    message: t.String({ examples: ["Database connection failed"] })
+                }, { description: "Internal server error" })
+            },
             detail: {
-                summary: "Retrieve all adjustments for a simulation",
+                summary: "Retrieve all optimization scenarios for a simulation",
                 description:
-                    "Fetches a complete simulation with all generated optimization scenarios.",
+                    "Returns the complete simulation including course information and all 4 generated optimization scenarios (adjustment_1 through adjustment_4). Use this endpoint to get an overview and compare all scenarios before diving into specific details.",
                 tags: ["Educational Stress"],
-                responses: {
-                    200: {
-                        description: "Simulation retrieved successfully",
-                    },
-                    404: {
-                        description: "Simulation not found",
-                    },
-                    500: {
-                        description: "Internal Server Error",
-                    },
-                },
             },
         }
     )
@@ -303,7 +373,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
      */
     .get(
         "/:caseId/:adjustmentId",
-        async ({ params }) => {
+        async ({ params, set }) => {
             const { caseId, adjustmentId } = params;
 
             try {
@@ -313,15 +383,10 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 });
 
                 if (!simulation) {
-                    return new Response(
-                        JSON.stringify({
-                            error: "Simulation not found",
-                        }),
-                        {
-                            status: 404,
-                            headers: { "Content-Type": "application/json" },
-                        }
-                    );
+                    set.status = 404;
+                    return {
+                        error: "Simulation not found",
+                    };
                 }
 
                 // Fetch the specific adjustment
@@ -333,15 +398,10 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 });
 
                 if (!adjustment) {
-                    return new Response(
-                        JSON.stringify({
-                            error: "Adjustment not found",
-                        }),
-                        {
-                            status: 404,
-                            headers: { "Content-Type": "application/json" },
-                        }
-                    );
+                    set.status = 404;
+                    return {
+                        error: "Adjustment not found",
+                    };
                 }
 
                 // Get adjustment name based on ID
@@ -378,7 +438,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 const extensionsUsed = extensionsApplied ? extensionsApplied.length : 0;
 
                 // Build response with detailed information
-                const response = {
+                return {
                     adjustment_id: adjustment.adjustment_id,
                     name: adjustmentNames[adjustment.adjustment_id] || "Custom Adjustment",
                     feasibility_score: feasibilityScore,
@@ -398,42 +458,55 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     },
                     week_schedules: adjustment.week_schedules,
                 };
-
-                return new Response(JSON.stringify(response), {
-                    status: 200,
-                    headers: { "Content-Type": "application/json" },
-                });
             } catch (error: any) {
                 console.error("Failed to retrieve adjustment:", error);
-                return new Response(
-                    JSON.stringify({
-                        error: "An error occurred while retrieving the adjustment.",
-                        message: error.message,
-                    }),
-                    {
-                        status: 500,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
+                set.status = 500;
+                return {
+                    error: "An error occurred while retrieving the adjustment.",
+                    message: error.message,
+                };
             }
         },
         {
+            params: t.Object({
+                caseId: t.String({ description: "Unique simulation case identifier (UUID)", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
+                adjustmentId: t.String({
+                    description: "Adjustment scenario identifier",
+                    examples: ["adjustment_1", "adjustment_2", "adjustment_3", "adjustment_4"],
+                    enum: ["adjustment_1", "adjustment_2", "adjustment_3", "adjustment_4"]
+                })
+            }),
+            response: {
+                200: t.Object({
+                    adjustment_id: t.String({ description: "Scenario identifier", examples: ["adjustment_4"] }),
+                    name: t.String({ description: "Human-readable scenario name", examples: ["Extension-Based - Deadline Flexibility"] }),
+                    feasibility_score: t.Number({ description: "Score from 0-100 indicating optimization quality (80-100=Excellent, 60-80=Good, 40-60=Moderate, 0-40=Poor)", examples: [72.8] }),
+                    key_changes: t.String({ description: "Summary of optimization strategy", examples: ["Assignment extensions + moderate redistribution"] }),
+                    peak_stress: t.Number({ description: "Highest stress level across all weeks", examples: [79.4] }),
+                    total_hours_maintained: t.Boolean({ description: "Whether total homework hours were conserved (always true for ECTS integrity)", examples: [true] }),
+                    optimization_summary: t.Object({
+                        stress_reduction_achieved: t.Number({ description: "Percentage reduction in average stress", examples: [12.6] }),
+                        learning_outcomes_maintained: t.Boolean({ description: "Whether learning outcomes preserved (always true)", examples: [true] }),
+                        total_adjustments_made: t.Number({ description: "Number of weeks modified", examples: [7] }),
+                        extensions_used: t.Number({ description: "Number of assignment deadline extensions applied", examples: [2] }),
+                        hours_redistributed: t.Boolean({ description: "Whether homework hours were moved between weeks", examples: [true] }),
+                        total_hours_maintained: t.Boolean({ description: "Total hours conserved (always true)", examples: [true] })
+                    }),
+                    week_schedules: t.Any({ description: "Array of week-by-week schedules with stress metrics and optimization changes" })
+                }, { description: "Detailed optimization scenario with week-by-week breakdown" }),
+                404: t.Object({
+                    error: t.String({ examples: ["Adjustment not found", "Simulation not found"] })
+                }, { description: "Case ID or adjustment ID not found" }),
+                500: t.Object({
+                    error: t.String({ examples: ["An error occurred while retrieving the adjustment."] }),
+                    message: t.String({ examples: ["Database query failed"] })
+                }, { description: "Internal server error" })
+            },
             detail: {
-                summary: "Retrieve a specific adjustment scenario",
+                summary: "Retrieve detailed information for a specific optimization scenario",
                 description:
-                    "Fetches detailed information about a single optimization scenario.",
+                    "Returns comprehensive details for one of the 4 optimization scenarios, including: feasibility score (0-100), peak stress levels, number of adjustments made, extensions used, and complete week-by-week schedules showing stress metrics and optimization changes. Use this to analyze a specific scenario in detail after comparing all scenarios.",
                 tags: ["Educational Stress"],
-                responses: {
-                    200: {
-                        description: "Adjustment retrieved successfully",
-                    },
-                    404: {
-                        description: "Adjustment not found",
-                    },
-                    500: {
-                        description: "Internal Server Error",
-                    },
-                },
             },
         }
     );
