@@ -1,7 +1,7 @@
 # Educational Stress Simulation - User Instructions
 
 **Last Updated:** 2025-01-13
-**Version:** 1.0
+**Version:** 1.1
 
 ---
 
@@ -12,13 +12,14 @@
 3. [Quick Start Guide](#quick-start-guide)
 4. [Understanding the Input](#understanding-the-input)
 5. [API Usage](#api-usage)
-6. [Understanding the Output](#understanding-the-output)
-7. [The Four Optimization Strategies](#the-four-optimization-strategies)
-8. [How Stress is Calculated](#how-stress-is-calculated)
-9. [Deadline Extensions Explained](#deadline-extensions-explained)
-10. [Interpreting Results](#interpreting-results)
-11. [Example Scenarios](#example-scenarios)
-12. [Troubleshooting](#troubleshooting)
+6. [Selecting Your Preferred Scenario](#selecting-your-preferred-scenario)
+7. [Understanding the Output](#understanding-the-output)
+8. [The Four Optimization Strategies](#the-four-optimization-strategies)
+9. [How Stress is Calculated](#how-stress-is-calculated)
+10. [Deadline Extensions Explained](#deadline-extensions-explained)
+11. [Interpreting Results](#interpreting-results)
+12. [Example Scenarios](#example-scenarios)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -32,10 +33,12 @@ The system analyzes your course schedule and generates **4 different optimizatio
 
 -   ✅ **Multi-factor stress calculation** - Considers workload, deadlines, difficulty, attendance method, and semester fatigue
 -   ✅ **4 optimization strategies** - From conservative to aggressive approaches
--   ✅ **Deadline extensions** - NEW! Suggest extending assignment deadlines instead of just redistributing hours
+-   ✅ **Deadline extensions** - Suggest extending assignment deadlines instead of just redistributing hours
+-   ✅ **Scenario selection** - Select and save your preferred optimization strategy
 -   ✅ **Hour conservation** - Total learning hours always maintained (ECTS integrity)
 -   ✅ **Feasibility scoring** - Each strategy rated 0-100 for how well it works
 -   ✅ **Week-by-week breakdown** - See exactly what changes in each week
+-   ✅ **Visual UI** - Compare scenarios side-by-side with charts and select directly from the interface
 
 ---
 
@@ -71,6 +74,7 @@ You receive:
 -   Number of deadline extensions used (if applicable)
 -   Feasibility score for each strategy
 -   Detailed breakdown of all changes
+-   Ability to select and save your preferred scenario
 
 ---
 
@@ -514,6 +518,174 @@ curl https://backend.localhost/api/simulations/education/6c1c66ec.../adjustment_
 }
 ```
 
+#### 4. Select Your Preferred Scenario
+
+**PUT** `/api/simulations/education/:caseId/select`
+
+Mark one scenario as your selected/preferred optimization strategy.
+
+**Request:**
+
+```bash
+curl -X PUT https://backend.localhost/api/simulations/education/6c1c66ec.../select \
+  -H "Content-Type: application/json" \
+  -d '{"adjustmentId": "adjustment_4"}'
+```
+
+**Response (Success - 200):**
+
+```json
+{
+    "success": true,
+    "caseId": "6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c",
+    "selectedAdjustmentId": "adjustment_4",
+    "selectedAt": "2025-01-13T14:32:15.234Z"
+}
+```
+
+**Response (Error - 404):**
+
+```json
+{
+    "error": "Simulation or adjustment not found"
+}
+```
+
+**Use Cases:**
+- Record which optimization strategy you've decided to implement
+- Track decision history for quality assurance
+- Enable UI to show which scenario is currently selected
+
+#### 5. Get Selected Scenario
+
+**GET** `/api/simulations/education/:caseId/selection`
+
+Retrieve which scenario (if any) has been selected for this simulation.
+
+**Request:**
+
+```bash
+curl https://backend.localhost/api/simulations/education/6c1c66ec.../selection
+```
+
+**Response (With Selection):**
+
+```json
+{
+    "hasSelection": true,
+    "caseId": "6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c",
+    "selectedAdjustmentId": "adjustment_4",
+    "selectedAt": "2025-01-13T14:32:15.234Z",
+    "adjustment": {
+        "adjustment_id": "adjustment_4",
+        "name": "Extension-Based - Deadline Flexibility",
+        "feasibility_score": 72.8,
+        "key_changes": "Uses assignment deadline extensions instead of hour redistribution. Spreads workload over longer periods. Maintains total learning hours.",
+        "summary_metrics": {
+            "stress_reduction_achieved": 12.6,
+            "total_adjustments_made": 7,
+            "extensions_used": 2
+        }
+    }
+}
+```
+
+**Response (No Selection):**
+
+```json
+{
+    "hasSelection": false,
+    "caseId": "6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c",
+    "selectedAdjustmentId": null,
+    "selectedAt": null
+}
+```
+
+---
+
+## Selecting Your Preferred Scenario
+
+After reviewing the 4 optimization strategies, you can select one as your preferred choice. This selection is saved in the database for future reference.
+
+### How to Select (Via API)
+
+**Using cURL:**
+
+```bash
+# 1. Create simulation and get caseId
+CASE_ID=$(curl -X POST https://backend.localhost/api/simulations/education/ \
+  -H "Content-Type: application/json" \
+  -d @course_input.json | jq -r '.caseId')
+
+# 2. Review all scenarios
+curl https://backend.localhost/api/simulations/education/$CASE_ID | jq
+
+# 3. Select your preferred scenario (e.g., adjustment_4)
+curl -X PUT https://backend.localhost/api/simulations/education/$CASE_ID/select \
+  -H "Content-Type: application/json" \
+  -d '{"adjustmentId": "adjustment_4"}'
+
+# 4. Verify selection
+curl https://backend.localhost/api/simulations/education/$CASE_ID/selection | jq
+```
+
+### How to Select (Via UI)
+
+The web interface (https://app.localhost) provides an intuitive way to select scenarios:
+
+**Option 1: From the Comparison Tab**
+
+1. Navigate to your simulation results page
+2. Click the **"Comparison"** tab (default view)
+3. Review the 4 scenario cards showing:
+   - Peak stress level
+   - Average stress
+   - Number of weeks adjusted
+   - Stress status (Safe/Warning/Critical)
+4. Click the **"Select"** button on your preferred card
+5. The card will show a green border and star icon ⭐ when selected
+6. The button changes to **"Selected"** with a checkmark ✓
+
+**Option 2: From Individual Scenario Tabs**
+
+1. Navigate to your simulation results page
+2. Click on any scenario tab (e.g., "Minimal Adjustment", "Balanced", etc.)
+3. Review detailed charts and week-by-week breakdown
+4. Click **"Select This Scenario"** button in the header
+5. A "Selected" badge with star icon appears in the header
+6. The tab label shows a star ⭐ to indicate selection
+
+**Visual Indicators:**
+
+- ⭐ **Star icon** - Appears next to selected scenario name
+- 🟢 **Green ring** - Border around selected comparison card
+- ✓ **Checkmark** - Shows in "Selected" button state
+- 🏷️ **Badge** - "Selected" badge in scenario detail view
+
+**Changing Selection:**
+
+- Simply click "Select" on a different scenario
+- Only one scenario can be selected at a time
+- Previous selection is automatically replaced
+
+### Why Select a Scenario?
+
+Selecting a scenario helps you:
+
+1. **Document your decision** - Record which strategy you've chosen to implement
+2. **Track changes** - Know which version of the schedule you're using
+3. **Quality assurance** - Demonstrate evidence-based course planning
+4. **Future reference** - Easily identify your chosen optimization when reviewing later
+5. **Team collaboration** - Share your decision with co-instructors or administrators
+
+### Selection Best Practices
+
+1. **Review all scenarios first** - Don't select immediately; compare all 4 options
+2. **Check feasibility scores** - Prefer scenarios with scores > 70
+3. **Consider practical constraints** - Can you actually implement deadline extensions?
+4. **Verify stress reduction** - Ensure peak stress is below critical threshold (85)
+5. **Document reasoning** - Note why you chose this scenario for future reference
+
 ---
 
 ## Understanding the Output
@@ -528,6 +700,8 @@ curl https://backend.localhost/api/simulations/education/6c1c66ec.../adjustment_
 | `key_changes`            | List of main modifications in this scenario             |
 | `peak_stress`            | Highest stress level across all weeks                   |
 | `total_hours_maintained` | Always true (ECTS integrity)                            |
+
+**Note:** When viewing results in the UI or via the selection API, you'll also see which scenario (if any) has been selected as the preferred choice. Selected scenarios are marked with visual indicators (star icons, green borders, badges).
 
 ### Optimization Summary
 
@@ -1845,9 +2019,9 @@ curl -X POST https://backend.localhost/api/simulations/education/ \
 
 ### Documentation
 
--   **Implementation details:** `specifications/stress_updates.md`
--   **Project overview:** `CLAUDE.md`
--   **Development log:** `worklog/stress_updates_log.md`
+-   **API specification:** `specifications/specification.yml` - Complete OpenAPI/Swagger specification
+-   **Project overview:** `CLAUDE.md` - Comprehensive project documentation
+-   **Development log:** `worklog/stress_updates_log.md` - Implementation history
 
 ### Test Scripts
 
@@ -1892,6 +2066,12 @@ Include:
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Last Updated:** 2025-01-13
 **Maintained By:** AI4Work Team
+
+**What's New in Version 1.1:**
+- Added scenario selection feature documentation
+- New API endpoints: PUT `/select` and GET `/selection`
+- UI selection instructions with visual indicators
+- Updated references to remove obsolete documentation
