@@ -351,6 +351,9 @@ export default function EducationalStressPage() {
                     <EducationalStressComparisonView
                         simulation={simulation}
                         thresholds={thresholds}
+                        selectedAdjustmentId={selectedAdjustmentId}
+                        onSelectAdjustment={handleSelectAdjustment}
+                        isSelecting={isSelectingAdjustment}
                     />
                 </TabsContent>
 

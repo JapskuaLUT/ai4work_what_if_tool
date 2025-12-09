@@ -8,6 +8,7 @@ import {
     CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
     BarChart,
@@ -20,7 +21,7 @@ import {
     ResponsiveContainer,
     ReferenceLine,
 } from "recharts";
-import { TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingDown, AlertTriangle, CheckCircle, Star, Check } from "lucide-react";
 import type {
     CourseAnalysisOutput,
     StressThresholds,
@@ -33,11 +34,17 @@ import {
 type EducationalStressComparisonViewProps = {
     simulation: CourseAnalysisOutput;
     thresholds: StressThresholds;
+    selectedAdjustmentId: string | null;
+    onSelectAdjustment: (adjustmentId: string) => void;
+    isSelecting: boolean;
 };
 
 export function EducationalStressComparisonView({
     simulation,
     thresholds,
+    selectedAdjustmentId,
+    onSelectAdjustment,
+    isSelecting,
 }: EducationalStressComparisonViewProps) {
     // Prepare comparison data for scenarios
     const scenarioComparison = simulation.week_schedules.map((scenario) => {
@@ -95,25 +102,32 @@ export function EducationalStressComparisonView({
     return (
         <div className="space-y-6">
             {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {scenarioComparison.map((scenario) => {
                     const status = getStressStatus(scenario.peakStress);
                     const StatusIcon = status.icon;
+                    const isSelected = selectedAdjustmentId === scenario.id;
 
                     return (
-                        <Card key={scenario.id} className={status.bg}>
+                        <Card
+                            key={scenario.id}
+                            className={`${status.bg} ${isSelected ? 'ring-2 ring-green-500' : ''}`}
+                        >
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-medium flex items-center justify-between">
-                                    <span className="truncate">
+                                    <span className="truncate flex items-center gap-1">
                                         {scenario.name.split(" - ")[0]}
+                                        {isSelected && (
+                                            <Star className="h-3 w-3 fill-green-600 text-green-600 flex-shrink-0" />
+                                        )}
                                     </span>
                                     <StatusIcon
-                                        className={`h-4 w-4 ${status.color}`}
+                                        className={`h-4 w-4 ${status.color} flex-shrink-0`}
                                     />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-2 text-sm mb-3">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">
                                             Peak Stress:
@@ -142,6 +156,25 @@ export function EducationalStressComparisonView({
                                         </span>
                                     </div>
                                 </div>
+                                <Button
+                                    onClick={() => onSelectAdjustment(scenario.id)}
+                                    disabled={isSelecting || isSelected}
+                                    variant={isSelected ? "outline" : "default"}
+                                    size="sm"
+                                    className="w-full"
+                                >
+                                    {isSelected ? (
+                                        <>
+                                            <Check className="mr-1 h-3 w-3" />
+                                            Selected
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Star className="mr-1 h-3 w-3" />
+                                            Select
+                                        </>
+                                    )}
+                                </Button>
                             </CardContent>
                         </Card>
                     );
