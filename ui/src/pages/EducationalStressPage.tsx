@@ -19,6 +19,8 @@ import {
     BookOpen,
     Clock,
     BarChart2,
+    Check,
+    Star,
 } from "lucide-react";
 import type {
     CourseAnalysisOutput,
@@ -28,6 +30,8 @@ import {
     fetchEducationalSimulation,
     getAdjustmentName,
     getAdjustmentDescription,
+    selectAdjustment,
+    getSelectedAdjustment,
 } from "@/services/educationalStressService";
 import { StressTimelineChart } from "@/components/stress/StressTimelineChart";
 import { WeeklyScheduleTable } from "@/components/stress/WeeklyScheduleTable";
@@ -44,6 +48,10 @@ export default function EducationalStressPage() {
     );
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedAdjustmentId, setSelectedAdjustmentId] = useState<
+        string | null
+    >(null);
+    const [isSelectingAdjustment, setIsSelectingAdjustment] = useState(false);
 
     const thresholds: StressThresholds = {
         warning:
@@ -52,7 +60,7 @@ export default function EducationalStressPage() {
             simulation?.optimization_request?.stress_threshold_critical || 85,
     };
 
-    // Fetch simulation data on mount
+    // Fetch simulation data and selection on mount
     useEffect(() => {
         async function loadSimulation() {
             if (!caseId) {
@@ -63,8 +71,16 @@ export default function EducationalStressPage() {
 
             setIsLoading(true);
             try {
-                const data = await fetchEducationalSimulation(caseId);
+                const [data, selectionData] = await Promise.all([
+                    fetchEducationalSimulation(caseId),
+                    getSelectedAdjustment(caseId),
+                ]);
                 setSimulation(data);
+                setSelectedAdjustmentId(
+                    selectionData.hasSelection
+                        ? selectionData.selectedAdjustmentId
+                        : null
+                );
                 setError(null);
             } catch (err) {
                 console.error("Failed to load simulation:", err);
@@ -76,6 +92,22 @@ export default function EducationalStressPage() {
 
         loadSimulation();
     }, [caseId]);
+
+    // Handle adjustment selection
+    const handleSelectAdjustment = async (adjustmentId: string) => {
+        if (!caseId) return;
+
+        setIsSelectingAdjustment(true);
+        try {
+            await selectAdjustment(caseId, adjustmentId);
+            setSelectedAdjustmentId(adjustmentId);
+        } catch (err) {
+            console.error("Failed to select adjustment:", err);
+            setError("Failed to select adjustment. Please try again.");
+        } finally {
+            setIsSelectingAdjustment(false);
+        }
+    };
 
     // Loading state
     if (isLoading) {
@@ -141,17 +173,47 @@ export default function EducationalStressPage() {
             );
         }
 
+        const isSelected = selectedAdjustmentId === adjustmentId;
+
         return (
             <div className="space-y-6">
-                {/* Scenario Description */}
+                {/* Scenario Description with Selection */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>
-                            {getAdjustmentName(adjustmentId)}
-                        </CardTitle>
-                        <p className="text-sm text-gray-600">
-                            {getAdjustmentDescription(adjustmentId)}
-                        </p>
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <CardTitle className="flex items-center gap-2">
+                                    {getAdjustmentName(adjustmentId)}
+                                    {isSelected && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                                            <Star className="h-3 w-3 fill-current" />
+                                            Selected
+                                        </span>
+                                    )}
+                                </CardTitle>
+                                <p className="text-sm text-gray-600 mt-2">
+                                    {getAdjustmentDescription(adjustmentId)}
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => handleSelectAdjustment(adjustmentId)}
+                                disabled={isSelectingAdjustment || isSelected}
+                                variant={isSelected ? "outline" : "default"}
+                                className="ml-4"
+                            >
+                                {isSelected ? (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Selected
+                                    </>
+                                ) : (
+                                    <>
+                                        <Star className="mr-2 h-4 w-4" />
+                                        Select This Scenario
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </CardHeader>
                 </Card>
 
@@ -263,17 +325,26 @@ export default function EducationalStressPage() {
                         Comparison
                     </TabsTrigger>
 
-                    {simulation.week_schedules.map((scenario) => (
-                        <TabsTrigger
-                            key={scenario.adjustment_id}
-                            value={scenario.adjustment_id}
-                            className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
-                        >
-                            {getAdjustmentName(scenario.adjustment_id).split(
-                                " - "
-                            )[0]}
-                        </TabsTrigger>
-                    ))}
+                    {simulation.week_schedules.map((scenario) => {
+                        const isSelected =
+                            selectedAdjustmentId === scenario.adjustment_id;
+                        return (
+                            <TabsTrigger
+                                key={scenario.adjustment_id}
+                                value={scenario.adjustment_id}
+                                className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
+                            >
+                                <span className="flex items-center gap-1">
+                                    {getAdjustmentName(
+                                        scenario.adjustment_id
+                                    ).split(" - ")[0]}
+                                    {isSelected && (
+                                        <Star className="h-3 w-3 fill-green-600 text-green-600" />
+                                    )}
+                                </span>
+                            </TabsTrigger>
+                        );
+                    })}
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-6">

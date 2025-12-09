@@ -92,6 +92,8 @@ CREATE TABLE educational_simulations (
     optimization_request JSONB NOT NULL,
     students JSONB,
     metadata JSONB NOT NULL,
+    selected_adjustment_id TEXT,
+    selected_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

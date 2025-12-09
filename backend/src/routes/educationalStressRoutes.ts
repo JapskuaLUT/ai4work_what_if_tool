@@ -509,4 +509,244 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                 tags: ["Educational Stress"],
             },
         }
+    )
+
+    /**
+     * PUT /api/simulations/education/:caseId/select
+     * Select a specific adjustment scenario as the preferred one
+     */
+    .put(
+        "/:caseId/select",
+        async ({ params, body, set }) => {
+            const { caseId } = params;
+            const { adjustmentId } = body as { adjustmentId: string };
+
+            try {
+                // Verify the simulation exists
+                const simulation = await db.query.educational_simulations.findFirst({
+                    where: eq(educational_simulations.case_id, caseId),
+                });
+
+                if (!simulation) {
+                    set.status = 404;
+                    return {
+                        error: "Simulation not found",
+                    };
+                }
+
+                // Verify the adjustment exists
+                const adjustment = await db.query.adjustment_scenarios.findFirst({
+                    where: and(
+                        eq(adjustment_scenarios.case_id, caseId),
+                        eq(adjustment_scenarios.adjustment_id, adjustmentId)
+                    ),
+                });
+
+                if (!adjustment) {
+                    set.status = 404;
+                    return {
+                        error: "Adjustment scenario not found",
+                    };
+                }
+
+                // Update the selection
+                await db
+                    .update(educational_simulations)
+                    .set({
+                        selected_adjustment_id: adjustmentId,
+                        selected_at: new Date(),
+                    })
+                    .where(eq(educational_simulations.case_id, caseId));
+
+                return {
+                    success: true,
+                    caseId: caseId,
+                    selectedAdjustmentId: adjustmentId,
+                    selectedAt: new Date().toISOString(),
+                };
+            } catch (error: any) {
+                console.error("Failed to update selection:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while updating the selection.",
+                    message: error.message,
+                };
+            }
+        },
+        {
+            params: t.Object({
+                caseId: t.String({
+                    description: "Unique simulation case identifier (UUID)",
+                    examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"]
+                })
+            }),
+            body: t.Object({
+                adjustmentId: t.String({
+                    description: "The adjustment scenario to select",
+                    examples: ["adjustment_1", "adjustment_2", "adjustment_3", "adjustment_4"],
+                    enum: ["adjustment_1", "adjustment_2", "adjustment_3", "adjustment_4"]
+                })
+            }),
+            response: {
+                200: t.Object({
+                    success: t.Boolean({ description: "Whether the selection was successful", examples: [true] }),
+                    caseId: t.String({ description: "The simulation case ID", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
+                    selectedAdjustmentId: t.String({ description: "The selected adjustment ID", examples: ["adjustment_2"] }),
+                    selectedAt: t.String({ description: "ISO 8601 timestamp of selection", examples: ["2025-01-15T14:30:00.000Z"] })
+                }, { description: "Selection successfully updated" }),
+                404: t.Object({
+                    error: t.String({ examples: ["Simulation not found", "Adjustment scenario not found"] })
+                }, { description: "Case ID or adjustment ID not found" }),
+                500: t.Object({
+                    error: t.String({ examples: ["An error occurred while updating the selection."] }),
+                    message: t.String({ examples: ["Database update failed"] })
+                }, { description: "Internal server error" })
+            },
+            detail: {
+                summary: "Select a preferred adjustment scenario",
+                description:
+                    "Marks a specific optimization scenario (adjustment_1 through adjustment_4) as the user's selected/preferred option for this simulation. This selection is stored and can be retrieved later to indicate which scenario the user has chosen to implement.",
+                tags: ["Educational Stress"],
+            },
+        }
+    )
+
+    /**
+     * GET /api/simulations/education/:caseId/selection
+     * Get the currently selected adjustment scenario for a simulation
+     */
+    .get(
+        "/:caseId/selection",
+        async ({ params, set }) => {
+            const { caseId } = params;
+
+            try {
+                // Fetch the simulation with selected adjustment info
+                const simulation = await db.query.educational_simulations.findFirst({
+                    where: eq(educational_simulations.case_id, caseId),
+                });
+
+                if (!simulation) {
+                    set.status = 404;
+                    return {
+                        error: "Simulation not found",
+                    };
+                }
+
+                // If no selection has been made
+                if (!simulation.selected_adjustment_id) {
+                    return {
+                        hasSelection: false,
+                        caseId: caseId,
+                        selectedAdjustmentId: null,
+                        selectedAt: null,
+                    };
+                }
+
+                // Fetch the selected adjustment details
+                const adjustment = await db.query.adjustment_scenarios.findFirst({
+                    where: and(
+                        eq(adjustment_scenarios.case_id, caseId),
+                        eq(adjustment_scenarios.adjustment_id, simulation.selected_adjustment_id)
+                    ),
+                });
+
+                if (!adjustment) {
+                    // Selection references non-existent adjustment (data inconsistency)
+                    return {
+                        hasSelection: false,
+                        caseId: caseId,
+                        selectedAdjustmentId: null,
+                        selectedAt: null,
+                        warning: "Selected adjustment no longer exists",
+                    };
+                }
+
+                // Get adjustment name
+                const adjustmentNames: Record<string, string> = {
+                    adjustment_1: "Minimal Adjustment - Critical Weeks Only",
+                    adjustment_2: "Balanced Redistribution - Smooth Stress Curve",
+                    adjustment_3: "Aggressive Optimization - Maximum Stress Reduction",
+                    adjustment_4: "Extension-Based - Deadline Flexibility",
+                };
+
+                // Extract thresholds from simulation
+                const thresholds = {
+                    warning: (simulation.optimization_request as any).stress_threshold_warning || 75,
+                    critical: (simulation.optimization_request as any).stress_threshold_critical || 85,
+                };
+
+                // Calculate feasibility score
+                const feasibilityScore = calculateFeasibilityScore(
+                    adjustment.week_schedules as any[],
+                    thresholds
+                );
+
+                return {
+                    hasSelection: true,
+                    caseId: caseId,
+                    selectedAdjustmentId: simulation.selected_adjustment_id,
+                    selectedAt: simulation.selected_at?.toISOString() || new Date().toISOString(),
+                    adjustment: {
+                        adjustment_id: adjustment.adjustment_id,
+                        name: adjustmentNames[adjustment.adjustment_id] || "Custom Adjustment",
+                        feasibility_score: feasibilityScore,
+                        key_changes: getKeyChanges(adjustment.adjustment_id),
+                        summary_metrics: adjustment.summary_metrics,
+                    },
+                };
+            } catch (error: any) {
+                console.error("Failed to retrieve selection:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while retrieving the selection.",
+                    message: error.message,
+                };
+            }
+        },
+        {
+            params: t.Object({
+                caseId: t.String({
+                    description: "Unique simulation case identifier (UUID)",
+                    examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"]
+                })
+            }),
+            response: {
+                200: t.Union([
+                    t.Object({
+                        hasSelection: t.Literal(false),
+                        caseId: t.String({ description: "The simulation case ID" }),
+                        selectedAdjustmentId: t.Null(),
+                        selectedAt: t.Null(),
+                        warning: t.Optional(t.String({ description: "Warning message if data inconsistency" }))
+                    }, { description: "No adjustment has been selected yet" }),
+                    t.Object({
+                        hasSelection: t.Literal(true),
+                        caseId: t.String({ description: "The simulation case ID", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
+                        selectedAdjustmentId: t.String({ description: "The selected adjustment ID", examples: ["adjustment_2"] }),
+                        selectedAt: t.String({ description: "ISO 8601 timestamp of selection", examples: ["2025-01-15T14:30:00.000Z"] }),
+                        adjustment: t.Object({
+                            adjustment_id: t.String({ description: "Adjustment scenario identifier" }),
+                            name: t.String({ description: "Human-readable name" }),
+                            feasibility_score: t.Number({ description: "Quality score 0-100" }),
+                            key_changes: t.String({ description: "Summary of changes" }),
+                            summary_metrics: t.Any({ description: "Summary metrics object" })
+                        })
+                    }, { description: "An adjustment has been selected" })
+                ]),
+                404: t.Object({
+                    error: t.String({ examples: ["Simulation not found"] })
+                }, { description: "Case ID not found" }),
+                500: t.Object({
+                    error: t.String({ examples: ["An error occurred while retrieving the selection."] }),
+                    message: t.String({ examples: ["Database query failed"] })
+                }, { description: "Internal server error" })
+            },
+            detail: {
+                summary: "Get the selected adjustment scenario",
+                description:
+                    "Returns information about which optimization scenario (if any) the user has selected for this simulation. Returns hasSelection: false if no selection has been made, or hasSelection: true with full adjustment details if a selection exists.",
+                tags: ["Educational Stress"],
+            },
+        }
     );

@@ -189,6 +189,10 @@ export const educational_simulations = pgTable("educational_simulations", {
     students: jsonb("students"), // { count: number }
     metadata: jsonb("metadata").notNull(), // Metadata object
 
+    // Selection tracking
+    selected_adjustment_id: text("selected_adjustment_id"), // The adjustment_id selected by user
+    selected_at: timestamp("selected_at"), // When the selection was made
+
     created_at: timestamp("created_at").defaultNow().notNull(),
     updated_at: timestamp("updated_at").defaultNow().notNull()
 });

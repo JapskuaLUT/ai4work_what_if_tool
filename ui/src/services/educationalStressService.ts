@@ -185,3 +185,69 @@ export function calculateStressReduction(
     const reduction = ((originalAvg - adjustedAvg) / originalAvg) * 100;
     return Math.max(0, Math.round(reduction * 10) / 10);
 }
+
+/**
+ * Select an adjustment scenario as the preferred option
+ */
+export async function selectAdjustment(
+    caseId: string,
+    adjustmentId: string
+): Promise<{
+    success: boolean;
+    caseId: string;
+    selectedAdjustmentId: string;
+    selectedAt: string;
+}> {
+    const response = await fetch(
+        `${API_BASE_URL}/simulations/education/${caseId}/select`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ adjustmentId }),
+        }
+    );
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error("Simulation or adjustment not found");
+        }
+        const error = await response.json();
+        throw new Error(error.message || "Failed to select adjustment");
+    }
+
+    return response.json();
+}
+
+/**
+ * Get the currently selected adjustment scenario
+ */
+export async function getSelectedAdjustment(caseId: string): Promise<{
+    hasSelection: boolean;
+    caseId: string;
+    selectedAdjustmentId: string | null;
+    selectedAt: string | null;
+    adjustment?: {
+        adjustment_id: string;
+        name: string;
+        feasibility_score: number;
+        key_changes: string;
+        summary_metrics: any;
+    };
+    warning?: string;
+}> {
+    const response = await fetch(
+        `${API_BASE_URL}/simulations/education/${caseId}/selection`
+    );
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error("Simulation not found");
+        }
+        const error = await response.json();
+        throw new Error(error.message || "Failed to fetch selection");
+    }
+
+    return response.json();
+}
