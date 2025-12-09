@@ -42,7 +42,7 @@ services:
             - ./backend:/usr/src/app # We want to mount our local backend folder to the container
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
-        command: bun run dev:migrate # Run migrations automatically on startup
+        command: bun dev # Simple: just start the backend
         environment:
             - SERVER_URL=https://backend.localhost
             - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
@@ -68,7 +68,7 @@ services:
             - "5432:5432"
         volumes:
             - ./postgres_whatif_data:/var/lib/postgresql
-            # To automatically initialize DB on first run, uncomment and ensure files exist:
+            # Auto-initialize database on first run with schema and seed data
             - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
             - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
         healthcheck:

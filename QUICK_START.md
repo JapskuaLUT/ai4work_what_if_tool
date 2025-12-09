@@ -34,7 +34,7 @@
    - Swagger Docs: https://backend.localhost/swagger
    - Traefik Dashboard: https://traefik.localhost
 
-**✅ That's it! Database migrations run automatically.**
+**✅ That's it! Database is automatically initialized with schema and sample data.**
 
 ---
 
@@ -70,24 +70,13 @@ docker-compose restart backend
 
 ## 🗄️ Database Management
 
-### Automatic Migrations (Default)
+### Automatic Initialization
 
-Migrations run automatically when the backend starts. No action needed!
+Database schema and sample data load automatically on first startup from:
+- [db/schema.sql](db/schema.sql) - All tables, indexes, triggers
+- [db/seed.sql](db/seed.sql) - Sample development data
 
-### Manual Migration Commands
-
-```bash
-cd backend
-
-# Apply pending migrations
-bun run db:push
-
-# Generate new migration after schema changes
-bun run db:generate
-
-# Open database GUI
-bun run db:studio
-```
+No manual setup needed!
 
 ### Fresh Database Reset
 
@@ -97,6 +86,18 @@ bun run db:studio
 docker-compose down
 rm -rf postgres_whatif_data/
 docker-compose up -d
+```
+
+### Database Tools
+
+```bash
+cd backend
+
+# Open database GUI
+bun run db:studio
+
+# Connect via psql
+docker-compose exec postgres psql -U whatifuser -d whatifdatabase
 ```
 
 ---
@@ -122,7 +123,7 @@ curl -X POST https://backend.localhost/api/simulations/education/ \
 ## 📚 Documentation
 
 - **Project Overview:** [CLAUDE.md](CLAUDE.md) - Comprehensive project guide
-- **Database Setup:** [backend/DATABASE_SETUP.md](backend/DATABASE_SETUP.md) - Database management guide
+- **Database Setup:** [backend/DATABASE_SIMPLE_SETUP.md](backend/DATABASE_SIMPLE_SETUP.md) - Database management guide
 - **API Documentation:** https://backend.localhost/swagger - Interactive API docs
 - **Educational Stress:** [instructions/stress_simulation_instructions.md](instructions/stress_simulation_instructions.md)
 
@@ -132,12 +133,16 @@ curl -X POST https://backend.localhost/api/simulations/education/ \
 
 ### "relation does not exist" error
 
+**Cause:** Database was not properly initialized.
+
 **Solution:**
 ```bash
-docker-compose restart backend
+docker-compose down
+rm -rf postgres_whatif_data/
+docker-compose up -d
 ```
 
-Migrations will run automatically on restart.
+Schema will load automatically on fresh startup.
 
 ### Database connection failed
 
