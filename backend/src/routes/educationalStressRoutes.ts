@@ -173,7 +173,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                         caseId: caseId,
                         resultsUrl: `${
                             process.env.APP_BASE_URL || "http://localhost"
-                        }/results/${caseId}`,
+                        }/education/${caseId}`,
                     }),
                     {
                         status: 201,
@@ -266,7 +266,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
             response: {
                 201: t.Object({
                     caseId: t.String({ description: "Unique identifier for this simulation", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
-                    resultsUrl: t.String({ description: "URL to view results", examples: ["http://localhost/results/6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] })
+                    resultsUrl: t.String({ description: "URL to view results in frontend", examples: ["https://app.localhost/education/6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] })
                 }, { description: "Simulation successfully created" }),
                 500: t.Object({
                     error: t.String({ examples: ["An error occurred while saving the simulation."] }),
