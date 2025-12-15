@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
     nginx:
-        image: nginx:1.25-alpine
+        image: nginx:1.29.3-alpine
         ports:
             - "80:80"
             - "443:443"
@@ -46,7 +46,7 @@ services:
         # Removed all Traefik labels
 
     postgres:
-        image: postgres:17.5
+        image: postgres:18.1
         environment:
             - POSTGRES_USER=whatifuser
             - POSTGRES_PASSWORD=whatifpassword
@@ -54,7 +54,8 @@ services:
         ports:
             - "5432:5432"
         volumes:
-            - ./postgres_whatif_data:/var/lib/postgresql/data
+            - ./postgres_whatif_data:/var/lib/postgresql
+            # To automatically initialize DB on first run, uncomment and ensure files exist:
             - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
             - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
         healthcheck:

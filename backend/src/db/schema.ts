@@ -8,7 +8,8 @@ import {
     primaryKey,
     foreignKey,
     timestamp,
-    unique
+    unique,
+    jsonb
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -162,6 +163,94 @@ export const stress_metrics_relations = relations(
         scenario: one(scenarios, {
             fields: [stress_metrics.case_id, stress_metrics.scenario_id],
             references: [scenarios.case_id, scenarios.scenario_id]
+        })
+    })
+);
+
+// ============================================================================
+// EDUCATIONAL STRESS SIMULATION TABLES
+// ============================================================================
+
+/**
+ * Educational Simulations table
+ * Stores course analysis input data for educational stress simulations
+ * Uses JSONB for flexible nested data structures
+ */
+export const educational_simulations = pgTable("educational_simulations", {
+    case_id: text("case_id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+
+    // JSONB columns for complex nested data
+    course_info: jsonb("course_info").notNull(), // CourseInfo object
+    assignment_weeks: jsonb("assignment_weeks").notNull(), // AssignmentWeek[]
+    current_status: jsonb("current_status").notNull(), // CurrentStatus object
+    optimization_request: jsonb("optimization_request").notNull(), // OptimizationRequest object
+    students: jsonb("students"), // { count: number }
+    metadata: jsonb("metadata").notNull(), // Metadata object
+
+    // Selection tracking
+    selected_adjustment_id: text("selected_adjustment_id"), // The adjustment_id selected by user
+    selected_at: timestamp("selected_at"), // When the selection was made
+
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const educational_simulations_relations = relations(
+    educational_simulations,
+    ({ many }) => ({
+        adjustments: many(adjustment_scenarios)
+    })
+);
+
+/**
+ * Adjustment Scenarios table
+ * Stores generated optimization scenarios for each educational simulation
+ * Each scenario represents a different optimization strategy
+ */
+export const adjustment_scenarios = pgTable(
+    "adjustment_scenarios",
+    {
+        id: serial("id").primaryKey(),
+        case_id: text("case_id")
+            .notNull()
+            .references(() => educational_simulations.case_id, {
+                onDelete: "cascade"
+            }),
+        adjustment_id: text("adjustment_id").notNull(), // e.g., "adjustment_1", "adjustment_2"
+
+        // JSONB column for week schedules array
+        week_schedules: jsonb("week_schedules").notNull(), // WeekSchedule[]
+
+        // Optional modified assignments (for extension scenarios)
+        assignment_weeks: jsonb("assignment_weeks"), // AssignmentWeek[] - only populated for extension scenarios
+
+        // Optional extension applications tracking
+        extensions_applied: jsonb("extensions_applied"), // ExtensionApplication[] - tracks all extensions
+
+        // Optional summary metrics for quick access
+        summary_metrics: jsonb("summary_metrics"), // OptimizationSummary object
+
+        created_at: timestamp("created_at").defaultNow().notNull()
+    },
+    (table) => {
+        return {
+            // Unique constraint: one case can't have duplicate adjustment IDs
+            unq: unique("case_adjustment_unique").on(
+                table.case_id,
+                table.adjustment_id
+            )
+        };
+    }
+);
+
+export const adjustment_scenarios_relations = relations(
+    adjustment_scenarios,
+    ({ one }) => ({
+        simulation: one(educational_simulations, {
+            fields: [adjustment_scenarios.case_id],
+            references: [educational_simulations.case_id]
         })
     })
 );

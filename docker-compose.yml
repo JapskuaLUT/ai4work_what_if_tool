@@ -1,6 +1,6 @@
 services:
     traefik:
-        image: traefik:v3.4.1
+        image: traefik:v3.6.4
         command:
             - "--configFile=/app/configs/traefik.toml" # This is the traefik configuration file
         volumes:
@@ -42,13 +42,16 @@ services:
             - ./backend:/usr/src/app # We want to mount our local backend folder to the container
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
-        command: bun dev # This is the command we want to run. We are now overriding the default command.
+        command: bun dev # Simple: just start the backend
         environment:
             - SERVER_URL=https://backend.localhost
             - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
             - JWT_SECRET=your-SHARED-strong-jwt-secret # We want to set the JWT_SECRET in the environment variables. This must match the one in auth and backend!
             - APP_BASE_URL=https://app.localhost
             - API_BASE_URL=https://backend.localhost
+        depends_on:
+            postgres:
+                condition: service_healthy
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.backend.rule=Host(`backend.localhost`)" # This is the backend service URL
@@ -56,7 +59,7 @@ services:
             - "traefik.http.routers.backend.tls=true"
             - "traefik.http.services.backend.loadbalancer.server.port=8000"
     postgres:
-        image: postgres:17.5
+        image: postgres:18.1
         environment:
             - POSTGRES_USER=whatifuser
             - POSTGRES_PASSWORD=whatifpassword
@@ -64,8 +67,8 @@ services:
         ports:
             - "5432:5432"
         volumes:
-            - ./postgres_whatif_data:/var/lib/postgresql/data
-            # To automatically initialize DB on first run, uncomment and ensure files exist:
+            - ./postgres_whatif_data:/var/lib/postgresql
+            # Auto-initialize database on first run with schema and seed data
             - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
             - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
         healthcheck:
