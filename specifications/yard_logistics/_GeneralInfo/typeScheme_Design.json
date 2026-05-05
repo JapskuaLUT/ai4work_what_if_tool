@@ -1,0 +1,471 @@
+{
+  "RootType": "AI4Work_Interfaces.YardDesigner.Canvas.CanvasData",
+  "Types": [
+    {
+      "Name": "E_EntityAction",
+      "FullName": null,
+      "Description": "An action defines something that can be performed at an entity.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "None",
+          "Description": "No action which can be performed"
+        },
+        {
+          "Name": "Loading",
+          "Description": "Can perform loading of goods"
+        },
+        {
+          "Name": "Unloading",
+          "Description": "Can perform unloading of goods)"
+        },
+        {
+          "Name": "CheckIn",
+          "Description": "Can perform a check-in (is required at the very beginning)"
+        },
+        {
+          "Name": "CheckOut",
+          "Description": "Can perform a check-out (is required at the end)"
+        },
+        {
+          "Name": "Parking",
+          "Description": "Allows/Requires parking before beeing called to be served"
+        },
+        {
+          "Name": "Authenticate",
+          "Description": "Can perform authentication (is required to enter a yard)"
+        },
+        {
+          "Name": "Weighing",
+          "Description": "Can perform weighing-processes (may be required before and/or after loading or unloading)"
+        }
+      ]
+    },
+    {
+      "Name": "Entity",
+      "FullName": null,
+      "Description": "An entity is a base-type for different types (terminal, parkplatz, waage, silo, kreuzung) and is specialized by the concrete type [attribute xsi:type]",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Street",
+      "FullName": null,
+      "Description": "A road connects two entities using a direction (source and destination) and gives the information, at which costs (time in seconds) the road can be used. A road has no action defined (none), while roads always allow driving only",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "ID_From",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "ID of the entity the road starts",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "ID_To",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "ID of the entity the road ends",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Cost_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "CanvasData",
+      "FullName": null,
+      "Description": "The main type holding all information about a configured yard-design",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Entities",
+          "TypeName": "List<Entity>",
+          "FullTypeName": null,
+          "Description": "List of entities",
+          "IsCollection": true,
+          "CollectionItemType": "Entity"
+        },
+        {
+          "Name": "Roads",
+          "TypeName": "List<Street>",
+          "FullTypeName": null,
+          "Description": "List of roads",
+          "IsCollection": true,
+          "CollectionItemType": "Street"
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "TerminalTyp",
+      "FullName": null,
+      "Description": "Terminaltype describes the type of a terminal",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "CheckIn",
+          "Description": "This type is for performing check-in"
+        },
+        {
+          "Name": "CheckOut",
+          "Description": "This type is for performing checkout"
+        },
+        {
+          "Name": "Waagenterminal",
+          "Description": "This type is for performing wheighing"
+        },
+        {
+          "Name": "Schrankenterminal",
+          "Description": "This type is for performing authentication"
+        }
+      ]
+    },
+    {
+      "Name": "Terminal",
+      "FullName": null,
+      "Description": "A terminal is something a truck driver is required to use to perform some action",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Typ",
+          "TypeName": "TerminalTyp",
+          "FullTypeName": null,
+          "Description": "The type of the terminal describes the type of a terminal",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Storage",
+      "FullName": null,
+      "Description": "A storage location where material/goods can be loaded or unladed",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Capacity",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "The max. capacity of material",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Stock",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Current stock-level, 0 to capacity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "MaterialId",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The material at this storage location",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Loading_PerSecond",
+          "TypeName": "Single",
+          "FullTypeName": null,
+          "Description": "How fast can material be loaded (in kg/second",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Unloading_PerSecond",
+          "TypeName": "Single",
+          "FullTypeName": null,
+          "Description": "How fast can material be unloaded (in kg/second",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Crossing",
+      "FullName": null,
+      "Description": "Kreuzung defines a crossing and is used to connect roads",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "ParkingArea",
+      "FullName": null,
+      "Description": "A parking-area ",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Capacity",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "The capacity of parking lots this parking has available",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": null,
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": null,
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": null,
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": null,
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    }
+  ]
+}

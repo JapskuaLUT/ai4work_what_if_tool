@@ -254,3 +254,86 @@ export const adjustment_scenarios_relations = relations(
         })
     })
 );
+
+// ============================================================================
+// YARD LOGISTICS SIMULATION TABLES
+// ============================================================================
+
+/**
+ * Yard Simulations table
+ * Parent record for a yard logistics comparison set: one yard plus several
+ * simulator runs over different orders/processes. Yard graph and processes
+ * are stored at parent level when all runs share their hash.
+ */
+export const yard_simulations = pgTable("yard_simulations", {
+    case_id: text("case_id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+
+    yard_structure: jsonb("yard_structure"),
+    processes: jsonb("processes"),
+    yard_hash: text("yard_hash"),
+    processes_hash: text("processes_hash"),
+
+    yard_image_path: text("yard_image_path"),
+
+    selected_run_id: text("selected_run_id"),
+    selected_at: timestamp("selected_at"),
+
+    metadata: jsonb("metadata").notNull().default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const yard_simulations_relations = relations(
+    yard_simulations,
+    ({ many }) => ({
+        runs: many(yard_runs)
+    })
+);
+
+/**
+ * Yard Runs table
+ * One simulator run / scenario inside a yard_simulations set.
+ * Holds the raw simulator export plus derived summary_metrics.
+ */
+export const yard_runs = pgTable(
+    "yard_runs",
+    {
+        id: serial("id").primaryKey(),
+        case_id: text("case_id")
+            .notNull()
+            .references(() => yard_simulations.case_id, {
+                onDelete: "cascade"
+            }),
+        run_id: text("run_id").notNull(),
+        label: text("label").notNull(),
+        description: text("description"),
+
+        orders: jsonb("orders").notNull(),
+        measurements: jsonb("measurements").notNull(),
+        yard_structure: jsonb("yard_structure"),
+        processes: jsonb("processes"),
+
+        yard_hash: text("yard_hash"),
+        processes_hash: text("processes_hash"),
+        orders_hash: text("orders_hash"),
+
+        summary_metrics: jsonb("summary_metrics").notNull(),
+
+        simulated_at: timestamp("simulated_at"),
+        created_at: timestamp("created_at").defaultNow().notNull()
+    },
+    (table) => {
+        return {
+            unq: unique("yard_run_unique").on(table.case_id, table.run_id)
+        };
+    }
+);
+
+export const yard_runs_relations = relations(yard_runs, ({ one }) => ({
+    simulation: one(yard_simulations, {
+        fields: [yard_runs.case_id],
+        references: [yard_simulations.case_id]
+    })
+}));

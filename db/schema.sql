@@ -114,6 +114,59 @@ CREATE TABLE adjustment_scenarios (
     CONSTRAINT case_adjustment_unique UNIQUE(case_id, adjustment_id)
 );
 
+-- Table: yard_simulations
+-- Parent record for a yard logistics comparison set (one yard, many simulator runs).
+-- Fed by JSON drops today; the same shape will receive simulator-API webhooks later.
+CREATE TABLE yard_simulations (
+    case_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+
+    -- Yard graph + processes are usually shared across runs in a set.
+    -- Stored once at parent level when all runs share the same hash;
+    -- a run that diverges carries its own copy in yard_runs.
+    yard_structure JSONB,
+    processes JSONB,
+    yard_hash TEXT,
+    processes_hash TEXT,
+
+    yard_image_path TEXT,
+
+    selected_run_id TEXT,
+    selected_at TIMESTAMP,
+
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: yard_runs
+-- One simulator run / scenario inside a yard_simulations set.
+CREATE TABLE yard_runs (
+    id SERIAL PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    description TEXT,
+
+    orders JSONB NOT NULL,
+    measurements JSONB NOT NULL,
+    yard_structure JSONB,
+    processes JSONB,
+
+    yard_hash TEXT,
+    processes_hash TEXT,
+    orders_hash TEXT,
+
+    summary_metrics JSONB NOT NULL,
+
+    simulated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+
+    FOREIGN KEY (case_id) REFERENCES yard_simulations(case_id) ON DELETE CASCADE,
+    CONSTRAINT yard_run_unique UNIQUE(case_id, run_id)
+);
+
 -- Indexes for performance
 CREATE INDEX idx_simulation_sets_kind ON simulation_sets(kind);
 CREATE INDEX idx_simulation_sets_name ON simulation_sets(name);
@@ -123,6 +176,8 @@ CREATE INDEX idx_scenarios_current_week ON scenarios(current_week);
 CREATE INDEX idx_assignments_weeks ON assignments(start_week, end_week);
 CREATE INDEX idx_stress_metrics_calculated_at ON stress_metrics(calculated_at);
 CREATE INDEX idx_stress_metrics_scenario ON stress_metrics(case_id, scenario_id);
+CREATE INDEX idx_yard_simulations_name ON yard_simulations(name);
+CREATE INDEX idx_yard_runs_case ON yard_runs(case_id);
 
 -- Triggers for automatic updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -143,4 +198,8 @@ CREATE TRIGGER update_scenarios_updated_at
 
 CREATE TRIGGER update_educational_simulations_updated_at
     BEFORE UPDATE ON educational_simulations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_yard_simulations_updated_at
+    BEFORE UPDATE ON yard_simulations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

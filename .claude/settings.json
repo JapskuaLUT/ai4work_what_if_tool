@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose -f /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml ps)",
+      "Bash(git -C /Users/japskua/projects/lut/ai4work_what_if_tool log --oneline -15)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\).get\\('scripts',{}\\)\\)\")",
+      "Bash(bunx tsc *)"
+    ],
+    "additionalDirectories": [
+      "/Users/japskua/projects/lut/ai4work_what_if_tool/specifications"
+    ]
+  }
+}

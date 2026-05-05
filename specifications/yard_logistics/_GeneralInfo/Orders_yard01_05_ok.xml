@@ -1,0 +1,369 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<OrderList>
+  <Order>
+    <offsetMinutes>0</offsetMinutes>
+    <licensePlate>OAS-L 186-1</licensePlate>
+    <material>186</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>62</offsetMinutes>
+    <licensePlate>OAS-U 186-1</licensePlate>
+    <material>186</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>10</offsetMinutes>
+    <licensePlate>OAS-L 102-1</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>72</offsetMinutes>
+    <licensePlate>OAS-U 102-1</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>20</offsetMinutes>
+    <licensePlate>OAS-L 102-2</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>82</offsetMinutes>
+    <licensePlate>OAS-U 102-2</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>30</offsetMinutes>
+    <licensePlate>OAS-L 102-3</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>92</offsetMinutes>
+    <licensePlate>OAS-U 102-3</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>  
+  <Order>
+    <offsetMinutes>40</offsetMinutes>
+    <licensePlate>OAS-L 193-1</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>3000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>102</offsetMinutes>
+    <licensePlate>OAS-U 193-1</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>3000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>50</offsetMinutes>
+    <licensePlate>OAS-L 193-2</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>112</offsetMinutes>
+    <licensePlate>OAS-U 193-2</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order> 
+  <Order>
+    <offsetMinutes>60</offsetMinutes>
+    <licensePlate>OAS-L 193-3</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>3000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>122</offsetMinutes>
+    <licensePlate>OAS-U 193-3</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>3000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>70</offsetMinutes>
+    <licensePlate>OAS-L 193-4</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>132</offsetMinutes>
+    <licensePlate>OAS-U 193-4</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>80</offsetMinutes>
+    <licensePlate>OAS-L 193-5</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>142</offsetMinutes>
+    <licensePlate>OAS-U 193-5</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order> 
+  <Order>
+    <offsetMinutes>90</offsetMinutes>
+    <licensePlate>OAS-L 444-1</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>152</offsetMinutes>
+    <licensePlate>OAS-U 444-1</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>100</offsetMinutes>
+    <licensePlate>OAS-L 444-2</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>162</offsetMinutes>
+    <licensePlate>OAS-U 444-2</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>110</offsetMinutes>
+    <licensePlate>OAS-L 444-3</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>172</offsetMinutes>
+    <licensePlate>OAS-U 444-3</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order> 
+  <Order>
+    <offsetMinutes>120</offsetMinutes>
+    <licensePlate>OAS-L 1-1</licensePlate>
+    <material>1</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>182</offsetMinutes>
+    <licensePlate>OAS-U 1-1</licensePlate>
+    <material>1</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  
+ <!-- 2nd Round --> 
+  <Order>
+    <offsetMinutes>240</offsetMinutes>
+    <licensePlate>OAS-L2 186-1</licensePlate>
+    <material>186</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>302</offsetMinutes>
+    <licensePlate>OAS-U2 186-1</licensePlate>
+    <material>186</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>250</offsetMinutes>
+    <licensePlate>OAS-L2 102-1</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>312</offsetMinutes>
+    <licensePlate>OAS-U2 102-1</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>260</offsetMinutes>
+    <licensePlate>OAS-L2 102-2</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>322</offsetMinutes>
+    <licensePlate>OAS-U2 102-2</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>270</offsetMinutes>
+    <licensePlate>OAS-L2 102-3</licensePlate>
+    <material>102</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>332</offsetMinutes>
+    <licensePlate>OAS-U2 102-3</licensePlate>
+    <material>102</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>280</offsetMinutes>
+    <licensePlate>OAS-L2 193-1</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>342</offsetMinutes>
+    <licensePlate>OAS-U2 193-1</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>290</offsetMinutes>
+    <licensePlate>OAS-L2 193-2</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>352</offsetMinutes>
+    <licensePlate>OAS-U2 193-2</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>300</offsetMinutes>
+    <licensePlate>OAS-L2 193-3</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>362</offsetMinutes>
+    <licensePlate>OAS-U2 193-3</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>310</offsetMinutes>
+    <licensePlate>OAS-L2 193-4</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>372</offsetMinutes>
+    <licensePlate>OAS-U2 193-4</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>320</offsetMinutes>
+    <licensePlate>OAS-L2 193-5</licensePlate>
+    <material>193</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>382</offsetMinutes>
+    <licensePlate>OAS-U2 193-5</licensePlate>
+    <material>193</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order> 
+  <Order>
+    <offsetMinutes>330</offsetMinutes>
+    <licensePlate>OAS-L2 444-1</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>392</offsetMinutes>
+    <licensePlate>OAS-U2 444-1</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>340</offsetMinutes>
+    <licensePlate>OAS-L2 444-2</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>402</offsetMinutes>
+    <licensePlate>OAS-U2 444-2</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>350</offsetMinutes>
+    <licensePlate>OAS-L2 444-3</licensePlate>
+    <material>444</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>412</offsetMinutes>
+    <licensePlate>OAS-U2 444-3</licensePlate>
+    <material>444</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>360</offsetMinutes>
+    <licensePlate>OAS-L2 1-1</licensePlate>
+    <material>1</material>
+    <action>Loading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+  <Order>
+    <offsetMinutes>422</offsetMinutes>
+    <licensePlate>OAS-U2 1-1</licensePlate>
+    <material>1</material>
+    <action>Unloading</action>
+    <quantityKg>4000</quantityKg>
+  </Order>
+</OrderList>
