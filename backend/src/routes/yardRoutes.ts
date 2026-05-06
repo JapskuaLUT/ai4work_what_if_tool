@@ -146,13 +146,30 @@ export const yardRoutes = new Elysia({ prefix: "/simulations/yard" })
                     summary_metrics: r.summary_metrics as any
                 }));
 
+                // The parent's yard_structure / processes are only populated
+                // when all runs hash-match. Storage.Stock changes per run, so
+                // hashes commonly diverge while topology stays identical —
+                // fall back to the first run's copy for display.
+                const firstRunWithYard = sim.runs.find(
+                    (r) => r.yard_structure !== null
+                );
+                const firstRunWithProcesses = sim.runs.find(
+                    (r) => r.processes !== null
+                );
+
                 const response: YardSimulationOverviewResponse = {
                     case_id: sim.case_id,
                     name: sim.name,
                     description: sim.description,
                     yard_image_path: sim.yard_image_path,
-                    yard_structure: sim.yard_structure as any,
-                    processes: sim.processes as any,
+                    yard_structure:
+                        (sim.yard_structure as any) ??
+                        (firstRunWithYard?.yard_structure as any) ??
+                        null,
+                    processes:
+                        (sim.processes as any) ??
+                        (firstRunWithProcesses?.processes as any) ??
+                        null,
                     yard_hash: sim.yard_hash,
                     processes_hash: sim.processes_hash,
                     selected_run_id: sim.selected_run_id,

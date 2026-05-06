@@ -13,10 +13,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { db } from "../src/db";
-import { yard_simulations, yard_runs } from "../src/db/schema";
-import { eq } from "drizzle-orm";
-import { summarizeRun } from "../src/services/yardAnalyticsService";
+import { YardIngestService } from "../src/services/yardIngestService";
 import type {
     YardRunIngestInput,
     YardSimulationExport
@@ -31,7 +28,6 @@ const RESULTS_ROOT = join(
 );
 
 // Fixed case_id for the seeded sample so MainPage can link to it.
-// Re-running with --replace regenerates the runs under the same id.
 const SAMPLE_CASE_ID = "yard-sample-001";
 const SAMPLE_NAME = "Yard AI4Work — sample comparison";
 // Path is resolved by the UI; the asset is copied into ui/public/ at the
@@ -93,86 +89,30 @@ function loadRun(spec: SampleSpec): YardRunIngestInput {
 }
 
 async function main() {
-    // Always re-seed the fixed case so the script is idempotent.
-    const existing = await db.query.yard_simulations.findFirst({
-        where: eq(yard_simulations.case_id, SAMPLE_CASE_ID)
-    });
-    if (existing) {
-        console.log(`Deleting previous seed case ${SAMPLE_CASE_ID}`);
-        await db
-            .delete(yard_simulations)
-            .where(eq(yard_simulations.case_id, SAMPLE_CASE_ID));
-    }
-
     console.log(`Loading ${SAMPLES.length} sample runs from ${RESULTS_ROOT}`);
     const runs = SAMPLES.map(loadRun);
 
-    // Decide whether yard + processes are shareable across all runs
-    // (mirrors YardIngestService.createSimulation, but uses the fixed case_id).
-    const firstHash = runs[0].export.ComparisonInformation;
-    const allYardSame = runs.every(
-        (r) =>
-            r.export.ComparisonInformation.YardStructure === firstHash.YardStructure
-    );
-    const allProcSame = runs.every(
-        (r) => r.export.ComparisonInformation.Processes === firstHash.Processes
-    );
-    const parentYard = allYardSame ? runs[0].export.YardStructure : null;
-    const parentProcesses = allProcSame ? runs[0].export.Processes : null;
-    const parentYardHash = allYardSame ? firstHash.YardStructure : null;
-    const parentProcessesHash = allProcSame ? firstHash.Processes : null;
-
-    await db.transaction(async (tx) => {
-        await tx.insert(yard_simulations).values({
-            case_id: SAMPLE_CASE_ID,
+    const ingest = new YardIngestService();
+    const result = await ingest.createSimulation(
+        {
             name: SAMPLE_NAME,
             description:
                 "Three reference runs over the same yard with progressively heavier order load.",
-            yard_structure: parentYard,
-            processes: parentProcesses,
-            yard_hash: parentYardHash,
-            processes_hash: parentProcessesHash,
             yard_image_path: YARD_IMAGE_PATH,
             metadata: {
                 source: "specifications/yard_logistics/Results/",
                 seeded_by: "seedYardSamples.ts"
-            }
-        });
-        for (const run of runs) {
-            const cmp = run.export.ComparisonInformation;
-            const yardOverride =
-                parentYardHash && cmp.YardStructure === parentYardHash
-                    ? null
-                    : run.export.YardStructure;
-            const procOverride =
-                parentProcessesHash && cmp.Processes === parentProcessesHash
-                    ? null
-                    : run.export.Processes;
-            await tx.insert(yard_runs).values({
-                case_id: SAMPLE_CASE_ID,
-                run_id: run.run_id,
-                label: run.label,
-                description: run.description ?? null,
-                orders: run.export.Orders,
-                measurements: run.export.Measurements,
-                yard_structure: yardOverride,
-                processes: procOverride,
-                yard_hash: cmp.YardStructure,
-                processes_hash: cmp.Processes,
-                orders_hash: cmp.Orders,
-                summary_metrics: summarizeRun(run.export),
-                simulated_at: run.simulated_at
-                    ? new Date(run.simulated_at)
-                    : null
-            });
-        }
-    });
+            },
+            runs
+        },
+        { caseId: SAMPLE_CASE_ID, replace: true }
+    );
 
     console.log("");
     console.log(`Seeded yard simulation:`);
-    console.log(`   case_id : ${SAMPLE_CASE_ID}`);
-    console.log(`   runs    : ${runs.length}`);
-    console.log(`   url     : /yard/${SAMPLE_CASE_ID}`);
+    console.log(`   case_id : ${result.case_id}`);
+    console.log(`   runs    : ${result.run_count}`);
+    console.log(`   url     : /yard/${result.case_id}`);
     process.exit(0);
 }
 

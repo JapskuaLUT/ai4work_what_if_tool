@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { yard_simulations, yard_runs } from "../db/schema";
 import { summarizeRun } from "./yardAnalyticsService";
+import { yardTopologyEqual } from "./yardCompare";
 import type {
     YardRunIngestInput,
     YardSimulationIngestInput
@@ -29,24 +30,39 @@ export interface CreateSimulationResult {
 
 export class YardIngestService {
     /**
-     * Create a new yard simulation set with one or more runs.
-     * Returns the newly-allocated case_id.
+     * Create a new yard simulation set with one or more runs. The
+     * `caseId` is auto-generated unless `options.caseId` is supplied
+     * (the seed script uses a fixed id so the MainPage button can link
+     * to it). Pass `options.replace = true` to delete an existing case
+     * with the same id first.
      */
     async createSimulation(
-        input: YardSimulationIngestInput
+        input: YardSimulationIngestInput,
+        options: { caseId?: string; replace?: boolean } = {}
     ): Promise<CreateSimulationResult> {
         if (input.runs.length === 0) {
             throw new Error("createSimulation requires at least one run");
         }
 
-        const caseId = crypto.randomUUID();
+        const caseId = options.caseId ?? crypto.randomUUID();
+
+        if (options.replace) {
+            await db
+                .delete(yard_simulations)
+                .where(eq(yard_simulations.case_id, caseId));
+        }
 
         // Decide whether yard + processes are shareable across all runs.
-        const firstHash = input.runs[0].export.ComparisonInformation;
-        const allYardSame = input.runs.every(
-            (r) =>
-                r.export.ComparisonInformation.YardStructure ===
-                firstHash.YardStructure
+        // For the yard we compare *topology* not the raw simulator hash:
+        // Storage.Stock changes per run, which makes the hashes diverge
+        // even when the layout is identical. See yardCompare.ts.
+        const firstRun = input.runs[0];
+        const firstHash = firstRun.export.ComparisonInformation;
+        const allYardSame = input.runs.every((r) =>
+            yardTopologyEqual(
+                r.export.YardStructure,
+                firstRun.export.YardStructure
+            )
         );
         const allProcSame = input.runs.every(
             (r) =>
@@ -54,8 +70,11 @@ export class YardIngestService {
                 firstHash.Processes
         );
 
-        const parentYard = allYardSame ? input.runs[0].export.YardStructure : null;
-        const parentProcesses = allProcSame ? input.runs[0].export.Processes : null;
+        const parentYard = allYardSame ? firstRun.export.YardStructure : null;
+        const parentProcesses = allProcSame ? firstRun.export.Processes : null;
+        // The hash columns still carry the simulator's original hashes —
+        // they are user-facing identifiers for "is this the same input?"
+        // and we don't want to re-mint them.
         const parentYardHash = allYardSame ? firstHash.YardStructure : null;
         const parentProcessesHash = allProcSame ? firstHash.Processes : null;
 
@@ -75,7 +94,7 @@ export class YardIngestService {
             for (const run of input.runs) {
                 await tx.insert(yard_runs).values(
                     this.buildRunRow(caseId, run, {
-                        parentYardHash,
+                        parentYard,
                         parentProcessesHash
                     })
                 );
@@ -102,7 +121,7 @@ export class YardIngestService {
 
         await db.insert(yard_runs).values(
             this.buildRunRow(caseId, run, {
-                parentYardHash: parent.yard_hash,
+                parentYard: parent.yard_structure as any,
                 parentProcessesHash: parent.processes_hash
             })
         );
@@ -111,11 +130,19 @@ export class YardIngestService {
     private buildRunRow(
         caseId: string,
         run: YardRunIngestInput,
-        ctx: { parentYardHash: string | null; parentProcessesHash: string | null }
+        ctx: {
+            parentYard: import("../types/yard").YardDesignData | null;
+            parentProcessesHash: string | null;
+        }
     ) {
         const cmp = run.export.ComparisonInformation;
+        // Topology-equivalent yards don't need a per-run override; the
+        // parent copy is fine for display. We discard the run's stock
+        // levels here, which is acceptable because per-run stock is
+        // already represented inside the run's own measurements.
         const yardOverride =
-            ctx.parentYardHash && cmp.YardStructure === ctx.parentYardHash
+            ctx.parentYard &&
+            yardTopologyEqual(ctx.parentYard, run.export.YardStructure)
                 ? null
                 : run.export.YardStructure;
         const procOverride =
