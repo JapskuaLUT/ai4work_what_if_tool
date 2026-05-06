@@ -337,3 +337,37 @@ export const yard_runs_relations = relations(yard_runs, ({ one }) => ({
         references: [yard_simulations.case_id]
     })
 }));
+
+/**
+ * Yard Proposals table
+ * AI-generated or human-authored improvement proposals against a yard
+ * simulation set. Each proposal targets a specific run and lists structured
+ * changes (capacity / stagger / reroute / add_entity) that will eventually
+ * be forwarded to the simulator API for re-evaluation.
+ */
+export const yard_proposals = pgTable("yard_proposals", {
+    id: serial("id").primaryKey(),
+    case_id: text("case_id")
+        .notNull()
+        .references(() => yard_simulations.case_id, {
+            onDelete: "cascade"
+        }),
+    target_run_id: text("target_run_id"),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    target_bottleneck: text("target_bottleneck"),
+    changes: jsonb("changes").notNull(),
+    expected_impact: text("expected_impact"),
+    risks: text("risks"),
+    source: text("source").notNull().default("ai"),
+    sent_to_simulator_at: timestamp("sent_to_simulator_at"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const yard_proposals_relations = relations(yard_proposals, ({ one }) => ({
+    simulation: one(yard_simulations, {
+        fields: [yard_proposals.case_id],
+        references: [yard_simulations.case_id]
+    })
+}));

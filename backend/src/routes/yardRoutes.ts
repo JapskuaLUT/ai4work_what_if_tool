@@ -1,13 +1,20 @@
 // backend/src/routes/yardRoutes.ts
 
 import Elysia, { t } from "elysia";
-import { and, eq } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { yard_simulations, yard_runs } from "../db/schema";
+import {
+    yard_simulations,
+    yard_runs,
+    yard_proposals
+} from "../db/schema";
 import { YardIngestService } from "../services/yardIngestService";
 import { entityOccupancyTimeline } from "../services/yardAnalyticsService";
+import { validateProposal } from "../services/yardProposalService";
 import type {
     OccupancyTimelineResponse,
+    YardDesignData,
+    YardProposal,
     YardRunDetailResponse,
     YardRunSummaryResponse,
     YardSimulationOverviewResponse,
@@ -452,7 +459,187 @@ export const yardRoutes = new Elysia({ prefix: "/simulations/yard" })
                 tags: ["Yard Logistics"]
             }
         }
+    )
+
+    // -----------------------------------------------------------------
+    // Improvement proposals (AI-generated or manual)
+    // -----------------------------------------------------------------
+
+    /**
+     * GET /api/simulations/yard/:caseId/proposals
+     * List all proposals for a case (newest first).
+     */
+    .get(
+        "/:caseId/proposals",
+        async ({ params, set }) => {
+            try {
+                const sim = await db.query.yard_simulations.findFirst({
+                    where: eq(yard_simulations.case_id, params.caseId)
+                });
+                if (!sim) {
+                    set.status = 404;
+                    return { error: "Yard simulation not found" };
+                }
+                const rows = await db
+                    .select()
+                    .from(yard_proposals)
+                    .where(eq(yard_proposals.case_id, params.caseId))
+                    .orderBy(desc(yard_proposals.created_at));
+                return {
+                    case_id: params.caseId,
+                    proposals: rows.map(rowToProposal)
+                };
+            } catch (error: any) {
+                console.error("Failed to list proposals:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while listing proposals.",
+                    message: error.message
+                };
+            }
+        },
+        {
+            params: t.Object({ caseId: t.String() }),
+            detail: {
+                summary: "List improvement proposals for a yard simulation",
+                tags: ["Yard Logistics"]
+            }
+        }
+    )
+
+    /**
+     * POST /api/simulations/yard/:caseId/proposals
+     * Persist a new proposal. Validates references against the parent
+     * yard structure (or the first run's, if parent yard is null).
+     */
+    .post(
+        "/:caseId/proposals",
+        async ({ params, body, set }) => {
+            try {
+                const sim = await db.query.yard_simulations.findFirst({
+                    where: eq(yard_simulations.case_id, params.caseId),
+                    with: { runs: true }
+                });
+                if (!sim) {
+                    set.status = 404;
+                    return { error: "Yard simulation not found" };
+                }
+                const yard: YardDesignData | null =
+                    (sim.yard_structure as any) ??
+                    (sim.runs.find((r) => r.yard_structure)?.yard_structure as any) ??
+                    null;
+
+                const input = body as any;
+                const validation = validateProposal(yard, input);
+                if (!validation.valid) {
+                    set.status = 400;
+                    return {
+                        error: "Proposal failed validation",
+                        validation
+                    };
+                }
+
+                const inserted = await db
+                    .insert(yard_proposals)
+                    .values({
+                        case_id: params.caseId,
+                        target_run_id: input.target_run_id ?? null,
+                        title: input.title,
+                        summary: input.summary,
+                        target_bottleneck: input.target_bottleneck ?? null,
+                        changes: input.changes,
+                        expected_impact: input.expected_impact ?? null,
+                        risks: input.risks ?? null,
+                        source: input.source ?? "ai"
+                    })
+                    .returning();
+
+                set.status = 201;
+                return {
+                    proposal: rowToProposal(inserted[0]),
+                    validation
+                };
+            } catch (error: any) {
+                console.error("Failed to create proposal:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while saving the proposal.",
+                    message: error.message
+                };
+            }
+        },
+        {
+            params: t.Object({ caseId: t.String() }),
+            // Accept opaquely; validateProposal does the real check.
+            body: t.Any(),
+            detail: {
+                summary: "Save a yard improvement proposal",
+                tags: ["Yard Logistics"]
+            }
+        }
+    )
+
+    /**
+     * DELETE /api/simulations/yard/:caseId/proposals/:id
+     */
+    .delete(
+        "/:caseId/proposals/:id",
+        async ({ params, set }) => {
+            const id = Number(params.id);
+            if (!Number.isFinite(id)) {
+                set.status = 400;
+                return { error: "Proposal id must be numeric" };
+            }
+            try {
+                const deleted = await db
+                    .delete(yard_proposals)
+                    .where(
+                        and(
+                            eq(yard_proposals.case_id, params.caseId),
+                            eq(yard_proposals.id, id)
+                        )
+                    )
+                    .returning();
+                if (deleted.length === 0) {
+                    set.status = 404;
+                    return { error: "Proposal not found" };
+                }
+                return { ok: true, deletedId: id };
+            } catch (error: any) {
+                console.error("Failed to delete proposal:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while deleting the proposal.",
+                    message: error.message
+                };
+            }
+        },
+        {
+            params: t.Object({ caseId: t.String(), id: t.String() }),
+            detail: {
+                summary: "Delete an improvement proposal",
+                tags: ["Yard Logistics"]
+            }
+        }
     );
+
+function rowToProposal(r: any): YardProposal {
+    return {
+        id: r.id,
+        case_id: r.case_id,
+        target_run_id: r.target_run_id ?? null,
+        title: r.title,
+        summary: r.summary,
+        target_bottleneck: r.target_bottleneck ?? null,
+        changes: r.changes ?? [],
+        expected_impact: r.expected_impact ?? null,
+        risks: r.risks ?? null,
+        source: r.source,
+        sent_to_simulator_at: r.sent_to_simulator_at?.toISOString?.() ?? null,
+        created_at: r.created_at?.toISOString?.() ?? r.created_at,
+        updated_at: r.updated_at?.toISOString?.() ?? r.updated_at
+    };
+}
 
 function lookupMaxOccupancy(yard: any, entityName: string): number {
     if (!yard) return 1;

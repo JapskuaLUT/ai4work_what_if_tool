@@ -17,7 +17,10 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Message } from "@/types/chat";
 import type {
+    ProposalChange,
+    YardProposal,
     YardRunDetail,
+    YardRunSummary,
     YardSimulationOverview
 } from "@/types/yard";
 import { formatSeconds } from "@/services/yardSimulationService";
@@ -27,9 +30,19 @@ interface Props {
     /** When the user has a specific run tab open, the model gets focused
      *  context for that run; null/undefined → comparison-mode context. */
     activeRun?: YardRunDetail | null;
+    /** When set, the chat opens automatically with the proposal injected
+     *  into the system context. The chat is in "discuss this proposal"
+     *  mode until the user closes it (which fires onClearDiscussion). */
+    discussionProposal?: YardProposal | null;
+    onClearDiscussion?: () => void;
 }
 
-export function FloatingYardChat({ overview, activeRun }: Props) {
+export function FloatingYardChat({
+    overview,
+    activeRun,
+    discussionProposal,
+    onClearDiscussion
+}: Props) {
     const { globalModel, availableModels: contextModels } = useModelContext();
 
     const [model, setModel] = useState<string>("");
@@ -71,10 +84,15 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
         }
     }, [availableModels, model]);
 
-    // Re-issue welcome whenever the focus run changes
+    // Re-issue welcome whenever the focus changes (run, case, or discussion)
     useEffect(() => {
         setIsInitialized(false);
-    }, [activeRun?.run_id, overview.case_id]);
+    }, [activeRun?.run_id, overview.case_id, discussionProposal?.id]);
+
+    // Auto-open the chat when a discussion target is set
+    useEffect(() => {
+        if (discussionProposal) setIsChatOpen(true);
+    }, [discussionProposal?.id]);
 
     useEffect(() => {
         if (!isInitialized && model && !loading && isChatOpen) {
@@ -82,12 +100,24 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
                 {
                     id: "initial-" + Date.now(),
                     role: "assistant",
-                    content: createWelcomeMessage(overview, activeRun)
+                    content: createWelcomeMessage(
+                        overview,
+                        activeRun,
+                        discussionProposal
+                    )
                 }
             ]);
             setIsInitialized(true);
         }
-    }, [overview, activeRun, model, loading, isInitialized, isChatOpen]);
+    }, [
+        overview,
+        activeRun,
+        discussionProposal,
+        model,
+        loading,
+        isInitialized,
+        isChatOpen
+    ]);
 
     // Stream the in-flight assistant message
     useEffect(() => {
@@ -115,7 +145,14 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
         }
     }, [loading, response, streamingMessageId]);
 
-    // Click outside / Escape to close
+    // Click outside / Escape to close. Both paths also end any active
+    // proposal discussion, matching the explicit close button.
+    const closeAndClearDiscussion = () => {
+        setIsChatOpen(false);
+        setIsExpanded(false);
+        if (discussionProposal && onClearDiscussion) onClearDiscussion();
+    };
+
     useEffect(() => {
         function onClick(e: MouseEvent) {
             const target = e.target as HTMLElement;
@@ -129,24 +166,25 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
                 chatCardRef.current &&
                 !chatCardRef.current.contains(e.target as Node)
             ) {
-                setIsChatOpen(false);
-                setIsExpanded(false);
+                closeAndClearDiscussion();
             }
         }
         if (isChatOpen) document.addEventListener("mousedown", onClick);
         return () => document.removeEventListener("mousedown", onClick);
-    }, [isChatOpen]);
+        // closeAndClearDiscussion captures latest discussionProposal via render
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isChatOpen, discussionProposal?.id]);
 
     useEffect(() => {
         function onKey(e: KeyboardEvent) {
             if (e.key === "Escape" && isChatOpen) {
-                setIsChatOpen(false);
-                setIsExpanded(false);
+                closeAndClearDiscussion();
             }
         }
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
-    }, [isChatOpen]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isChatOpen, discussionProposal?.id]);
 
     const handleSubmit = async (message: string) => {
         if (!message.trim() || loading || !model) return;
@@ -170,9 +208,17 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
                 {
                     role: "system" as const,
                     content:
-                        createSystemPrompt(overview, activeRun) +
+                        createSystemPrompt(
+                            overview,
+                            activeRun,
+                            discussionProposal
+                        ) +
                         "\n\nHere is the current data:\n" +
-                        createYardContext(overview, activeRun)
+                        createYardContext(
+                            overview,
+                            activeRun,
+                            discussionProposal
+                        )
                 },
                 ...messages
                     .filter(
@@ -204,7 +250,11 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
             {
                 id: "initial-" + Date.now(),
                 role: "assistant",
-                content: createWelcomeMessage(overview, activeRun)
+                content: createWelcomeMessage(
+                    overview,
+                    activeRun,
+                    discussionProposal
+                )
             }
         ]);
         setStreamingMessageId(null);
@@ -213,6 +263,9 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
     const handleClose = () => {
         setIsChatOpen(false);
         setIsExpanded(false);
+        // Closing the chat ends a proposal discussion — re-opening the
+        // floating button gives a fresh chat.
+        if (discussionProposal && onClearDiscussion) onClearDiscussion();
     };
 
     // Both modes need a *concrete* height: the Card uses `h-full` and the
@@ -240,9 +293,11 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
         contextModels.length > 0 ? contextModels : availableModels;
     const isLoadingModels =
         loadingModels && mergedAvailableModels.length === 0;
-    const chatTitle = activeRun
-        ? `${activeRun.label} run`
-        : "Yard comparison";
+    const chatTitle = discussionProposal
+        ? `Discuss: ${truncateForTitle(discussionProposal.title)}`
+        : activeRun
+          ? `${activeRun.label} run`
+          : "Yard comparison";
 
     return (
         <>
@@ -325,7 +380,8 @@ export function FloatingYardChat({ overview, activeRun }: Props) {
 
 function createSystemPrompt(
     overview: YardSimulationOverview,
-    activeRun?: YardRunDetail | null
+    activeRun?: YardRunDetail | null,
+    discussionProposal?: YardProposal | null
 ): string {
     const base = `You are a yard-logistics analyst helping the user reason about simulator outputs for a truck-yard comparison set ("${overview.name}").
 
@@ -338,6 +394,13 @@ When you reason:
 - Be concrete about what would help: capacity (more parking, second barrier/scale), order pacing (stagger offsetMinutes), or routing (different storage assignments).
 - Do not invent simulator features the user has not mentioned (this app only ingests results; it does not yet run the simulator).
 `;
+
+    if (discussionProposal) {
+        return (
+            base +
+            `\nThe user is now discussing a specific improvement proposal (see "PROPOSAL UNDER DISCUSSION" in the data block). Default your answers to that proposal: critique it, predict its impact, surface risks, suggest alternatives, and tell the user what the simulator is most likely to show. The proposal is advisory — it has NOT been validated by the simulator yet. If the user asks comparative questions, answer those honestly using the runs' summaries below.`
+        );
+    }
 
     if (activeRun) {
         return (
@@ -353,9 +416,17 @@ When you reason:
 
 function createYardContext(
     overview: YardSimulationOverview,
-    activeRun?: YardRunDetail | null
+    activeRun?: YardRunDetail | null,
+    discussionProposal?: YardProposal | null
 ): string {
     const lines: string[] = [];
+
+    // When discussing a proposal, lead with the proposal block — it's the
+    // most relevant context for every question that follows.
+    if (discussionProposal) {
+        lines.push(...formatProposalBlock(discussionProposal, overview));
+        lines.push("");
+    }
 
     // Yard layout summary (when present)
     const e = overview.yard_structure?.Entities;
@@ -478,8 +549,34 @@ function shortHash(h: string | null): string {
 
 function createWelcomeMessage(
     overview: YardSimulationOverview,
-    activeRun?: YardRunDetail | null
+    activeRun?: YardRunDetail | null,
+    discussionProposal?: YardProposal | null
 ): string {
+    if (discussionProposal) {
+        const targetRun = discussionProposal.target_run_id
+            ? overview.runs.find(
+                  (r) => r.run_id === discussionProposal.target_run_id
+              )
+            : null;
+        const changeBullets = discussionProposal.changes
+            .map((c) => `• ${formatChange(c)}`)
+            .join("\n");
+        return `Let's pick apart **${discussionProposal.title}**${targetRun ? ` for the **${targetRun.label}** run` : ""}.
+
+Proposed changes:
+${changeBullets}
+${discussionProposal.expected_impact ? `\n_Expected impact:_ ${discussionProposal.expected_impact}` : ""}
+${discussionProposal.risks ? `\n_Risks:_ ${discussionProposal.risks}` : ""}
+
+Things you might ask:
+- *How confident are you that this fixes the bottleneck?*
+- *What could go wrong — second-order effects on other entities?*
+- *What would the simulator most likely show when this runs?*
+- *Are there cheaper alternatives that get most of the benefit?*
+- *Which numbers in the data support or contradict the expected impact?*
+
+Reminder: this proposal hasn't been validated by the simulator yet — your answers are hypotheses based on the run data.`;
+    }
     if (activeRun) {
         const m = activeRun.summary_metrics;
         const top = m.bottlenecks[0];
@@ -502,4 +599,62 @@ Things you might ask:
 - *What single change would help the worst run the most?*
 - *What actually changed between runs — the layout, the processes, or just the orders?*
 - *Are any runs hitting the same bottleneck for different reasons?*`;
+}
+
+// ---------------------------------------------------------------------------
+// Proposal-discussion helpers
+// ---------------------------------------------------------------------------
+
+function truncateForTitle(s: string): string {
+    return s.length <= 36 ? s : s.slice(0, 33) + "…";
+}
+
+function formatChange(c: ProposalChange): string {
+    switch (c.kind) {
+        case "capacity":
+            return `[capacity] ${c.entity}: ${c.from} → ${c.to}${c.note ? ` — ${c.note}` : ""}`;
+        case "stagger_orders":
+            return `[stagger] ${c.description}${typeof c.target_arrivals_per_min === "number" ? ` (target ${c.target_arrivals_per_min}/min)` : ""}`;
+        case "reroute":
+            return `[reroute] material ${c.material}: ${c.from_storage} → ${c.to_storage}`;
+        case "add_entity":
+            return `[add] ${c.entity_type}${c.terminal_typ ? `(${c.terminal_typ})` : ""} ${c.name}${c.connects?.length ? ` via ${c.connects.join(", ")}` : ""}`;
+    }
+}
+
+function formatProposalBlock(
+    p: YardProposal,
+    overview: YardSimulationOverview
+): string[] {
+    const lines: string[] = [];
+    lines.push("PROPOSAL UNDER DISCUSSION");
+    lines.push(`  title: ${p.title}`);
+    lines.push(`  source: ${p.source}`);
+    if (p.target_bottleneck) {
+        lines.push(`  target_bottleneck: ${p.target_bottleneck}`);
+    }
+    if (p.target_run_id) {
+        const run = overview.runs.find(
+            (r) => r.run_id === p.target_run_id
+        ) as YardRunSummary | undefined;
+        lines.push(`  target_run: ${p.target_run_id}`);
+        if (run) {
+            const m = run.summary_metrics;
+            const top = m.bottlenecks[0];
+            lines.push(
+                `  target_run KPIs: ${m.orders.completed}/${m.orders.overall} orders, max wait ${formatSeconds(m.waiting_seconds.max)}, total wait ${formatSeconds(m.waiting_seconds.total)}, throughput ${m.throughput.orders_per_hour.toFixed(1)}/h`
+            );
+            if (top) {
+                lines.push(
+                    `  target_run top bottleneck: ${top.entity} (${top.type}, ${top.max_concurrent}/${top.max_occupancy}, queue_score ${top.queue_score.toFixed(2)})`
+                );
+            }
+        }
+    }
+    lines.push(`  summary: ${p.summary}`);
+    if (p.expected_impact) lines.push(`  expected_impact: ${p.expected_impact}`);
+    if (p.risks) lines.push(`  risks: ${p.risks}`);
+    lines.push("  changes:");
+    for (const c of p.changes) lines.push(`    - ${formatChange(c)}`);
+    return lines;
 }

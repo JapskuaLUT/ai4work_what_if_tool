@@ -2,6 +2,9 @@
 
 import type {
     OccupancyTimeline,
+    ProposalValidation,
+    YardProposal,
+    YardProposalCreateInput,
     YardRunDetail,
     YardSimulationOverview
 } from "../types/yard";
@@ -105,4 +108,66 @@ export function formatSeconds(s: number): string {
 export function parseHmsToSeconds(hms: string): number {
     const [h, m, s] = hms.split(":");
     return Number(h) * 3600 + Number(m) * 60 + Number(s);
+}
+
+// ---------------------------------------------------------------------------
+// Proposals API
+// ---------------------------------------------------------------------------
+
+export async function listYardProposals(
+    caseId: string
+): Promise<YardProposal[]> {
+    const res = await fetch(
+        `${API_BASE_URL}/simulations/yard/${caseId}/proposals`
+    );
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to list proposals");
+    }
+    const body = await res.json();
+    return body.proposals ?? [];
+}
+
+export interface SaveProposalResult {
+    proposal: YardProposal;
+    validation: ProposalValidation;
+}
+
+export async function saveYardProposal(
+    caseId: string,
+    input: YardProposalCreateInput
+): Promise<SaveProposalResult> {
+    const res = await fetch(
+        `${API_BASE_URL}/simulations/yard/${caseId}/proposals`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input)
+        }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        // 400 carries a structured `validation` payload — surface it so the
+        // UI can show what went wrong.
+        const err = new Error(
+            body.error || body.message || "Failed to save proposal"
+        ) as Error & { validation?: ProposalValidation };
+        if (body.validation) err.validation = body.validation;
+        throw err;
+    }
+    return body as SaveProposalResult;
+}
+
+export async function deleteYardProposal(
+    caseId: string,
+    id: number
+): Promise<void> {
+    const res = await fetch(
+        `${API_BASE_URL}/simulations/yard/${caseId}/proposals/${id}`,
+        { method: "DELETE" }
+    );
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete proposal");
+    }
 }

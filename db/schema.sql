@@ -167,6 +167,30 @@ CREATE TABLE yard_runs (
     CONSTRAINT yard_run_unique UNIQUE(case_id, run_id)
 );
 
+-- Table: yard_proposals
+-- AI-generated or human-authored improvement proposals against a yard
+-- simulation set. Each proposal targets a specific run (the "before" state)
+-- and lists structured changes that will eventually be forwarded to the
+-- simulator API for re-evaluation.
+CREATE TABLE yard_proposals (
+    id SERIAL PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    target_run_id TEXT,                       -- which run is the "before"; nullable
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    target_bottleneck TEXT,                   -- entity name addressed (e.g. "B010")
+    changes JSONB NOT NULL,                   -- typed change list (capacity / stagger / reroute / add_entity)
+    expected_impact TEXT,
+    risks TEXT,
+    source TEXT NOT NULL DEFAULT 'ai',        -- "ai" | "manual"
+    sent_to_simulator_at TIMESTAMP,           -- populated when forwarded later
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+
+    FOREIGN KEY (case_id) REFERENCES yard_simulations(case_id) ON DELETE CASCADE,
+    CHECK (source IN ('ai', 'manual'))
+);
+
 -- Indexes for performance
 CREATE INDEX idx_simulation_sets_kind ON simulation_sets(kind);
 CREATE INDEX idx_simulation_sets_name ON simulation_sets(name);
@@ -178,6 +202,8 @@ CREATE INDEX idx_stress_metrics_calculated_at ON stress_metrics(calculated_at);
 CREATE INDEX idx_stress_metrics_scenario ON stress_metrics(case_id, scenario_id);
 CREATE INDEX idx_yard_simulations_name ON yard_simulations(name);
 CREATE INDEX idx_yard_runs_case ON yard_runs(case_id);
+CREATE INDEX idx_yard_proposals_case ON yard_proposals(case_id);
+CREATE INDEX idx_yard_proposals_target_run ON yard_proposals(case_id, target_run_id);
 
 -- Triggers for automatic updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -202,4 +228,8 @@ CREATE TRIGGER update_educational_simulations_updated_at
 
 CREATE TRIGGER update_yard_simulations_updated_at
     BEFORE UPDATE ON yard_simulations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_yard_proposals_updated_at
+    BEFORE UPDATE ON yard_proposals
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

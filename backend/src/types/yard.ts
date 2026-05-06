@@ -298,3 +298,88 @@ export interface OccupancyTimelineResponse {
     max_occupancy: number;
     points: OccupancyTimelinePoint[];
 }
+
+// ---------------------------------------------------------------------------
+// Proposals — improvement suggestions over a yard simulation
+// ---------------------------------------------------------------------------
+
+/**
+ * One concrete change inside a proposal. The `kind` field discriminates
+ * the shape; new kinds can be added over time. The simulator-API hand-off
+ * (future work) will translate these into the simulator's input format.
+ */
+export type ProposalChange =
+    | {
+          kind: "capacity";
+          entity: string;        // entity Name (e.g. "P010", "B010")
+          from: number;
+          to: number;
+          note?: string;
+      }
+    | {
+          kind: "stagger_orders";
+          description: string;
+          target_arrivals_per_min?: number;
+          spread_window_min?: number;
+          note?: string;
+      }
+    | {
+          kind: "reroute";
+          material: string;
+          from_storage: string;
+          to_storage: string;
+          note?: string;
+      }
+    | {
+          kind: "add_entity";
+          entity_type:
+              | "Terminal"
+              | "ParkingArea"
+              | "Scale"
+              | "Storage"
+              | "Crossing";
+          terminal_typ?:
+              | "CheckIn"
+              | "CheckOut"
+              | "Waagenterminal"
+              | "Schrankenterminal";
+          name: string;
+          connects?: string[];      // street names this new entity ties into
+          note?: string;
+      };
+
+export type ProposalSource = "ai" | "manual";
+
+export interface YardProposal {
+    id: number;
+    case_id: string;
+    target_run_id: string | null;
+    title: string;
+    summary: string;
+    target_bottleneck: string | null;
+    changes: ProposalChange[];
+    expected_impact: string | null;
+    risks: string | null;
+    source: ProposalSource;
+    sent_to_simulator_at: string | null;   // ISO 8601
+    created_at: string;
+    updated_at: string;
+}
+
+export interface YardProposalCreateInput {
+    target_run_id?: string | null;
+    title: string;
+    summary: string;
+    target_bottleneck?: string | null;
+    changes: ProposalChange[];
+    expected_impact?: string | null;
+    risks?: string | null;
+    source?: ProposalSource;
+}
+
+/** Result of validating a proposal against a yard structure. */
+export interface ProposalValidation {
+    valid: boolean;
+    errors: string[];     // hard problems (unknown entity, bad kind)
+    warnings: string[];   // soft concerns (e.g. capacity reduction below max_concurrent)
+}

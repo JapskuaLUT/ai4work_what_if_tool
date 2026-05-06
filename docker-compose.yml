@@ -87,6 +87,8 @@ services:
             - what_if_network
     ollama-proxy:
         image: whatif-ollama-proxy:dev
+        volumes:
+            - ./ollama_proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro # Live-edit nginx config without rebuilding the image
         networks:
             - what_if_network
         labels:

@@ -16,6 +16,7 @@ import {
     AlertTriangle,
     BarChart2,
     ChevronLeft,
+    Lightbulb,
     Star,
     Truck
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
     selectYardRun
 } from "@/services/yardSimulationService";
 import type {
+    YardProposal,
     YardRunDetail,
     YardSimulationOverview
 } from "@/types/yard";
@@ -36,6 +38,7 @@ import { OccupancyTimelineChart } from "@/components/yard/OccupancyTimelineChart
 import { TruckGanttChart } from "@/components/yard/TruckGanttChart";
 import { YardMap } from "@/components/yard/YardMap";
 import { FloatingYardChat } from "@/components/yard/FloatingYardChat";
+import { YardImprovementsTab } from "@/components/yard/YardImprovementsTab";
 
 export default function YardSimulationPage() {
     const { caseId } = useParams<{ caseId: string }>();
@@ -50,6 +53,8 @@ export default function YardSimulationPage() {
     const [isSelecting, setIsSelecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+    const [discussionProposal, setDiscussionProposal] =
+        useState<YardProposal | null>(null);
 
     // Initial load
     useEffect(() => {
@@ -84,9 +89,12 @@ export default function YardSimulationPage() {
         };
     }, [caseId]);
 
-    // Load run detail when a non-overview tab becomes active
+    // Load run detail when a per-run tab becomes active. Non-run tabs
+    // (overview, improvements, …) are listed here so they don't get
+    // mistaken for a run id and cause a spurious /:runId fetch.
+    const NON_RUN_TABS = ["overview", "improvements"];
     useEffect(() => {
-        if (!caseId || activeTab === "overview") {
+        if (!caseId || NON_RUN_TABS.includes(activeTab)) {
             setRunDetail(null);
             setSelectedEntity(null);
             return;
@@ -213,6 +221,13 @@ export default function YardSimulationPage() {
                         <BarChart2 className="h-4 w-4 mr-2" />
                         Comparison
                     </TabsTrigger>
+                    <TabsTrigger
+                        value="improvements"
+                        className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md"
+                    >
+                        <Lightbulb className="h-4 w-4 mr-2" />
+                        Improvements
+                    </TabsTrigger>
                     {overview.runs.map((r) => {
                         const isSel = overview.selected_run_id === r.run_id;
                         return (
@@ -241,6 +256,13 @@ export default function YardSimulationPage() {
                     />
                 </TabsContent>
 
+                <TabsContent value="improvements">
+                    <YardImprovementsTab
+                        overview={overview}
+                        onDiscussProposal={setDiscussionProposal}
+                    />
+                </TabsContent>
+
                 {overview.runs.map((r) => (
                     <TabsContent key={r.run_id} value={r.run_id}>
                         {isLoadingRun || !runDetail ? (
@@ -263,6 +285,8 @@ export default function YardSimulationPage() {
                         ? runDetail
                         : null
                 }
+                discussionProposal={discussionProposal}
+                onClearDiscussion={() => setDiscussionProposal(null)}
             />
         </div>
     );

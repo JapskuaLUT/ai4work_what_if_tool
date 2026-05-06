@@ -45,6 +45,12 @@ export interface ChatParams {
         content: string;
     }[];
     stream?: boolean;
+    /**
+     * Ollama's structured-output hint. Pass "json" to constrain the model
+     * to emit valid JSON; pass a JSON Schema object for stricter shaping.
+     * https://github.com/ollama/ollama/blob/main/docs/api.md#structured-outputs
+     */
+    format?: "json" | Record<string, unknown>;
     options?: {
         temperature?: number;
         top_p?: number;
