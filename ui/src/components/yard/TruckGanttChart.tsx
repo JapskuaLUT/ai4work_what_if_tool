@@ -15,7 +15,10 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { parseHmsToSeconds } from "@/services/yardSimulationService";
+import {
+    formatSeconds,
+    parseHmsToSeconds
+} from "@/services/yardSimulationService";
 
 interface Props {
     measurements: OrderMeasurement[];
@@ -35,6 +38,43 @@ const ACTION_COLOURS: Record<string, string> = {
 
 function colourFor(action: string): string {
     return ACTION_COLOURS[action] ?? "#6b7280";
+}
+
+interface TruckAggregate {
+    totalSec: number;        // sum of all TimeEntry durations
+    spanSec: number;         // last End − first Start (wall-clock on-yard)
+    byAction: Array<{ action: string; seconds: number; pct: number }>;
+}
+
+/**
+ * Reduce a truck's TimeEntries into per-action totals + a span. Action
+ * percentages are over the totalSec sum (which equals span only if there
+ * are no overlaps — for our data it does).
+ */
+function aggregateTruck(m: OrderMeasurement): TruckAggregate {
+    const byAct = new Map<string, number>();
+    let total = 0;
+    let firstStart = Number.POSITIVE_INFINITY;
+    let lastEnd = 0;
+    for (const te of m.TimeEntries) {
+        const s = parseHmsToSeconds(te.Start);
+        const e = parseHmsToSeconds(te.End);
+        if (e < s) continue;
+        const dur = e - s;
+        total += dur;
+        byAct.set(te.Action, (byAct.get(te.Action) ?? 0) + dur);
+        if (s < firstStart) firstStart = s;
+        if (e > lastEnd) lastEnd = e;
+    }
+    const span = Math.max(0, lastEnd - (Number.isFinite(firstStart) ? firstStart : 0));
+    const byAction = [...byAct.entries()]
+        .map(([action, seconds]) => ({
+            action,
+            seconds,
+            pct: total > 0 ? (seconds / total) * 100 : 0
+        }))
+        .sort((a, b) => b.seconds - a.seconds);
+    return { totalSec: total, spanSec: span, byAction };
 }
 
 export function TruckGanttChart({ measurements }: Props) {
@@ -64,6 +104,12 @@ export function TruckGanttChart({ measurements }: Props) {
         }
         return mx;
     }, [visible]);
+
+    const [hovered, setHovered] = useState<{
+        measurement: OrderMeasurement;
+        x: number;
+        y: number;
+    } | null>(null);
 
     if (visible.length === 0) {
         return null;
@@ -123,11 +169,33 @@ export function TruckGanttChart({ measurements }: Props) {
                                     key={m.OrderIdent}
                                     measurement={m}
                                     tMaxSec={tMaxSec}
+                                    onHoverEnter={(e) =>
+                                        setHovered({
+                                            measurement: m,
+                                            x: e.clientX,
+                                            y: e.clientY
+                                        })
+                                    }
+                                    onHoverMove={(e) =>
+                                        setHovered((prev) =>
+                                            prev &&
+                                            prev.measurement.OrderIdent ===
+                                                m.OrderIdent
+                                                ? {
+                                                      ...prev,
+                                                      x: e.clientX,
+                                                      y: e.clientY
+                                                  }
+                                                : prev
+                                        )
+                                    }
+                                    onHoverLeave={() => setHovered(null)}
                                 />
                             ))}
                         </div>
                     </div>
                 </div>
+                {hovered && <TruckTooltip {...hovered} />}
             </CardContent>
         </Card>
     );
@@ -135,21 +203,29 @@ export function TruckGanttChart({ measurements }: Props) {
 
 function GanttRow({
     measurement,
-    tMaxSec
+    tMaxSec,
+    onHoverEnter,
+    onHoverMove,
+    onHoverLeave
 }: {
     measurement: OrderMeasurement;
     tMaxSec: number;
+    onHoverEnter: (e: React.MouseEvent) => void;
+    onHoverMove: (e: React.MouseEvent) => void;
+    onHoverLeave: () => void;
 }) {
     const stateClass =
         measurement.Summary.OrderState === "Completed"
             ? "text-gray-700"
             : "text-yellow-700";
     return (
-        <div className="flex items-center text-xs">
-            <div
-                className={`w-32 shrink-0 truncate pr-2 ${stateClass}`}
-                title={`${measurement.OrderIdent} — wait ${measurement.Summary.WaitingTime}, drive ${measurement.Summary.DrivingTime}`}
-            >
+        <div
+            className="flex items-center text-xs cursor-default"
+            onMouseEnter={onHoverEnter}
+            onMouseMove={onHoverMove}
+            onMouseLeave={onHoverLeave}
+        >
+            <div className={`w-32 shrink-0 truncate pr-2 ${stateClass}`}>
                 {measurement.OrderIdent}
             </div>
             <div className="flex-1 relative h-5 bg-gray-100 rounded">
@@ -160,6 +236,133 @@ function GanttRow({
                         tMaxSec={tMaxSec}
                     />
                 ))}
+            </div>
+        </div>
+    );
+}
+
+function TruckTooltip({
+    measurement,
+    x,
+    y
+}: {
+    measurement: OrderMeasurement;
+    x: number;
+    y: number;
+}) {
+    const agg = useMemo(() => aggregateTruck(measurement), [measurement]);
+    const sum = measurement.Summary;
+    const waitSec = parseHmsToSeconds(sum.WaitingTime);
+    const driveSec = parseHmsToSeconds(sum.DrivingTime);
+
+    // Position to the right of the cursor by default; flip left if too close
+    // to the right edge of the viewport. Same vertical flip near the bottom.
+    const W = 320;
+    const H = 320; // generous; tooltip can be shorter
+    const left =
+        typeof window !== "undefined" && x + W + 24 > window.innerWidth
+            ? x - W - 12
+            : x + 12;
+    const top =
+        typeof window !== "undefined" && y + H + 24 > window.innerHeight
+            ? Math.max(8, y - H - 12)
+            : y + 12;
+
+    return (
+        <div
+            className="fixed z-50 pointer-events-none rounded-lg border bg-white shadow-lg p-3 text-xs"
+            style={{ left, top, width: W }}
+        >
+            <div className="flex items-center justify-between mb-1">
+                <div className="font-semibold text-sm truncate">
+                    {measurement.OrderIdent}
+                </div>
+                <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        sum.OrderState === "Completed"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-800"
+                    }`}
+                >
+                    {sum.OrderState}
+                </span>
+            </div>
+            <div className="text-gray-500 mb-2">
+                Process: {measurement.ProcessIdent}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-3">
+                <Stat label="On yard" value={formatSeconds(agg.spanSec)} />
+                <Stat
+                    label="Waiting"
+                    value={formatSeconds(waitSec)}
+                    accent={waitSec > 0 ? "text-red-600" : undefined}
+                />
+                <Stat label="Driving" value={formatSeconds(driveSec)} />
+            </div>
+
+            {/* Stacked composition bar */}
+            <div className="flex h-2 w-full rounded overflow-hidden mb-2">
+                {agg.byAction.map((a) => (
+                    <div
+                        key={a.action}
+                        style={{
+                            width: `${a.pct}%`,
+                            backgroundColor: colourFor(a.action)
+                        }}
+                        title={`${a.action}: ${formatSeconds(a.seconds)} (${a.pct.toFixed(1)}%)`}
+                    />
+                ))}
+            </div>
+
+            {/* Per-action breakdown */}
+            <div className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">
+                Time per action
+            </div>
+            <ul className="space-y-0.5">
+                {agg.byAction.map((a) => (
+                    <li
+                        key={a.action}
+                        className="flex items-center justify-between gap-2"
+                    >
+                        <span className="flex items-center gap-1.5 min-w-0">
+                            <span
+                                className="inline-block w-2.5 h-2.5 rounded shrink-0"
+                                style={{ backgroundColor: colourFor(a.action) }}
+                            />
+                            <span className="truncate">{a.action}</span>
+                        </span>
+                        <span className="tabular-nums text-gray-700 shrink-0">
+                            {formatSeconds(a.seconds)}{" "}
+                            <span className="text-gray-400">
+                                ({a.pct.toFixed(0)}%)
+                            </span>
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function Stat({
+    label,
+    value,
+    accent
+}: {
+    label: string;
+    value: string;
+    accent?: string;
+}) {
+    return (
+        <div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wide">
+                {label}
+            </div>
+            <div
+                className={`font-semibold tabular-nums ${accent ?? "text-gray-800"}`}
+            >
+                {value}
             </div>
         </div>
     );
