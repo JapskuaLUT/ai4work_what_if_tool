@@ -35,14 +35,27 @@ The development has been done using `bun.sh` but `node.js` should work as well. 
 ./build_docker_images.sh
 ```
 
-4. **Start the ollama**
+4. **Start Ollama on the host (required for AI features)**
 
-Check the `ollama_readme.md` for more.
+The dockerised app talks to your host's Ollama through the
+`ollama-proxy`. Ollama must already be running on the host **before**
+you `docker-compose up`, with both env vars set, or the model dropdown
+will show `502 Bad Gateway` + a misleading CORS error.
 
 ```bash
-# OSX
-`OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' ollama serve`
+# macOS / Linux
+OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' ollama serve
 ```
+
+Quick check that the host process is reachable:
+
+```bash
+curl -sS http://localhost:11434/api/tags | head -c 200
+```
+
+See [ollama_readme.md](ollama_readme.md) for full background,
+troubleshooting, and a LaunchAgent recipe to keep Ollama running
+across reboots.
 
 5. **Start the application:**
 
@@ -118,14 +131,36 @@ docker-compose up -d
 ### Database Tools
 
 ```bash
-cd backend
-
-# Open database GUI
-bun run db:studio
-
 # Connect via psql
 docker-compose exec postgres psql -U whatifuser -d whatifdatabase
 ```
+
+> The `drizzle-kit` CLI (and the `db:push` / `db:generate` / `db:studio`
+> scripts) was removed — it had been broken for a long time and nothing
+> depended on it. Schema is managed via plain SQL — see "Adding or
+> changing tables" below.
+
+### Adding or changing tables
+
+The schema lives in two synced files:
+
+-   `db/schema.sql` — canonical SQL, runs once on a **fresh** database.
+-   `backend/src/db/schema.ts` — Drizzle definitions used by `db.query.*`
+    at runtime.
+
+Workflow:
+
+1. Edit **both** files; keep them aligned.
+2. For an **existing** database (your usual dev box), write an idempotent
+    migration in `db/<name>_migration.sql` and apply it:
+    ```bash
+    docker-compose exec -T postgres psql -U whatifuser -d whatifdatabase \
+        < db/<name>_migration.sql
+    ```
+    See [db/yard_logistics_migration.sql](db/yard_logistics_migration.sql)
+    for a working example.
+3. For a **fresh** database, just blow away the volume and let Postgres
+    re-run `db/schema.sql` automatically (see the reset block above).
 
 ---
 
@@ -269,11 +304,11 @@ docker-compose exec -T postgres psql -U whatifuser -d whatifdatabase < backup.sq
 ### Backend
 
 ```bash
-# Execute command in backend container
-docker-compose exec backend bun run db:push
-
 # Shell into backend container
 docker-compose exec backend /bin/bash
+
+# Run a one-off script inside the backend (e.g. seed yard sample data)
+docker-compose exec backend bun run seed:yard
 ```
 
 ---
@@ -284,22 +319,28 @@ docker-compose exec backend /bin/bash
 
 -   **Backend:** Code changes reload automatically (via `bun --watch`)
 -   **Frontend:** HMR (Hot Module Replacement) enabled
--   **Database:** Schema changes require running `bun run db:generate` then restart
+-   **Database:** Schema changes require editing **both** `db/schema.sql`
+    and `backend/src/db/schema.ts`, then either resetting the DB volume
+    (fresh boot reads `schema.sql`) or applying an SQL migration via
+    `psql`. See "Adding or changing tables" above.
 
-### Automatic Migrations
+### Database Initialization
 
-When backend starts:
+On the **first** Postgres startup the volume is empty, so Postgres'
+`docker-entrypoint-initdb.d` automatically runs:
 
-1. Waits for PostgreSQL health check
-2. Runs `bunx drizzle-kit push:pg`
-3. Applies any pending migrations
-4. Starts server
+1. `db/schema.sql` — creates all tables, indexes, triggers
+2. `db/seed.sql` — inserts sample data
 
-This ensures:
+After that the volume persists. To re-run them, delete
+`postgres_whatif_data/` and `docker-compose up -d` again.
 
--   ✅ Fresh clones work immediately
--   ✅ Team members always have latest schema
--   ✅ No "relation does not exist" errors
+> An older auto-migration script (`backend/scripts/migrate-and-start.sh`)
+> existed in this repo but was never wired up — `docker-compose` runs
+> `bun dev` directly. It and the broken `drizzle-kit` CLI config were
+> removed during the yard-logistics work. If we want auto-migrations back
+> later, see the note in [CLAUDE.md](CLAUDE.md) under "Database schema
+> workflow".
 
 ### Network Architecture
 

@@ -150,15 +150,29 @@ This service is an Nginx proxy that allows the Dockerized services to communicat
 
 ## Local Development with Ollama
 
-If you want to use the AI features of the application, you need to run an Ollama instance locally on your host machine.
+The AI features (model dropdown, explanations, chat) call your **host
+machine's** Ollama through the dockerised `ollama-proxy`. Ollama must
+already be running on the host **before** you open the UI; otherwise
+the UI will show `502 Bad Gateway` plus a misleading CORS error.
 
-To allow the Dockerized application to communicate with your local Ollama server, you need to start it with specific environment variables. On macOS, you can run:
+Start Ollama on the host with both env vars set:
 
 ```sh
 OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' ollama serve
 ```
 
-This command makes Ollama accessible from the Docker containers.
+-   `OLLAMA_HOST=0.0.0.0` — bind on all interfaces so the proxy
+    container can reach Ollama through the Docker host gateway.
+-   `OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost'`
+    — Ollama itself adds the `Access-Control-Allow-Origin` header for
+    these origins, which is what the browser needs.
+
+Verify with `curl -ksS -H 'Origin: https://app.localhost'
+https://ollama.localhost/api/tags` — you should get a JSON `models`
+array.
+
+For full background, troubleshooting, and a LaunchAgent recipe to keep
+Ollama running across reboots, see [ollama_readme.md](ollama_readme.md).
 
 ## Database Schema
 

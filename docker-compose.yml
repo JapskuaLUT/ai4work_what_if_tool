@@ -40,6 +40,7 @@ services:
         image: whatif-backend:dev # This is the image we have built. If missing, check build_images.sh
         volumes:
             - ./backend:/usr/src/app # We want to mount our local backend folder to the container
+            - ./specifications:/usr/src/specifications:ro # Read-only access to spec files (yard sample data, schemas)
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
         command: bun dev # Simple: just start the backend

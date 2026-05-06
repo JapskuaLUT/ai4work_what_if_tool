@@ -35,6 +35,7 @@ import { BottlenecksList } from "@/components/yard/BottlenecksList";
 import { OccupancyTimelineChart } from "@/components/yard/OccupancyTimelineChart";
 import { TruckGanttChart } from "@/components/yard/TruckGanttChart";
 import { YardMap } from "@/components/yard/YardMap";
+import { FloatingYardChat } from "@/components/yard/FloatingYardChat";
 
 export default function YardSimulationPage() {
     const { caseId } = useParams<{ caseId: string }>();
@@ -254,6 +255,15 @@ export default function YardSimulationPage() {
                     </TabsContent>
                 ))}
             </Tabs>
+
+            <FloatingYardChat
+                overview={overview}
+                activeRun={
+                    activeTab !== "overview" && runDetail
+                        ? runDetail
+                        : null
+                }
+            />
         </div>
     );
 }

@@ -311,11 +311,9 @@ bun install
 cp .env.example .env
 # Edit .env with your database credentials
 
-# Generate database schema
-bunx drizzle-kit generate:pg
-
-# Push schema to database
-bunx drizzle-kit push:pg
+# Database schema is applied automatically by Postgres on first startup
+# from db/schema.sql (see "Database schema workflow" section below).
+# Nothing to run here for a fresh database.
 
 # Start development server
 bun run dev
@@ -850,12 +848,55 @@ bun run --watch src/index.ts  # Run with hot reload
 
 ### Database Commands
 
+> The `drizzle-kit` CLI tooling (`drizzle.config.ts`, `db:push`,
+> `db:generate`, `db:studio`, `migrate-and-start.sh`, the `backend/drizzle/`
+> migrations folder, and the `drizzle-kit` package dependency) was removed
+> as part of the yard-logistics work — it had been broken for a long time
+> and nothing depended on it. Schema is managed via plain SQL files. The
+> `drizzle-orm` runtime queries in route handlers are unaffected.
+
 ```bash
-bunx drizzle-kit generate:pg  # Generate migration
-bunx drizzle-kit push:pg      # Push schema to database
-bunx drizzle-kit studio       # Open database GUI
-bunx drizzle-kit drop         # Drop all tables (careful!)
+# Open a psql shell against the running database
+docker-compose exec postgres psql -U whatifuser -d whatifdatabase
+
+# Apply an idempotent migration to an existing database
+docker-compose exec -T postgres psql -U whatifuser -d whatifdatabase \
+    < db/<name>_migration.sql
+
+# Reset to a fresh database (destroys data, re-runs db/schema.sql + db/seed.sql)
+docker-compose down
+rm -rf postgres_whatif_data/
+docker-compose up -d
 ```
+
+### Database schema workflow
+
+The schema lives in **two synced places**:
+
+1. **`db/schema.sql`** — canonical SQL. Postgres runs this once on first
+   startup (via `docker-entrypoint-initdb.d`) for a fresh database.
+2. **`backend/src/db/schema.ts`** — Drizzle table/column definitions used at
+   *runtime* by `db.query.*` (relations, types). Not used to migrate.
+
+When adding a new table or column:
+
+1. Edit **both** files. Keep names/types/constraints aligned.
+2. For an **existing database**, write a small idempotent migration in
+   `db/<name>_migration.sql` (use `CREATE TABLE IF NOT EXISTS`, `DO $$
+   BEGIN ... IF NOT EXISTS ... END $$` for triggers, etc.) and apply it via
+   the psql command above. See `db/yard_logistics_migration.sql` for a
+   working example.
+3. For a **fresh database**, no migration is needed — `db/schema.sql` will
+   be picked up automatically on first boot.
+
+Auto-migrate via `drizzle-kit` is intentionally not wired in. If we want
+it back later, the work is: re-add `drizzle-kit` as a dev dependency,
+create a fresh `backend/drizzle.config.ts` in the modern format
+(`dialect: "postgresql"`, `dbCredentials: { url: process.env.DATABASE_URL }`),
+add scripts `db:generate` / `db:push` (no `:pg` suffix, no `--config`
+flag), and decide whether `db/schema.sql` becomes generated output or
+stays the canonical source. Until then: edit both files by hand and
+ship a small `db/<name>_migration.sql` for existing databases.
 
 ### Docker Commands
 
@@ -908,13 +949,10 @@ git push origin feature/my-feature
 
 -   **Solution:** Run `bun install` in the correct directory
 
-#### Drizzle schema issues
+#### Schema is out of date / "relation does not exist" on a non-fresh DB
 
--   **Solution:** Regenerate schema:
-    ```bash
-    bunx drizzle-kit generate:pg
-    bunx drizzle-kit push:pg
-    ```
+-   **Solution:** Write or apply an idempotent SQL migration. See the
+    "Database schema workflow" section above for the pattern.
 
 ---
 
