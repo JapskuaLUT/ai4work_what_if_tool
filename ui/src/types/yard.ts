@@ -130,6 +130,7 @@ export interface BottleneckEntry {
         | "ParkingArea"
         | "Crossing"
         | "Street"
+        | "ExternalWait" // synthetic: "(off-yard waiting)"
         | "Unknown";
     max_concurrent: number;
     max_occupancy: number;

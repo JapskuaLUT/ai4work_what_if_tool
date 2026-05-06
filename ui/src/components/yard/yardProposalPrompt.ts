@@ -68,6 +68,7 @@ OUTPUT CONTRACT
 - All strings must use double quotes and escape any internal double quotes as \\".
 - Reference only entity names that actually exist in the supplied data. Do NOT invent names except for "add_entity" where you are creating something new.
 - Be concrete. Each proposal must address an observable problem in the data (e.g. a saturated entity with queue_score > 1).
+- The synthetic bottleneck named "(off-yard waiting)" with type ExternalWait means trucks queued outside the yard before they could check in. Address it by adding CheckIn-Terminal capacity or staggering the order arrival times — NOT by adding capacity to "(off-yard waiting)" itself, which is not a real entity.
 - Be conservative. Suggest the smallest change that plausibly fixes the bottleneck. Prefer one or two changes per proposal.
 - If a run already runs smoothly, return { "proposals": [] }.
 

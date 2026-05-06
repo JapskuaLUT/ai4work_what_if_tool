@@ -74,10 +74,23 @@ export function OccupancyTimelineChart({ caseId, runId, entity }: Props) {
         );
     }
 
+    const isExternalWait = entity === "(off-yard waiting)";
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Occupancy at {entity}</CardTitle>
+                <CardTitle>
+                    {isExternalWait
+                        ? "Off-yard wait queue"
+                        : `Occupancy at ${entity}`}
+                </CardTitle>
+                {isExternalWait && (
+                    <p className="text-xs text-gray-500 mt-1">
+                        Trucks queued outside the yard because their first
+                        required entity was busy. Capacity = 1 (single
+                        waiting slot); peaks above the line indicate gate
+                        congestion.
+                    </p>
+                )}
             </CardHeader>
             <CardContent>
                 {loading && <Skeleton className="h-72 w-full" />}

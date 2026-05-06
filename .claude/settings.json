@@ -19,7 +19,10 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d['proposals']\\)\\); print\\('titles:', [p['title'] for p in d['proposals']]\\)\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d['proposals']\\)\\)\")",
       "Bash(echo \"=== Currently running Ollama models ===\" *)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(python3)",
+      "Bash(cd /Users/japskua/projects/lut/ai4work_what_if_tool/backend && bun test src/services/yardAnalyticsService.test.ts 2>&1 | tail -5 *)",
+      "Read(//Users/japskua/projects/lut/**)"
     ],
     "additionalDirectories": [
       "/Users/japskua/projects/lut/ai4work_what_if_tool/specifications"

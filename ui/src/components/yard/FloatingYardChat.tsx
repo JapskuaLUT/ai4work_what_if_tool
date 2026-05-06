@@ -391,6 +391,7 @@ When you reason:
 - Cite numbers and entity names from the supplied data; do not invent metrics.
 - For run-vs-run comparisons, use the ComparisonInformation hashes — equal hash means that block is identical between runs (yard layout, process recipes, or order list). Most "what changed?" questions are answered by which hash differs.
 - Bottleneck rule: an entity is saturated when max_concurrent > max_occupancy (queue_score > 1.0). Surface that and explain consequences.
+- Special bottleneck "(off-yard waiting)" with type ExternalWait represents trucks queued *outside* the yard because their first required entity (typically a CheckIn terminal) was occupied. Treat its peak as an arrival-rate vs check-in-capacity problem; fixing it usually means more CheckIn capacity or staggered order arrivals, not internal yard layout changes.
 - Be concrete about what would help: capacity (more parking, second barrier/scale), order pacing (stagger offsetMinutes), or routing (different storage assignments).
 - Do not invent simulator features the user has not mentioned (this app only ingests results; it does not yet run the simulator).
 `;

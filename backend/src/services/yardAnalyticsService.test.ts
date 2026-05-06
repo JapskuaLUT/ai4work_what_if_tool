@@ -164,6 +164,19 @@ describe("bottlenecks", () => {
         }
     });
 
+    test("surfaces off-yard waiting as a labelled ExternalWait entry", () => {
+        // WaitingProblem run has 21 Waiting events with empty Location —
+        // they should appear as a single named bottleneck, not as the
+        // unhelpful '' / "Unknown" pair the older code produced.
+        const top = bottlenecks(WAITING, 20);
+        const offYard = top.find((b) => b.type === "ExternalWait");
+        expect(offYard).toBeDefined();
+        expect(offYard!.entity).toBe("(off-yard waiting)");
+        expect(offYard!.max_concurrent).toBeGreaterThanOrEqual(1);
+        // No anonymous "" entity should leak into the output.
+        expect(top.some((b) => b.entity === "")).toBe(false);
+    });
+
     test("results are sorted by queue_score descending", () => {
         const top = bottlenecks(WAITING, 10);
         for (let i = 1; i < top.length; i++) {

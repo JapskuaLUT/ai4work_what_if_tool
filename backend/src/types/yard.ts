@@ -226,7 +226,7 @@ export interface ThroughputStats {
 }
 
 export interface BottleneckEntry {
-    entity: string; // entity Name
+    entity: string; // entity Name (or a synthetic name for off-yard waits)
     type:
         | "Terminal"
         | "Storage"
@@ -234,6 +234,9 @@ export interface BottleneckEntry {
         | "ParkingArea"
         | "Crossing"
         | "Street"
+        | "ExternalWait" // Synthetic: a truck waiting *before* any entity
+        //               // (simulator emits Action="Waiting" Location="").
+        //               // Surfaced as one bottleneck named "(off-yard waiting)".
         | "Unknown";
     max_concurrent: number;
     max_occupancy: number;

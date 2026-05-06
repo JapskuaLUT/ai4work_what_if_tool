@@ -67,6 +67,12 @@ export function validateProposal(
                     errors.push(`${where}: capacity change missing entity`);
                     break;
                 }
+                if (c.entity === "(off-yard waiting)") {
+                    errors.push(
+                        `${where}: "(off-yard waiting)" is a synthetic queue, not a real entity. To address it, increase CheckIn-Terminal capacity (e.g. add a second LT terminal) or stagger order arrivals.`
+                    );
+                    break;
+                }
                 if (known && !known.has(c.entity)) {
                     errors.push(
                         `${where}: entity "${c.entity}" does not exist in the yard`

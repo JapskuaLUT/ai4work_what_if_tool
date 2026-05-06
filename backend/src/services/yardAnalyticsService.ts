@@ -62,6 +62,14 @@ interface EntityIndexEntry {
     maxOccupancy: number;
 }
 
+/**
+ * Synthetic entity surfaced when the simulator emits a Waiting event with
+ * an empty Location — i.e. a truck queued before any concrete entity
+ * (typically pre-CheckIn). Single-server semantics: one waiting "slot"
+ * means peak concurrency directly equals the queue depth.
+ */
+const OFF_YARD_WAIT_LABEL = "(off-yard waiting)";
+
 function buildEntityIndex(yard: YardDesignData): Map<string, EntityIndexEntry> {
     const idx = new Map<string, EntityIndexEntry>();
     for (const e of yard.Entities.Crossings) {
@@ -125,7 +133,12 @@ function intervalsByEntity(
         for (const te of om.TimeEntries) {
             const start = parseHmsToSeconds(te.Start);
             const end = parseHmsToSeconds(te.End);
-            const key = te.Location;
+            // Empty Location + Action="Waiting" is the simulator's way of
+            // saying "queued outside the yard" (a required entity was
+            // occupied). Bucket those under a synthetic name so the
+            // bottleneck list surfaces them clearly instead of as ''/Unknown.
+            const key =
+                te.Location === "" ? OFF_YARD_WAIT_LABEL : te.Location;
             const list = m.get(key);
             if (list) list.push({ start, end });
             else m.set(key, [{ start, end }]);
@@ -200,11 +213,20 @@ export function bottlenecks(
 
     const all: BottleneckEntry[] = [];
     for (const [entityName, ivs] of intervals) {
-        const meta = idx.get(entityName) || { type: "Unknown", maxOccupancy: 1 };
+        let meta: EntityIndexEntry;
+        if (entityName === OFF_YARD_WAIT_LABEL) {
+            // Single waiting "slot" → peak concurrency == queue depth.
+            meta = { type: "ExternalWait", maxOccupancy: 1 };
+        } else {
+            meta = idx.get(entityName) ?? {
+                type: "Unknown",
+                maxOccupancy: 1
+            };
+        }
         // Skip entities the model considers transient (Streets, Crossings):
         // they show high turnover but rarely tell the operator anything actionable.
         // Streets in particular generate hundreds of entries; surface only serving
-        // entities (Terminals, ParkingAreas, Scales, Storages).
+        // entities (Terminals, ParkingAreas, Scales, Storages, ExternalWait).
         if (meta.type === "Street" || meta.type === "Crossing") continue;
 
         const peak = maxConcurrent(ivs);
@@ -230,10 +252,16 @@ export function entityOccupancyTimeline(
     entityName: string,
     sampleEverySec = 30
 ): OccupancyTimelinePoint[] {
+    // Synthetic name matches the same Location-empty bucket the bottleneck
+    // computation uses, so users can plot off-yard wait depth too.
+    const matchEmptyLocation = entityName === OFF_YARD_WAIT_LABEL;
     const intervals: Interval[] = [];
     for (const om of exp.Measurements.Measurements) {
         for (const te of om.TimeEntries) {
-            if (te.Location !== entityName) continue;
+            const matches = matchEmptyLocation
+                ? te.Location === ""
+                : te.Location === entityName;
+            if (!matches) continue;
             intervals.push({
                 start: parseHmsToSeconds(te.Start),
                 end: parseHmsToSeconds(te.End)
