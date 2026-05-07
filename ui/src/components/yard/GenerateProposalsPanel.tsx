@@ -99,13 +99,15 @@ export function GenerateProposalsPanel({
                 ],
                 {
                     model,
-                    // Ollama's `format: "json"` mode currently misbehaves with
-                    // "thinking" models (qwen3.5, gpt-oss) — they hang or
-                    // 500 because the constraint engine can't satisfy the
-                    // schema while reasoning. We rely on the prompt + the
-                    // tolerant parser instead. Keep this in mind if you see
-                    // long delays followed by "Could not locate JSON".
-                    options: { temperature: 0.3 }
+                    // - `format: "json"` is intentionally NOT set: it makes
+                    //   reasoning models (qwen3.5) hang because the constraint
+                    //   engine can't satisfy the schema during the thinking
+                    //   pass. The tolerant parser handles drift instead.
+                    // - `num_predict: 2048` is a safety cap so a runaway
+                    //   reasoning model can't generate for the full 10-minute
+                    //   proxy timeout — caps proposal output to ~6 KB, more
+                    //   than enough for 5 well-formed proposals.
+                    options: { temperature: 0.3, num_predict: 2048 }
                 }
             );
             const proposals = parseProposalResponse(raw);
@@ -142,7 +144,9 @@ export function GenerateProposalsPanel({
                 <p className="text-xs text-gray-500 mt-1">
                     The model receives this run's KPIs, bottlenecks, and yard
                     layout, and returns concrete proposals you can save and
-                    later forward to the simulator.
+                    later forward to the simulator. Tip: pick a non-reasoning
+                    model in the top-right (phi4 or gpt-oss work well) —
+                    qwen3.5 can hang on this prompt while it "thinks".
                 </p>
             </CardHeader>
             <CardContent className="space-y-3">

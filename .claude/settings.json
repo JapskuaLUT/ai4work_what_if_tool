@@ -22,7 +22,11 @@
       "Read(//private/tmp/**)",
       "Bash(python3)",
       "Bash(cd /Users/japskua/projects/lut/ai4work_what_if_tool/backend && bun test src/services/yardAnalyticsService.test.ts 2>&1 | tail -5 *)",
-      "Read(//Users/japskua/projects/lut/**)"
+      "Read(//Users/japskua/projects/lut/**)",
+      "Bash(docker-compose down *)",
+      "Bash(lsof -iTCP:5432 -sTCP:LISTEN)",
+      "Bash(grep -nB1 -A1 '\"5432' /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('proposals:', len\\(d['proposals']\\)\\); [print\\('  -', p['source'], '·', p['title']\\) for p in d['proposals']]\")"
     ],
     "additionalDirectories": [
       "/Users/japskua/projects/lut/ai4work_what_if_tool/specifications"
