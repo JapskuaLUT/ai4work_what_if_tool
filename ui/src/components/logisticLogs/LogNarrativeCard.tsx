@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb } from "lucide-react";
 import type {
     LogOverview,
-    LogSession,
+    LogSessionMetadata,
     StepAggregate
 } from "@/types/logisticLogs";
 import { formatDuration } from "@/services/logisticLogsService";
@@ -20,7 +20,7 @@ import {
 
 interface Props {
     overview: LogOverview;
-    sessions: LogSession[];
+    sessions: LogSessionMetadata[];
     aggregates: StepAggregate[];
 }
 
@@ -54,7 +54,7 @@ export function LogNarrativeCard({ overview, sessions, aggregates }: Props) {
 
 function buildInsights(
     ov: LogOverview,
-    sessions: LogSession[],
+    sessions: LogSessionMetadata[],
     aggregates: StepAggregate[]
 ): React.ReactNode[] {
     const out: React.ReactNode[] = [];
@@ -141,8 +141,9 @@ function buildInsights(
         );
     }
 
-    // 5. Completion check
-    const incomplete = sessions.filter((s) => !sessionLooksComplete(s)).length;
+    // 5. Completion check — server marks `completed=true` when the session
+    //    reached the ANZEIGE SCHLUSSBILD step.
+    const incomplete = sessions.filter((s) => !s.completed).length;
     if (incomplete > 0) {
         out.push(
             <>
@@ -169,7 +170,3 @@ function aggregatePhaseTotals(aggregates: StepAggregate[]) {
         .sort((a, b) => b.seconds - a.seconds);
 }
 
-function sessionLooksComplete(s: LogSession): boolean {
-    // The kiosk's final dialog. Sessions that don't reach it look abandoned.
-    return s.rows.some((r) => r.procstepinfo === "ANZEIGE SCHLUSSBILD");
-}

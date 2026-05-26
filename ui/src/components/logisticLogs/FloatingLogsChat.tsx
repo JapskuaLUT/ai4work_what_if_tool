@@ -22,7 +22,8 @@ import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Message } from "@/types/chat";
 import type {
     LogOverview,
-    LogSession,
+    LogSessionDetail,
+    LogSessionMetadata,
     StepAggregate
 } from "@/types/logisticLogs";
 import { formatDuration } from "@/services/logisticLogsService";
@@ -30,10 +31,10 @@ import { describeStep, phaseStyle } from "@/services/logisticLogsGlossary";
 
 interface Props {
     overview: LogOverview | null;
-    sessions: LogSession[];
+    sessions: LogSessionMetadata[];
     aggregates: StepAggregate[];
-    /** Currently drilled-in session (gets included as focused context). */
-    selectedSession: LogSession | null;
+    /** Currently drilled-in session, full rows (gets included as focused context). */
+    selectedSession: LogSessionDetail | null;
 }
 
 export function FloatingLogsChat({
@@ -360,9 +361,9 @@ WHEN YOU ANSWER
 
 function buildContext(
     overview: LogOverview,
-    sessions: LogSession[],
+    sessions: LogSessionMetadata[],
     aggregates: StepAggregate[],
-    selectedSession: LogSession | null
+    selectedSession: LogSessionDetail | null
 ): string {
     const lines: string[] = [];
 
@@ -401,13 +402,8 @@ function buildContext(
         .slice(0, 5);
     lines.push("=== 5 SLOWEST SESSIONS ===");
     for (const s of slowest) {
-        const completed = s.rows.some(
-            (r) => r.procstepinfo === "ANZEIGE SCHLUSSBILD"
-        )
-            ? "completed"
-            : "may-be-abandoned";
         lines.push(
-            `  #${s.processId}  started ${s.startedAt}  ${formatDuration(s.durationSec)}  events=${s.eventCount}  stepKinds=${s.stepCount}  ${completed}`
+            `  #${s.processId}  started ${s.startedAt}  ${formatDuration(s.durationSec)}  events=${s.eventCount}  stepKinds=${s.stepCount}  ${s.completed ? "completed" : "may-be-abandoned"}`
         );
     }
     lines.push("");
@@ -420,7 +416,7 @@ function buildContext(
             `  #${s.processId}  ${s.startedAt} → ${s.endedAt}  duration ${formatDuration(s.durationSec)}  events ${s.eventCount}  distinct steps ${s.stepCount}`
         );
         lines.push(
-            `  license plate: ${s.licensePlate ?? "—"}  ·  captured values: ${s.capturedValues.length}`
+            `  license plate: ${s.licensePlate ?? "—"}  ·  completed: ${s.completed}`
         );
         // Per-phase totals for this session
         const phaseTotals = new Map<string, number>();
@@ -457,7 +453,7 @@ function buildContext(
 
 function welcomeMessage(
     overview: LogOverview,
-    selectedSession: LogSession | null
+    selectedSession: LogSessionDetail | null
 ): string {
     if (selectedSession) {
         return `I'm focused on **session #${selectedSession.processId}** (${formatDuration(

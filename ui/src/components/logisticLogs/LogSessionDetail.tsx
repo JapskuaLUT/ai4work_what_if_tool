@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Eye, EyeOff, Info } from "lucide-react";
-import type { LogSession } from "@/types/logisticLogs";
+import type { LogSessionDetail as LogSessionDetailType } from "@/types/logisticLogs";
 import {
     formatDuration,
     maskValue,
@@ -24,7 +24,7 @@ import {
 } from "@/services/logisticLogsGlossary";
 
 interface Props {
-    session: LogSession | null;
+    session: LogSessionDetailType | null;
 }
 
 interface EnrichedStep extends SessionStep {

@@ -1,22 +1,24 @@
-// ui/src/types/logisticLogs.ts
+// backend/src/types/logisticLogs.ts
 //
-// Shapes for the LT 010 check-in terminal log dataset. Mirrored from
-// backend/src/types/logisticLogs.ts.
+// Server-side shapes for the kiosk-log domain. Manually kept in sync
+// with ui/src/types/logisticLogs.ts — if these drift in non-trivial
+// ways, the integration tests will catch it (they assert the response
+// shape).
 
 export type ProcstepType = "PROCESS" | "DIALOG";
 export type ProcstepAction = "Start" | "End";
 
 /**
- * One raw row as the kiosk emits it. German labels are kept verbatim —
- * they're domain vocabulary, not UI strings. The UI translates them via
- * the glossary at render time.
+ * One raw log row in the shape the kiosk emits and persists. The DB
+ * column `id` is a server-assigned bigserial; the kiosk's own row id
+ * is preserved as `source_id`.
  */
 export interface LogRow {
-    id: number;
-    date: string;
+    id: number;                       // kiosk's own row id (maps to log_rows.source_id)
+    date: string;                     // ISO 8601 timestamp (local time, no zone)
     location: string;
     topic: string;
-    process: number;                  // 0 = idle sentinel; otherwise session id
+    process: number;                  // 0 = idle sentinel; >0 = session id
     proc: number;
     procstep: number;
     procsteptype: ProcstepType;
@@ -26,10 +28,18 @@ export interface LogRow {
     value: string;
 }
 
-/**
- * Per-session metadata returned by GET /api/logs/:caseId/sessions.
- * No raw rows — fetch one with /sessions/:processId when needed.
- */
+/** What the partner POSTs at /api/logs/. */
+export interface LogCaseCreateInput {
+    name: string;
+    description?: string | null;
+    location: string;
+    topic: string;
+    related_yard_case_id?: string | null;
+    metadata?: Record<string, unknown>;
+    rows: LogRow[];
+}
+
+/** Per-session metadata returned by GET /:caseId/sessions. */
 export interface LogSessionMetadata {
     processId: number;
     startedAt: string;
@@ -38,15 +48,10 @@ export interface LogSessionMetadata {
     eventCount: number;
     stepCount: number;
     licensePlate: string | null;
-    completed: boolean;
+    completed: boolean;               // reached ANZEIGE SCHLUSSBILD
 }
 
-/**
- * Full session with raw rows, returned by
- * GET /api/logs/:caseId/sessions/:processId. Powers the detail
- * drill-in; `reconstructSteps()` pairs Start/End rows into
- * `SessionStep[]` on the client.
- */
+/** Per-session full detail returned by GET /:caseId/sessions/:processId. */
 export interface LogSessionDetail extends LogSessionMetadata {
     rows: LogRow[];
 }
@@ -87,7 +92,7 @@ export interface StepAggregate {
     maxSec: number;
 }
 
-/** What GET /api/logs/:caseId returns. */
+/** What GET /:caseId returns (pre-computed at ingest, stored on log_cases). */
 export interface LogCaseOverviewResponse {
     case_id: string;
     name: string;
@@ -100,4 +105,15 @@ export interface LogCaseOverviewResponse {
     updated_at: string;
     overview: LogOverview;
     aggregates: StepAggregate[];
+}
+
+export interface SummaryMetrics {
+    overview: LogOverview;
+    aggregates: StepAggregate[];
+}
+
+export interface CreateLogCaseResult {
+    case_id: string;
+    row_count: number;
+    session_count: number;
 }

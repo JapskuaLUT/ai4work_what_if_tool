@@ -36,7 +36,7 @@ function App() {
                             element={<YardSimulationPage />}
                         />
                         <Route
-                            path="/logs/lt010"
+                            path="/logs/:caseId"
                             element={<LogisticLogsPage />}
                         />
                         <Route path="/compare" element={<ComparePage />} />

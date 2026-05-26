@@ -1,0 +1,440 @@
+openapi: 3.1.0
+info:
+  title: AI4Work What-If Tool — Kiosk Logs API
+  version: 0.1.0
+  description: |
+    REST endpoints for the **kiosk check-in logs** domain.
+
+    A planner ingests a batch of raw kiosk log rows from a self-service
+    terminal (today LT 010), and the server stores them, materialises
+    per-step duration aggregates and per-session metadata, and serves
+    those back to the UI / partner integrations.
+
+    Sessions are reconstructed at read time by grouping rows on
+    `(case_id, process)`. The kiosk's `process` counter recycles over
+    time, so session identity is the **pair**, never bare `process`.
+
+    PII handling: driver names and signatures arrive already
+    pseudonymised by the kiosk (32-char hashes). We persist those values
+    verbatim and rely on the UI for display-time masking. The OpenAPI
+    schema does not redact them.
+
+    Full domain context: [design.md](design.md).
+  contact:
+    name: AI4Work team
+
+servers:
+  - url: https://backend.localhost
+    description: Local dev (Traefik HTTPS, mkcert-signed)
+  - url: http://localhost:8000
+    description: Local dev (direct backend, no proxy)
+
+tags:
+  - name: Logistic Logs
+    description: |
+      Endpoints for kiosk log batches, sessions, and step-duration
+      aggregates. Prefix `/api/logs/`.
+
+paths:
+  /api/logs/:
+    post:
+      tags: [Logistic Logs]
+      summary: Ingest a kiosk-log batch
+      description: |
+        Persist a new log case with all its rows in one transaction.
+        `summary_metrics` is computed server-side at ingest using the
+        same analytics the UI consumes. Returns the new case_id.
+      operationId: createLogCase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogCaseCreateInput"
+      responses:
+        "201":
+          description: Case created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLogCaseResponse"
+        "500":
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/logs/{caseId}:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Logistic Logs]
+      summary: Get log case overview + step aggregates
+      description: |
+        Returns the case metadata, the pre-computed overview block, and
+        the full step-duration aggregates array. Does **not** include
+        raw rows — use `/sessions/{processId}` for those.
+      operationId: getLogCase
+      responses:
+        "200":
+          description: Overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogCaseOverviewResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Logistic Logs]
+      summary: Delete a log case
+      description: Cascade-deletes all `log_rows` belonging to the case.
+      operationId: deleteLogCase
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, caseId]
+                properties:
+                  ok: { type: boolean, example: true }
+                  caseId: { type: string }
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/logs/{caseId}/aggregates:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Logistic Logs]
+      summary: Get per-step duration aggregates
+      description: |
+        Alias for the `.aggregates` field of the overview response;
+        useful when the caller already has the overview cached and only
+        needs the aggregate slice.
+      operationId: getLogAggregates
+      responses:
+        "200":
+          description: Aggregates.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [case_id, aggregates]
+                properties:
+                  case_id: { type: string }
+                  aggregates:
+                    type: array
+                    items: { $ref: "#/components/schemas/StepAggregate" }
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/logs/{caseId}/sessions:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Logistic Logs]
+      summary: List driver sessions for this case
+      description: |
+        Returns per-session metadata only (no raw rows). Use this for
+        the session table; fetch a single session's rows via
+        `/sessions/{processId}`.
+      operationId: listLogSessions
+      responses:
+        "200":
+          description: Sessions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [case_id, sessions]
+                properties:
+                  case_id: { type: string }
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LogSessionMetadata"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/logs/{caseId}/sessions/{processId}:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+      - name: processId
+        in: path
+        required: true
+        schema: { type: integer }
+        description: Session id (the kiosk's non-zero `process` value).
+    get:
+      tags: [Logistic Logs]
+      summary: Get full rows of one driver session
+      description: |
+        Returns the session's metadata plus the full ordered list of raw
+        rows. Powers the per-session detail drill-in in the UI; the
+        client reconstructs Start/End pairs into `SessionStep[]` from
+        these rows.
+      operationId: getLogSession
+      responses:
+        "200":
+          description: Session detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [case_id, session]
+                properties:
+                  case_id: { type: string }
+                  session:
+                    $ref: "#/components/schemas/LogSessionDetail"
+        "400":
+          description: Non-numeric processId.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Case or session not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/logs/{caseId}/recompute:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    post:
+      tags: [Logistic Logs]
+      summary: Recompute summary_metrics from stored rows
+      description: |
+        Re-runs the analytics over rows already in `log_rows` and
+        overwrites `log_cases.summary_metrics`. Use after analytics code
+        changes — same problem we hit on the yard side when bottleneck
+        labelling evolved.
+      operationId: recomputeLogCase
+      responses:
+        "200":
+          description: Recomputed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, rowCount]
+                properties:
+                  ok: { type: boolean, example: true }
+                  rowCount: { type: integer }
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string }
+      description: "Log case identifier (`log_cases.case_id`)."
+      examples: { seeded: { value: "lt010-2025-2026" } }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        message: { type: string, nullable: true }
+
+    ProcstepType:
+      type: string
+      enum: [PROCESS, DIALOG]
+    ProcstepAction:
+      type: string
+      enum: [Start, End]
+
+    LogRow:
+      description: |
+        One raw event from the kiosk. The kiosk's own `id` is preserved
+        on `source_id` server-side; the DB's `log_rows.id` is a
+        bigserial we don't echo.
+      type: object
+      required:
+        [id, date, location, topic, process, proc, procstep,
+         procsteptype, procstepinfo, procstepaction, message, value]
+      properties:
+        id:
+          type: integer
+          description: "Kiosk's own row id. Not unique across cases."
+        date:
+          type: string
+          description: |
+            ISO 8601 local timestamp without timezone, e.g.
+            `2025-04-28T14:21:06`.
+        location:        { type: string, example: "LT 010" }
+        topic:           { type: string, example: "Check-In" }
+        process:
+          type: integer
+          description: "0 = idle sentinel. Non-zero values group rows into a driver session."
+        proc:            { type: integer }
+        procstep:        { type: integer }
+        procsteptype:    { $ref: "#/components/schemas/ProcstepType" }
+        procstepinfo:
+          type: string
+          description: "German operator vocabulary, e.g. `EINGABE KENNZEICHEN`."
+        procstepaction:  { $ref: "#/components/schemas/ProcstepAction" }
+        message:         { type: string }
+        value:
+          type: string
+          description: |
+            Captured input value. May contain pseudonymised PII for
+            certain steps (driver name, signature) — masked in the UI.
+
+    LogCaseCreateInput:
+      type: object
+      required: [name, location, topic, rows]
+      properties:
+        name:        { type: string, example: "LT 010 — 2025-04 → 2026-04" }
+        description: { type: string, nullable: true }
+        location:    { type: string, example: "LT 010" }
+        topic:       { type: string, example: "Check-In" }
+        related_yard_case_id:
+          type: string
+          nullable: true
+          description: |
+            Optional link to a `yard_simulations.case_id`. Lets analyses
+            connect kiosk events to the simulator runs that consume the
+            same terminal.
+        metadata:
+          type: object
+          additionalProperties: true
+        rows:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/LogRow" }
+
+    CreateLogCaseResponse:
+      type: object
+      required: [caseId, rowCount, sessionCount, resultsUrl]
+      properties:
+        caseId:       { type: string }
+        rowCount:     { type: integer }
+        sessionCount: { type: integer }
+        resultsUrl:   { type: string, format: uri }
+
+    SecondsStats:
+      type: object
+      required: [minSec, medianSec, p95Sec, maxSec]
+      properties:
+        minSec:    { type: integer, minimum: 0 }
+        medianSec: { type: integer, minimum: 0 }
+        p95Sec:    { type: integer, minimum: 0 }
+        maxSec:    { type: integer, minimum: 0 }
+
+    EventStats:
+      type: object
+      required: [min, median, p95, max]
+      properties:
+        min:    { type: integer, minimum: 0 }
+        median: { type: integer, minimum: 0 }
+        p95:    { type: integer, minimum: 0 }
+        max:    { type: integer, minimum: 0 }
+
+    LogOverview:
+      type: object
+      required:
+        [rowCount, sessionCount, earliestDate, latestDate, location,
+         topic, durationStats, eventStats]
+      properties:
+        rowCount:     { type: integer }
+        sessionCount: { type: integer }
+        earliestDate: { type: string }
+        latestDate:   { type: string }
+        location:     { type: string }
+        topic:        { type: string }
+        durationStats: { $ref: "#/components/schemas/SecondsStats" }
+        eventStats:    { $ref: "#/components/schemas/EventStats" }
+
+    StepAggregate:
+      type: object
+      required:
+        [stepInfo, type, count, totalSec, avgSec, p50Sec, p95Sec, maxSec]
+      properties:
+        stepInfo: { type: string, example: "SPRACHAUSWAHL" }
+        type:     { $ref: "#/components/schemas/ProcstepType" }
+        count:    { type: integer }
+        totalSec: { type: number }
+        avgSec:   { type: number }
+        p50Sec:   { type: number }
+        p95Sec:   { type: number }
+        maxSec:   { type: number }
+
+    LogCaseOverviewResponse:
+      type: object
+      required:
+        [case_id, name, description, location, topic,
+         related_yard_case_id, metadata, created_at, updated_at,
+         overview, aggregates]
+      properties:
+        case_id:    { type: string }
+        name:       { type: string }
+        description:{ type: string, nullable: true }
+        location:   { type: string }
+        topic:      { type: string }
+        related_yard_case_id: { type: string, nullable: true }
+        metadata:   { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        overview:   { $ref: "#/components/schemas/LogOverview" }
+        aggregates:
+          type: array
+          items: { $ref: "#/components/schemas/StepAggregate" }
+
+    LogSessionMetadata:
+      type: object
+      required:
+        [processId, startedAt, endedAt, durationSec, eventCount,
+         stepCount, licensePlate, completed]
+      properties:
+        processId:    { type: integer }
+        startedAt:    { type: string }
+        endedAt:      { type: string }
+        durationSec:  { type: number }
+        eventCount:   { type: integer }
+        stepCount:    { type: integer }
+        licensePlate: { type: string, nullable: true }
+        completed:
+          type: boolean
+          description: |
+            True when the session reached the closing screen
+            (`ANZEIGE SCHLUSSBILD`). Otherwise the session may have been
+            abandoned mid-flow.
+
+    LogSessionDetail:
+      allOf:
+        - $ref: "#/components/schemas/LogSessionMetadata"
+        - type: object
+          required: [rows]
+          properties:
+            rows:
+              type: array
+              items: { $ref: "#/components/schemas/LogRow" }

@@ -191,6 +191,45 @@ CREATE TABLE yard_proposals (
     CHECK (source IN ('ai', 'manual'))
 );
 
+-- Table: log_cases
+-- Parent record for a kiosk-log ingest batch. Carries pre-computed
+-- summary metrics for cheap reads; raw rows live in log_rows.
+CREATE TABLE log_cases (
+    case_id              TEXT PRIMARY KEY,
+    name                 TEXT NOT NULL,
+    description          TEXT,
+    location             TEXT NOT NULL,
+    topic                TEXT NOT NULL,
+    summary_metrics      JSONB NOT NULL,
+    related_yard_case_id TEXT,
+    metadata             JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at           TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at           TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: log_rows
+-- Flat fact table — one row per kiosk Start/End event. Sessions are
+-- reconstructed at read time by grouping on (case_id, process).
+CREATE TABLE log_rows (
+    id              BIGSERIAL PRIMARY KEY,
+    case_id         TEXT NOT NULL,
+    source_id       INTEGER NOT NULL,
+    date            TIMESTAMP NOT NULL,
+    location        TEXT NOT NULL,
+    topic           TEXT NOT NULL,
+    process         INTEGER NOT NULL,
+    proc            INTEGER NOT NULL,
+    procstep        INTEGER NOT NULL,
+    procsteptype    TEXT NOT NULL,
+    procstepinfo    TEXT NOT NULL,
+    procstepaction  TEXT NOT NULL,
+    message         TEXT,
+    value           TEXT,
+    FOREIGN KEY (case_id) REFERENCES log_cases(case_id) ON DELETE CASCADE,
+    CONSTRAINT log_rows_procsteptype_chk CHECK (procsteptype IN ('PROCESS', 'DIALOG')),
+    CONSTRAINT log_rows_procstepaction_chk CHECK (procstepaction IN ('Start', 'End'))
+);
+
 -- Indexes for performance
 CREATE INDEX idx_simulation_sets_kind ON simulation_sets(kind);
 CREATE INDEX idx_simulation_sets_name ON simulation_sets(name);
@@ -204,6 +243,10 @@ CREATE INDEX idx_yard_simulations_name ON yard_simulations(name);
 CREATE INDEX idx_yard_runs_case ON yard_runs(case_id);
 CREATE INDEX idx_yard_proposals_case ON yard_proposals(case_id);
 CREATE INDEX idx_yard_proposals_target_run ON yard_proposals(case_id, target_run_id);
+CREATE INDEX idx_log_cases_location ON log_cases(location);
+CREATE INDEX idx_log_rows_case_proc ON log_rows(case_id, process, date);
+CREATE INDEX idx_log_rows_case_step ON log_rows(case_id, procstepinfo);
+CREATE INDEX idx_log_rows_case_date ON log_rows(case_id, date);
 
 -- Triggers for automatic updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -232,4 +275,8 @@ CREATE TRIGGER update_yard_simulations_updated_at
 
 CREATE TRIGGER update_yard_proposals_updated_at
     BEFORE UPDATE ON yard_proposals
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_log_cases_updated_at
+    BEFORE UPDATE ON log_cases
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

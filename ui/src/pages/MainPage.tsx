@@ -43,7 +43,7 @@ export default function MainPage() {
                 </Button>
                 <Button
                     className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-violet-600 hover:bg-violet-700 text-white"
-                    onClick={() => navigate("/logs/lt010")}
+                    onClick={() => navigate("/logs/lt010-2025-2026")}
                 >
                     🔑 Open Check-in Logs
                 </Button>

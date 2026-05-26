@@ -1,17 +1,11 @@
 // ui/src/pages/LogisticLogsPage.tsx
 //
-// A client-side prototype for inspecting raw check-in terminal logs from
-// the LT 010 kiosk. Loads the bundled JSON once, reduces it into sessions
-// + step aggregates, and renders three views:
-//   1. Overview stats card
-//   2. Top-N step-duration chart (where do drivers actually spend time?)
-//   3. Session table + per-session step-by-step detail drill-in
-//
-// No backend involvement yet — easy to evolve into a proper domain when
-// we know what's worth keeping.
+// Inspector for kiosk check-in logs. Now backed by /api/logs/* —
+// overview + aggregates land in one fetch, sessions list in a second,
+// and the focused session's rows are lazy-fetched on selection.
 
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
     Card,
     CardContent,
@@ -24,46 +18,63 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ChevronLeft, KeyRound } from "lucide-react";
 
 import type {
-    LogOverview,
-    LogRow,
-    LogSession,
-    StepAggregate
+    LogCaseOverviewResponse,
+    LogSessionDetail,
+    LogSessionMetadata
 } from "@/types/logisticLogs";
 import {
-    computeOverview,
-    computeStepAggregates,
-    formatDuration,
-    loadLogs
+    fetchLogCase,
+    fetchLogSession,
+    fetchLogSessions,
+    formatDuration
 } from "@/services/logisticLogsService";
 import { LogSessionTable } from "@/components/logisticLogs/LogSessionTable";
-import { LogSessionDetail } from "@/components/logisticLogs/LogSessionDetail";
+import { LogSessionDetail as LogSessionDetailView } from "@/components/logisticLogs/LogSessionDetail";
 import { StepDurationChart } from "@/components/logisticLogs/StepDurationChart";
 import { LogNarrativeCard } from "@/components/logisticLogs/LogNarrativeCard";
 import { FloatingLogsChat } from "@/components/logisticLogs/FloatingLogsChat";
 
 export default function LogisticLogsPage() {
     const navigate = useNavigate();
+    const { caseId } = useParams<{ caseId: string }>();
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [rows, setRows] = useState<LogRow[]>([]);
-    const [sessions, setSessions] = useState<LogSession[]>([]);
+    const [overview, setOverview] = useState<LogCaseOverviewResponse | null>(
+        null
+    );
+    const [sessions, setSessions] = useState<LogSessionMetadata[]>([]);
     const [selectedProc, setSelectedProc] = useState<number | null>(null);
+    const [selectedSession, setSelectedSession] =
+        useState<LogSessionDetail | null>(null);
+    const [sessionError, setSessionError] = useState<string | null>(null);
+    const [loadingSession, setLoadingSession] = useState(false);
 
+    // Initial load: overview + sessions in parallel
     useEffect(() => {
+        if (!caseId) {
+            setError("Case ID is missing.");
+            setLoading(false);
+            return;
+        }
         let cancelled = false;
         async function load() {
             try {
-                const { rows, sessions } = await loadLogs();
+                const [ov, sess] = await Promise.all([
+                    fetchLogCase(caseId!),
+                    fetchLogSessions(caseId!)
+                ]);
                 if (cancelled) return;
-                setRows(rows);
-                setSessions(sessions);
-                if (sessions.length > 0) {
-                    setSelectedProc(sessions[0].processId);
-                }
+                setOverview(ov);
+                setSessions(sess);
+                if (sess.length > 0) setSelectedProc(sess[0].processId);
+                setError(null);
             } catch (e) {
                 if (!cancelled) {
                     setError(
-                        e instanceof Error ? e.message : "Failed to load logs"
+                        e instanceof Error
+                            ? e.message
+                            : "Failed to load log case"
                     );
                 }
             } finally {
@@ -74,20 +85,37 @@ export default function LogisticLogsPage() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [caseId]);
 
-    const overview: LogOverview | null = useMemo(
-        () => (rows.length ? computeOverview(rows, sessions) : null),
-        [rows, sessions]
-    );
-
-    const aggregates: StepAggregate[] = useMemo(
-        () => (rows.length ? computeStepAggregates(rows) : []),
-        [rows]
-    );
-
-    const selectedSession =
-        sessions.find((s) => s.processId === selectedProc) ?? null;
+    // Lazy-load the selected session's rows
+    useEffect(() => {
+        if (!caseId || selectedProc === null) {
+            setSelectedSession(null);
+            return;
+        }
+        let cancelled = false;
+        async function load() {
+            setLoadingSession(true);
+            setSessionError(null);
+            try {
+                const s = await fetchLogSession(caseId!, selectedProc!);
+                if (cancelled) return;
+                setSelectedSession(s);
+            } catch (e) {
+                if (!cancelled) {
+                    setSessionError(
+                        e instanceof Error ? e.message : "Failed to load session"
+                    );
+                }
+            } finally {
+                if (!cancelled) setLoadingSession(false);
+            }
+        }
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [caseId, selectedProc]);
 
     if (loading) {
         return (
@@ -125,11 +153,19 @@ export default function LogisticLogsPage() {
                         Check-in terminal logs — {overview.location}
                     </h1>
                     <p className="text-gray-600 mt-1">
-                        Process-mining view over {overview.rowCount.toLocaleString()} raw events from
-                        the {overview.topic} kiosk, reconstructed into{" "}
-                        {overview.sessionCount} driver sessions. Span:{" "}
-                        {new Date(overview.earliestDate).toLocaleDateString()} →{" "}
-                        {new Date(overview.latestDate).toLocaleDateString()}.
+                        Process-mining view over{" "}
+                        {overview.overview.rowCount.toLocaleString()} raw
+                        events from the {overview.topic} kiosk,
+                        reconstructed into {overview.overview.sessionCount}{" "}
+                        driver sessions. Span:{" "}
+                        {new Date(
+                            overview.overview.earliestDate
+                        ).toLocaleDateString()}{" "}
+                        →{" "}
+                        {new Date(
+                            overview.overview.latestDate
+                        ).toLocaleDateString()}
+                        .
                     </p>
                 </div>
                 <Button variant="outline" onClick={() => navigate("/")}>
@@ -137,11 +173,11 @@ export default function LogisticLogsPage() {
                 </Button>
             </div>
 
-            {/* Narrative interpretation — plain English, no charts needed */}
+            {/* Narrative interpretation */}
             <LogNarrativeCard
-                overview={overview}
+                overview={overview.overview}
                 sessions={sessions}
-                aggregates={aggregates}
+                aggregates={overview.aggregates}
             />
 
             {/* Overview KPIs */}
@@ -149,33 +185,41 @@ export default function LogisticLogsPage() {
                 <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
                     <Stat
                         label="Sessions"
-                        value={overview.sessionCount.toString()}
+                        value={overview.overview.sessionCount.toString()}
                     />
                     <Stat
                         label="Events"
-                        value={overview.rowCount.toLocaleString()}
+                        value={overview.overview.rowCount.toLocaleString()}
                     />
                     <Stat
                         label="Median duration"
-                        value={formatDuration(overview.durationStats.medianSec)}
-                        sub={`p95 ${formatDuration(overview.durationStats.p95Sec)}`}
+                        value={formatDuration(
+                            overview.overview.durationStats.medianSec
+                        )}
+                        sub={`p95 ${formatDuration(
+                            overview.overview.durationStats.p95Sec
+                        )}`}
                     />
                     <Stat
                         label="Median events / session"
-                        value={overview.eventStats.median.toString()}
-                        sub={`p95 ${overview.eventStats.p95}`}
+                        value={overview.overview.eventStats.median.toString()}
+                        sub={`p95 ${overview.overview.eventStats.p95}`}
                     />
                     <Stat
                         label="Distinct dialogs"
-                        value={aggregates
+                        value={overview.aggregates
                             .filter((a) => a.type === "DIALOG")
                             .length.toString()}
                     />
                 </CardContent>
             </Card>
 
-            {/* Step duration chart — at-a-glance "where does the kiosk eat time?" */}
-            <StepDurationChart aggregates={aggregates} dialogsOnly topN={12} />
+            {/* Step duration chart */}
+            <StepDurationChart
+                aggregates={overview.aggregates}
+                dialogsOnly
+                topN={12}
+            />
 
             {/* Session list + detail */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -187,24 +231,31 @@ export default function LogisticLogsPage() {
                     />
                 </div>
                 <div className="lg:col-span-2">
-                    <LogSessionDetail session={selectedSession} />
+                    {loadingSession && !selectedSession ? (
+                        <Skeleton className="h-96 w-full rounded-lg" />
+                    ) : sessionError ? (
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>{sessionError}</AlertDescription>
+                        </Alert>
+                    ) : (
+                        <LogSessionDetailView session={selectedSession} />
+                    )}
                 </div>
             </div>
 
-            {/* Note */}
+            {/* About */}
             <Card>
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">
-                        About this view
-                    </CardTitle>
+                    <CardTitle className="text-sm">About this view</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs text-gray-600 space-y-1">
                     <p>
-                        Prototype: data is the raw{" "}
-                        <code>logdata_aggregated.data.json</code> from{" "}
-                        <code>specifications/logistic_logs/</code>, bundled
-                        as a static asset and reduced client-side. No
-                        backend involvement yet.
+                        Data is served by the backend at{" "}
+                        <code>/api/logs/{overview.case_id}</code>.{" "}
+                        Aggregates and session metadata are pre-computed
+                        at ingest time; per-session row detail is fetched
+                        on demand when you select a session.
                     </p>
                     <p>
                         Each step shows the English description as the
@@ -219,9 +270,9 @@ export default function LogisticLogsPage() {
 
             {/* Floating AI chat */}
             <FloatingLogsChat
-                overview={overview}
+                overview={overview.overview}
                 sessions={sessions}
-                aggregates={aggregates}
+                aggregates={overview.aggregates}
                 selectedSession={selectedSession}
             />
         </div>

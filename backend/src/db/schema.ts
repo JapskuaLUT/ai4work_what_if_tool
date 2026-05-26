@@ -2,6 +2,7 @@ import {
     pgTable,
     text,
     integer,
+    bigserial,
     serial,
     boolean,
     decimal,
@@ -369,5 +370,61 @@ export const yard_proposals_relations = relations(yard_proposals, ({ one }) => (
     simulation: one(yard_simulations, {
         fields: [yard_proposals.case_id],
         references: [yard_simulations.case_id]
+    })
+}));
+
+// ============================================================================
+// LOGISTIC LOGS (kiosk check-in log ingest)
+// ============================================================================
+
+/**
+ * Log Cases — parent record for one ingest batch of raw kiosk events.
+ * `summary_metrics` is computed at ingest time so reads stay cheap.
+ */
+export const log_cases = pgTable("log_cases", {
+    case_id: text("case_id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    location: text("location").notNull(),
+    topic: text("topic").notNull(),
+    summary_metrics: jsonb("summary_metrics").notNull(),
+    related_yard_case_id: text("related_yard_case_id"),
+    metadata: jsonb("metadata").notNull().default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const log_cases_relations = relations(log_cases, ({ many }) => ({
+    rows: many(log_rows)
+}));
+
+/**
+ * Log Rows — flat fact table. One row per Start or End event from the
+ * kiosk. Sessions are reconstructed at read time by grouping on
+ * (case_id, process).
+ */
+export const log_rows = pgTable("log_rows", {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    case_id: text("case_id")
+        .notNull()
+        .references(() => log_cases.case_id, { onDelete: "cascade" }),
+    source_id: integer("source_id").notNull(),
+    date: timestamp("date").notNull(),
+    location: text("location").notNull(),
+    topic: text("topic").notNull(),
+    process: integer("process").notNull(),
+    proc: integer("proc").notNull(),
+    procstep: integer("procstep").notNull(),
+    procsteptype: text("procsteptype").notNull(),
+    procstepinfo: text("procstepinfo").notNull(),
+    procstepaction: text("procstepaction").notNull(),
+    message: text("message"),
+    value: text("value")
+});
+
+export const log_rows_relations = relations(log_rows, ({ one }) => ({
+    case: one(log_cases, {
+        fields: [log_rows.case_id],
+        references: [log_cases.case_id]
     })
 }));

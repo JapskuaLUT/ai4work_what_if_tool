@@ -1,0 +1,75 @@
+{
+    "name": "Minimal LT 010 example",
+    "description": "Tiny synthetic kiosk-log case — one driver session with 6 events. Useful as a documentation reference; the real seeded sample at /logs/lt010-2025-2026 has ~5764 rows.",
+    "location": "LT 010",
+    "topic": "Check-In",
+    "metadata": {
+        "source": "specifications/examples/logistic_logs/",
+        "purpose": "documentation"
+    },
+    "rows": [
+        {
+            "id": 1, "date": "2026-01-01T08:00:00", "location": "LT 010", "topic": "Check-In",
+            "process": 0, "proc": 0, "procstep": 0,
+            "procsteptype": "PROCESS", "procstepinfo": "INITIALISIERUNG", "procstepaction": "End",
+            "message": "Zustandswechsel \"INITIALISIERUNG\" ==> \"SPRACHAUSWAHL\"",
+            "value": ""
+        },
+        {
+            "id": 2, "date": "2026-01-01T08:00:00", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 1,
+            "procsteptype": "DIALOG", "procstepinfo": "SPRACHAUSWAHL", "procstepaction": "Start",
+            "message": "Display language picker",
+            "value": ""
+        },
+        {
+            "id": 3, "date": "2026-01-01T08:00:08", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 1,
+            "procsteptype": "DIALOG", "procstepinfo": "SPRACHAUSWAHL", "procstepaction": "End",
+            "message": "Language picked",
+            "value": "SPR_DEUTSCH Deutschland"
+        },
+        {
+            "id": 4, "date": "2026-01-01T08:00:08", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 2,
+            "procsteptype": "DIALOG", "procstepinfo": "EINGABE KENNZEICHEN", "procstepaction": "Start",
+            "message": "Prompt for plate",
+            "value": ""
+        },
+        {
+            "id": 5, "date": "2026-01-01T08:00:21", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 2,
+            "procsteptype": "DIALOG", "procstepinfo": "EINGABE KENNZEICHEN", "procstepaction": "End",
+            "message": "Plate captured",
+            "value": "HB-EX 001"
+        },
+        {
+            "id": 6, "date": "2026-01-01T08:00:21", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 3,
+            "procsteptype": "PROCESS", "procstepinfo": "AKTION KENNZEICHEN ERFASST", "procstepaction": "Start",
+            "message": "Persisting plate",
+            "value": "HB-EX 001"
+        },
+        {
+            "id": 7, "date": "2026-01-01T08:00:21", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 3,
+            "procsteptype": "PROCESS", "procstepinfo": "AKTION KENNZEICHEN ERFASST", "procstepaction": "End",
+            "message": "Plate persisted",
+            "value": ""
+        },
+        {
+            "id": 8, "date": "2026-01-01T08:00:22", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 4,
+            "procsteptype": "DIALOG", "procstepinfo": "ANZEIGE SCHLUSSBILD", "procstepaction": "Start",
+            "message": "Show closing screen",
+            "value": ""
+        },
+        {
+            "id": 9, "date": "2026-01-01T08:00:30", "location": "LT 010", "topic": "Check-In",
+            "process": 9001, "proc": 1, "procstep": 4,
+            "procsteptype": "DIALOG", "procstepinfo": "ANZEIGE SCHLUSSBILD", "procstepaction": "End",
+            "message": "Closing screen dismissed",
+            "value": ""
+        }
+    ]
+}

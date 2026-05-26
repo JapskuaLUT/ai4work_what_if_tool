@@ -1,11 +1,11 @@
 // ui/src/components/logisticLogs/LogSessionTable.tsx
 
-import type { LogSession } from "@/types/logisticLogs";
+import type { LogSessionMetadata } from "@/types/logisticLogs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDuration } from "@/services/logisticLogsService";
 
 interface Props {
-    sessions: LogSession[];
+    sessions: LogSessionMetadata[];
     selected: number | null;
     onSelect: (processId: number) => void;
 }
