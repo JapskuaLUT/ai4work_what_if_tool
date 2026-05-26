@@ -26,7 +26,9 @@
       "Bash(docker-compose down *)",
       "Bash(lsof -iTCP:5432 -sTCP:LISTEN)",
       "Bash(grep -nB1 -A1 '\"5432' /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('proposals:', len\\(d['proposals']\\)\\); [print\\('  -', p['source'], '·', p['title']\\) for p in d['proposals']]\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('proposals:', len\\(d['proposals']\\)\\); [print\\('  -', p['source'], '·', p['title']\\) for p in d['proposals']]\")",
+      "Bash(kill 23712)",
+      "Bash(echo \"Ollama listening: $\\(lsof -iTCP:11434 -sTCP:LISTEN)"
     ],
     "additionalDirectories": [
       "/Users/japskua/projects/lut/ai4work_what_if_tool/specifications"
