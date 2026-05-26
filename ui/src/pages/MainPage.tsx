@@ -28,7 +28,7 @@ export default function MainPage() {
                 AI-generated schedules based on real-world constraints.
             </p>
 
-            <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-3 justify-center max-w-4xl mx-auto">
+            <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-center max-w-5xl mx-auto">
                 <Button
                     className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => handleProjectSelect("10001")}
@@ -40,6 +40,12 @@ export default function MainPage() {
                     onClick={() => navigate("/yard/yard-sample-001")}
                 >
                     🚚 Load Yard Simulation
+                </Button>
+                <Button
+                    className="h-32 text-xl shadow-lg hover:shadow-xl transition-all bg-violet-600 hover:bg-violet-700 text-white"
+                    onClick={() => navigate("/logs/lt010")}
+                >
+                    🔑 Open Check-in Logs
                 </Button>
                 <Button
                     className="h-32 text-xl shadow-lg hover:shadow-xl transition-all"

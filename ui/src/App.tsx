@@ -10,6 +10,7 @@ import ComparePage from "./pages/ComparePage";
 import OllamaPage from "./pages/OllamaPage";
 import EducationalStressPage from "./pages/EducationalStressPage";
 import YardSimulationPage from "./pages/YardSimulationPage";
+import LogisticLogsPage from "./pages/LogisticLogsPage";
 
 function App() {
     return (
@@ -33,6 +34,10 @@ function App() {
                         <Route
                             path="/yard/:caseId"
                             element={<YardSimulationPage />}
+                        />
+                        <Route
+                            path="/logs/lt010"
+                            element={<LogisticLogsPage />}
                         />
                         <Route path="/compare" element={<ComparePage />} />
                         <Route path="/test/ollama" element={<OllamaPage />} />
