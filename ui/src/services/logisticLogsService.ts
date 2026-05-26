@@ -222,6 +222,10 @@ export interface SessionStep {
     durationSec: number | null;
     value: string;
     pii: boolean;
+    /** Original Start row (always present). */
+    startRow: LogRow;
+    /** Original End row (null when the step is still open / truncated). */
+    endRow: LogRow | null;
 }
 
 export function reconstructSteps(session: LogSession): SessionStep[] {
@@ -243,7 +247,9 @@ export function reconstructSteps(session: LogSession): SessionStep[] {
                 endedAt: null,
                 durationSec: null,
                 value: r.value ?? "",
-                pii: PII_STEPS.has(r.procstepinfo)
+                pii: PII_STEPS.has(r.procstepinfo),
+                startRow: r,
+                endRow: null
             });
         } else if (r.procstepaction === "End") {
             const opened = open.get(r.procstepinfo);
@@ -261,6 +267,7 @@ export function reconstructSteps(session: LogSession): SessionStep[] {
                         0,
                         (endedMs - startedMs) / 1000
                     );
+                    steps[i].endRow = r;
                     break;
                 }
             }
