@@ -4,6 +4,14 @@
 **Owner:** AI4Work team
 **Last updated:** 2026-05-05
 
+> Companion files in this folder:
+> - [specification.yml](specification.yml) — OpenAPI 3.1 contract for every
+>   `/api/simulations/yard/*` endpoint, including the proposal flow.
+> - [_GeneralInfo/typeScheme_ExportData.json](_GeneralInfo/typeScheme_ExportData.json) —
+>   the simulator partner's own native description of `SimulationExportData`.
+> - [Results/](Results/) — three reference simulator runs used for tests,
+>   the seeded sample, and prompt grounding.
+
 ---
 
 ## 1. Goal
@@ -197,7 +205,7 @@ No DB access here — keeps it unit-testable, mirrors how [stressCalculation.ts]
 
 ## 7. API
 
-Prefix: `/api/simulations/yard/`. Mirrors the education shape so the UI service layer stays symmetric.
+Prefix: `/api/simulations/yard/`. Mirrors the education shape so the UI service layer stays symmetric. **Full OpenAPI contract:** [specification.yml](specification.yml).
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -208,6 +216,10 @@ Prefix: `/api/simulations/yard/`. Mirrors the education shape so the UI service 
 | `GET`  | `/:caseId/:runId/timeline?entity=B010` | On-demand per-entity occupancy timeline (computed, not stored). |
 | `PUT`  | `/:caseId/select` | Set preferred run. Body: `{ runId }`. |
 | `GET`  | `/:caseId/selection` | Read current selection. |
+| `GET`  | `/:caseId/proposals` | List all improvement proposals (AI- or human-authored). |
+| `POST` | `/:caseId/proposals` | Save a new proposal; server validates changes against the case's yard. |
+| `DELETE` | `/:caseId/proposals/:id` | Remove a proposal. |
+| `POST` | `/:caseId/proposals/:id/run` | **Stub** — forward the proposal to the simulator for a what-if run (returns 503 until partners wire up their API). Contract defined; see §14 for the partner-side shape we expect. |
 
 The first two endpoints accept the simulator's native JSON unchanged — drop a `*.complete.json` straight in.
 
@@ -341,6 +353,7 @@ db/
 
 specifications/yard_logistics/
   design.md                            (this doc)
+  specification.yml                    (OpenAPI 3.1 — every endpoint + schema)
   _GeneralInfo/                        (untouched, vendor inputs)
   Results/                             (untouched, sample simulator outputs)
 
@@ -350,3 +363,101 @@ instructions/yard_logistics/
 worklog/yard_logistics/
   yard_logistics_log.md                (per-phase implementation log, like stress_updates_log.md)
 ```
+
+---
+
+## 14. Proposed simulator-side contract (partner API)
+
+The yard analog of education's `POST /api/simulations/education/` — *give
+me an analysis* — has to live on the partner's side, because we don't
+run the simulator. This section drafts the contract we'd want them to
+expose. **Nothing here is implemented yet; it's a starting point for
+the partner conversation.**
+
+### 14.1 What we'd POST to them
+
+Single endpoint owned by the simulator partner, accepting a payload
+that's structurally a `SimulationExportData` (per
+[_GeneralInfo/typeScheme_ExportData.json](_GeneralInfo/typeScheme_ExportData.json))
+minus the `Measurements` block (since measurements are what they're
+about to produce):
+
+```
+POST {SIMULATOR_BASE}/run
+Content-Type: application/json
+Idempotency-Key: <our caseId + proposalId, optional>
+
+{
+  "callbackUrl": "https://backend.localhost/api/simulations/yard/{caseId}/runs",
+  "callbackRunId": "proposal_7",     // becomes yard_runs.run_id when we receive it
+  "callbackLabel": "Proposal #7",    // becomes yard_runs.label
+  "request": {
+    "YardStructure": { ... },        // see Crossing/Storage/... schemas in specification.yml
+    "Processes":     [ ... ],
+    "Orders":        [ ... ]
+    // Measurements deliberately omitted — the simulator produces these.
+  }
+}
+```
+
+The `YardStructure`, `Processes`, and `Orders` arrays come from our
+working copy of the case **with the proposal's `changes` applied**:
+
+| `ProposalChange.kind` | Effect on the payload                                                                |
+|:-:|---|
+| `capacity`        | Mutate the named entity's `MaxOccupancy` / `Capacity` to the new `to` value.            |
+| `stagger_orders`  | Mutate `Orders[*].offsetMinutes` according to the proposal's pacing spec.               |
+| `reroute`         | Update `Processes` so the task targeting `from_storage` for `material` now targets `to_storage`. |
+| `add_entity`      | Append a new entity to `YardStructure.Entities.<kind>` (with a generated `Id`) and, if `connects` is set, append matching `Street` records. |
+
+### 14.2 Expected reply shape
+
+**Synchronous ack (HTTP 202).** The simulator returns immediately:
+
+```jsonc
+{ "accepted": true, "simulatorTraceId": "sim-job-12345" }
+```
+
+…and runs the simulation in the background. We surface
+`simulatorTraceId` on our `ForwardProposalResponse` for cross-system
+debugging.
+
+**Asynchronous callback (simulator → us).** When done, the simulator
+POSTs to `callbackUrl` (which is our existing `POST
+/api/simulations/yard/{caseId}/runs` endpoint) with a regular
+`YardRunIngestInput`-shaped body. Its `run_id` must equal the
+`callbackRunId` we supplied, so we can match the result to the
+proposal that requested it. The push includes full `Measurements` and
+preserves `ComparisonInformation` hashes so we can spot whether the
+input matched what we sent.
+
+### 14.3 Failure modes worth defining
+
+- **Reject on validation:** simulator returns `400` if it can't parse
+  the `YardStructure` (e.g. an `add_entity` references an unknown
+  street ID). We bubble this up as `502` on `POST /proposals/{id}/run`.
+- **Reject on resource:** simulator returns `429` if it's at capacity.
+  We surface as `503` with a Retry-After hint passed through.
+- **Lost callback:** if the callback never arrives, the proposal stays
+  in `sent_to_simulator_at != null` with no matching run. A future
+  reconciliation job would poll `GET {SIMULATOR_BASE}/run/{traceId}` to
+  recover state; out of scope for the first iteration.
+
+### 14.4 Auth and transport
+
+To be agreed with the partner. Default proposal: **mutual TLS** for
+both directions (we already terminate TLS via Traefik at
+`backend.localhost`; partners can pin our cert). Bearer-token auth is
+the fallback if mTLS is too heavy. The callback URL is supplied per
+request so partners don't need DNS-level configuration.
+
+### 14.5 What this isn't
+
+- **Not a generic "run any simulation" API.** We only ever forward
+  proposals that we already store; the request is derived from a row
+  in `yard_proposals`. If we ever expose ad-hoc simulator access from
+  the UI, that's a separate workflow.
+- **Not a streaming protocol.** Single ack + single callback. If the
+  simulator wants to emit progress events along the way, it can
+  optionally POST intermediate measurements to the same callback URL,
+  but our default UI doesn't render them.

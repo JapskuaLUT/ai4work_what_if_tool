@@ -1,6 +1,28 @@
 # What-If Tool
 
-This repository contains the source code for the What-If Tool, a web application designed for simulating and analyzing different scenarios, such as course scheduling and stress prediction. The application is built with a microservices architecture and is fully containerized with Docker for easy setup and deployment.
+This repository contains the source code for the What-If Tool, a web
+application for comparing alternative scenarios across two analysis
+domains:
+
+-   **Educational course planning** — model student stress under
+    different course schedules, generate optimisation scenarios
+    server-side, pick the best one. See
+    [specifications/specification.yml](specifications/specification.yml).
+-   **Yard logistics** — ingest truck-yard simulator outputs from a
+    partner-owned simulator, surface KPIs and bottlenecks, let
+    planners author improvement proposals (AI- or human-authored) and
+    discuss them with a local LLM. See
+    [specifications/yard_logistics/design.md](specifications/yard_logistics/design.md)
+    and
+    [specifications/yard_logistics/specification.yml](specifications/yard_logistics/specification.yml).
+
+Both halves share a Bun + Elysia backend, Postgres + Drizzle ORM, a
+React/Vite UI, and a dockerised Ollama-proxy that connects to a host
+Ollama process for AI features. The whole stack is orchestrated with
+Docker Compose behind mkcert-signed Traefik.
+
+For request-body examples and curl recipes, see
+[specifications/examples/](specifications/examples/).
 
 ## Table of Contents
 

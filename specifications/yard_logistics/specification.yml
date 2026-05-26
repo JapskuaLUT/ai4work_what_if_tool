@@ -1,0 +1,1164 @@
+openapi: 3.1.0
+info:
+  title: AI4Work What-If Tool — Yard Logistics API
+  version: 0.1.0
+  description: |
+    REST endpoints for the **yard logistics** half of the What-If Tool.
+
+    The tool ingests yard simulator outputs (the partner-owned simulator emits
+    `SimulationExportData` JSON — see
+    [_GeneralInfo/typeScheme_ExportData.json](../yard_logistics/_GeneralInfo/typeScheme_ExportData.json)),
+    derives per-run KPIs and bottlenecks, lets planners compare runs and pick
+    one, and supports AI- or human-authored improvement **proposals** that can
+    later be forwarded back to the simulator API for re-evaluation.
+
+    **Current flow (this iteration):**
+    - JSON drops from the simulator are POSTed to `/api/simulations/yard/`
+      (one parent + N runs) or appended to an existing case via
+      `/api/simulations/yard/{caseId}/runs`.
+    - The UI reads runs, computes occupancy timelines, lets planners select a
+      preferred run, generate proposals, and discuss them with an LLM.
+
+    **Future flow (simulator API integration):**
+    - The same `POST /:caseId/runs` endpoint is the webhook target: when the
+      simulator finishes a run for one of our proposals it pushes the result
+      back here.
+    - A separate `POST /:caseId/proposals/{id}/run` (not in this spec yet)
+      will forward a proposal to the simulator's input API.
+
+    The CRUD shape, error envelope, and JSONB column boundaries are
+    intentionally similar to the educational-stress side
+    ([../specification.yml](../specification.yml)) so the codebase stays
+    consistent.
+  contact:
+    name: AI4Work team
+servers:
+  - url: https://backend.localhost
+    description: Local dev (Traefik HTTPS, mkcert-signed)
+  - url: http://localhost:8000
+    description: Local dev (direct backend, no proxy)
+
+tags:
+  - name: Yard Logistics
+    description: |
+      Endpoints for yard simulation sets, runs, derived analytics, selection,
+      and improvement proposals.
+
+paths:
+  /api/simulations/yard/:
+    post:
+      tags: [Yard Logistics]
+      summary: Create a new yard simulation set
+      description: |
+        Ingests one or more simulator runs sharing the same yard. The yard
+        graph and processes are stored once at parent level when all runs
+        share their topology (volatile fields like `Storage.Stock` are
+        ignored for the topology comparison); otherwise each run keeps its
+        own copy.
+
+        On success, every run is summarised (per-action KPIs, bottlenecks)
+        at ingest time and the result is persisted in `yard_runs.summary_metrics`.
+      operationId: createYardSimulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YardSimulationIngestInput"
+      responses:
+        "201":
+          description: Simulation set created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateYardSimulationResponse"
+        "400":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Yard Logistics]
+      summary: Get a yard simulation overview (parent + every run's summary)
+      description: |
+        Returns parent metadata, the (shared) yard structure and processes,
+        and every run's `summary_metrics` (orders, waiting/driving stats,
+        throughput, top bottlenecks). Powers the **Comparison** tab in the UI.
+
+        If the parent's `yard_structure` is null (e.g. legacy data ingested
+        before the topology-aware sharing logic existed), the API
+        transparently falls back to the first run's copy so consumers can
+        still render the layout.
+      operationId: getYardSimulationOverview
+      responses:
+        "200":
+          description: Simulation overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YardSimulationOverviewResponse"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/runs:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    post:
+      tags: [Yard Logistics]
+      summary: Add a simulator run to an existing yard simulation
+      description: |
+        Appends one run to an existing case. The run's yard structure and
+        processes are stored at run-level only when they differ from the
+        parent's; otherwise they inherit from the parent.
+
+        **This is the future simulator-webhook target.** When partners wire
+        their simulator API to push runs back to us, they POST to this
+        endpoint with the same `SimulationExportData` shape we accept here.
+      operationId: addYardRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YardRunIngestInput"
+      responses:
+        "201":
+          description: Run appended.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [caseId, runId]
+                properties:
+                  caseId: { type: string }
+                  runId: { type: string }
+        "404":
+          description: Parent simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/{runId}:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+      - $ref: "#/components/parameters/RunId"
+    get:
+      tags: [Yard Logistics]
+      summary: Get a single yard run with full payload (orders + measurements)
+      description: |
+        Returns the run's full raw payload (orders, measurements with
+        per-truck TimeEntries) plus derived `summary_metrics`. The truck
+        Gantt and per-entity occupancy timelines on the per-run tabs are
+        rendered from this data.
+      operationId: getYardRun
+      responses:
+        "200":
+          description: Run detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YardRunDetailResponse"
+        "404":
+          description: Run not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/{runId}/timeline:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+      - $ref: "#/components/parameters/RunId"
+      - name: entity
+        in: query
+        required: true
+        description: |
+          Entity name to plot. Pass the **Name** field of any yard entity
+          (e.g. `B010`, `P010`, `SL729`). The synthetic name
+          `(off-yard waiting)` is also accepted — it returns the timeline
+          of trucks queued outside the yard before any check-in could
+          admit them.
+        schema:
+          type: string
+        examples:
+          terminal:    { value: B010 }
+          parking:     { value: P010 }
+          storage:     { value: SL729 }
+          externalWait: { value: "(off-yard waiting)" }
+    get:
+      tags: [Yard Logistics]
+      summary: Per-entity occupancy timeline for a yard run
+      description: |
+        Sweeps the run's TimeEntries and returns a uniformly-sampled (30s
+        resolution) count of trucks present at the given entity. The
+        response also carries `max_occupancy` so the UI can draw a
+        capacity reference line.
+      operationId: getYardRunTimeline
+      responses:
+        "200":
+          description: Timeline.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyTimelineResponse"
+        "400":
+          description: Missing or invalid `entity` query parameter.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Run not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/select:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    put:
+      tags: [Yard Logistics]
+      summary: Mark a run as the preferred one for this case
+      description: |
+        Sets `yard_simulations.selected_run_id` and `selected_at`. The UI
+        renders a star next to the chosen run.
+      operationId: selectYardRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId]
+              properties:
+                runId: { type: string, example: "02_sequenced_ok" }
+      responses:
+        "200":
+          description: Selection updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, caseId, selectedRunId, selectedAt]
+                properties:
+                  success: { type: boolean, example: true }
+                  caseId:  { type: string }
+                  selectedRunId: { type: string }
+                  selectedAt: { type: string, format: date-time }
+        "404":
+          description: Simulation or run not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/selection:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Yard Logistics]
+      summary: Get the current selected run for this case
+      operationId: getYardSelection
+      responses:
+        "200":
+          description: Current selection (may be empty).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SelectionEmpty"
+                  - $ref: "#/components/schemas/SelectionPresent"
+        "404":
+          description: Simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/proposals:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    get:
+      tags: [Yard Logistics]
+      summary: List improvement proposals for a yard simulation
+      description: Newest first.
+      operationId: listYardProposals
+      responses:
+        "200":
+          description: Proposals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [case_id, proposals]
+                properties:
+                  case_id: { type: string }
+                  proposals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/YardProposal"
+        "404":
+          description: Simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags: [Yard Logistics]
+      summary: Save a yard improvement proposal (AI- or human-authored)
+      description: |
+        Validates the proposal's references against the case's yard
+        structure. On failure returns 400 with a structured
+        `ProposalValidation` payload so the UI can surface specific
+        errors per change.
+
+        AI-authored proposals usually carry `source: "ai"`; the manual
+        entry form sets `source: "manual"`. The discriminated `changes[]`
+        union supports four kinds today: `capacity`, `stagger_orders`,
+        `reroute`, `add_entity`.
+      operationId: createYardProposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YardProposalCreateInput"
+      responses:
+        "201":
+          description: Proposal saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [proposal, validation]
+                properties:
+                  proposal:
+                    $ref: "#/components/schemas/YardProposal"
+                  validation:
+                    $ref: "#/components/schemas/ProposalValidation"
+        "400":
+          description: Validation failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, validation]
+                properties:
+                  error: { type: string, example: "Proposal failed validation" }
+                  validation:
+                    $ref: "#/components/schemas/ProposalValidation"
+        "404":
+          description: Simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/proposals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+        description: Proposal numeric id (`yard_proposals.id`).
+    delete:
+      tags: [Yard Logistics]
+      summary: Delete a yard proposal
+      operationId: deleteYardProposal
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, deletedId]
+                properties:
+                  ok: { type: boolean, example: true }
+                  deletedId: { type: integer }
+        "400":
+          description: Non-numeric id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Proposal not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/simulations/yard/{caseId}/proposals/{id}/run:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+        description: Proposal numeric id (`yard_proposals.id`).
+    post:
+      tags: [Yard Logistics]
+      summary: Forward a proposal to the simulator for a what-if run
+      description: |
+        **Status: not yet implemented.** The contract is defined here so we
+        can wire it into the simulator partner's API as soon as it's
+        available. This is the yard analog of education's
+        `POST /api/simulations/education/` — it kicks off a "give me an
+        analysis" workflow, just out-of-process instead of in-process.
+
+        **Intended flow:**
+
+        1. Caller (the UI's *Send to simulator* button) POSTs an empty body
+           against an existing proposal id.
+        2. The backend reads the proposal + the case's yard / processes /
+           orders, applies the proposal's `changes` to a working copy
+           (capacity tweaks, order staggering, etc.), and POSTs the
+           resulting `SimulationExportData`-shaped payload (minus
+           `Measurements`) to the simulator partner's input endpoint —
+           see [design.md §14](design.md) for the proposed partner
+           contract.
+        3. The simulator runs asynchronously; on completion it pushes the
+           result back via `POST /api/simulations/yard/{caseId}/runs`
+           (the same webhook target we already serve) with a `run_id`
+           derived from this proposal so we can correlate them.
+        4. The backend marks `yard_proposals.sent_to_simulator_at` and
+           returns the eventual run_id to the caller.
+
+        **Why two steps?** The simulator can take minutes to finish. The
+        response here is the *acknowledgement*; clients poll the case via
+        `GET /api/simulations/yard/{caseId}` (or subscribe to the future
+        SSE stream) to see the new run appear.
+      operationId: forwardProposalToSimulator
+      responses:
+        "202":
+          description: |
+            Forward accepted; the simulator has acknowledged the request.
+            The new run will appear on the case under the returned
+            `run_id` when the simulator finishes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForwardProposalResponse"
+        "404":
+          description: Proposal or case not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            Proposal already forwarded (`sent_to_simulator_at` is set) and
+            the existing run is still pending. Retry with a different
+            proposal or wait for the prior run to land.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: |
+            The simulator partner endpoint returned an error or was
+            unreachable. The response body's `message` carries the
+            upstream detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: |
+            Returned today — the forward endpoint is defined but not yet
+            wired to a live simulator. Will switch to 202 once partners
+            ship their API.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+# ============================================================================
+# Components
+# ============================================================================
+
+components:
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      description: Unique identifier for a yard simulation set (`yard_simulations.case_id`).
+      schema:
+        type: string
+        examples: ["yard-sample-001"]
+    RunId:
+      name: runId
+      in: path
+      required: true
+      description: Identifier for a run inside a case (`yard_runs.run_id`). Uploader-supplied.
+      schema:
+        type: string
+        examples: ["01_smooth", "02_sequenced_ok", "03_waiting_problem"]
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:   { type: string, example: "Yard simulation not found" }
+        message: { type: string, nullable: true, example: "details from the underlying exception" }
+
+    # -----------------------------------------------------------------------
+    # Enums mirrored from typeScheme_ExportData.json
+    # -----------------------------------------------------------------------
+    EOrderActionType:
+      type: string
+      enum: [Loading, Unloading]
+    EOrderState:
+      type: string
+      enum: [Unhandled, Incomplete, Completed]
+    TerminalTyp:
+      type: string
+      enum: [CheckIn, CheckOut, Waagenterminal, Schrankenterminal]
+    EEntityAction:
+      description: |
+        Simulator action enum. May appear as a single value (`Loading`) or
+        as a comma-separated combination (`Loading, Unloading`) on Storage
+        entities. Treated as opaque string in our types.
+      type: string
+      examples: [None, Loading, Unloading, CheckIn, CheckOut, Parking, Authenticate, Weighing, "Loading, Unloading"]
+
+    # -----------------------------------------------------------------------
+    # Simulator export shapes (passthrough — see typeScheme_ExportData.json)
+    # -----------------------------------------------------------------------
+    EntityBase:
+      type: object
+      required: [Id, Name, Description, Costs_Seconds, Actions]
+      properties:
+        Id:            { type: string, format: uuid }
+        Name:          { type: string, example: "B010" }
+        Description:   { type: string }
+        Costs_Seconds: { type: integer, minimum: 0 }
+        Actions:       { $ref: "#/components/schemas/EEntityAction" }
+
+    Crossing:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required: [PlanDuration, MaxOccupancy]
+          properties:
+            PlanDuration: { type: string, description: "HH:MM:SS" }
+            MaxOccupancy: { type: integer, minimum: 1 }
+
+    ParkingArea:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required: [ParkingDuration, Capacity]
+          properties:
+            ParkingDuration: { type: string, description: "HH:MM:SS" }
+            Capacity: { type: integer, minimum: 1, description: "Number of parking lots." }
+
+    Scale:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required: [WeighingDuration]
+          properties:
+            WeighingDuration: { type: string, description: "HH:MM:SS" }
+
+    Storage:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required:
+            [Capacity, Stock, MaterialId, Loading_PerSecond, Unloading_PerSecond]
+          properties:
+            Capacity:           { type: integer, minimum: 0, description: "Max material capacity in kg." }
+            Stock:              { type: integer, minimum: 0, description: "Current stock level in kg. Volatile: changes per run, intentionally ignored by topology-equivalence checks." }
+            MaterialId:         { type: string, example: "186" }
+            Loading_PerSecond:  { type: number, format: float, description: "kg/s loadable from this storage." }
+            Unloading_PerSecond: { type: number, format: float, description: "kg/s unloadable into this storage." }
+
+    Terminal:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required: [ProcessingDuration, Typ]
+          properties:
+            ProcessingDuration: { type: string, description: "HH:MM:SS" }
+            Typ: { $ref: "#/components/schemas/TerminalTyp" }
+
+    Street:
+      allOf:
+        - $ref: "#/components/schemas/EntityBase"
+        - type: object
+          required: [DrivingDuration, MaxOccupancy, ID_From, ID_To, Cost_Seconds]
+          properties:
+            DrivingDuration: { type: string, description: "HH:MM:SS" }
+            MaxOccupancy:    { type: integer, minimum: 1 }
+            ID_From:         { type: string, format: uuid }
+            ID_To:           { type: string, format: uuid }
+            Cost_Seconds:    { type: integer, minimum: 0 }
+
+    EntityCollections:
+      type: object
+      required: [Crossings, ParkingAreas, Scales, Storages, Terminals]
+      properties:
+        Crossings:    { type: array, items: { $ref: "#/components/schemas/Crossing" } }
+        ParkingAreas: { type: array, items: { $ref: "#/components/schemas/ParkingArea" } }
+        Scales:       { type: array, items: { $ref: "#/components/schemas/Scale" } }
+        Storages:     { type: array, items: { $ref: "#/components/schemas/Storage" } }
+        Terminals:    { type: array, items: { $ref: "#/components/schemas/Terminal" } }
+
+    YardDesignData:
+      type: object
+      required: [Entities, Streets]
+      properties:
+        Entities: { $ref: "#/components/schemas/EntityCollections" }
+        Streets:  { type: array, items: { $ref: "#/components/schemas/Street" } }
+
+    ProcessTask:
+      type: object
+      required: [Specifications, Action, Remark]
+      properties:
+        Specifications:
+          type: array
+          items: { type: string }
+          description: |
+            Entity Names this task is pinned to. Empty array means any
+            entity that provides the required Action is allowed.
+        Action:
+          type: string
+          example: CheckIn
+          description: An `EEntityAction` value, or `*` meaning "the order's own action".
+        Remark: { type: string }
+
+    Process:
+      type: object
+      required: [Ident, Material, Action, Remark, Tasks]
+      properties:
+        Ident:    { type: string, example: M186_Load }
+        Material: { type: string, example: "186", description: "Material id, or `*` for any." }
+        Action:   { type: string, example: Loading, description: "EOrderActionType or space-separated combination." }
+        Remark:   { type: string }
+        Tasks:
+          type: array
+          items: { $ref: "#/components/schemas/ProcessTask" }
+
+    Order:
+      type: object
+      required: [offsetMinutes, licensePlate, action, quantityKg, material]
+      properties:
+        offsetMinutes: { type: integer, minimum: 0, description: "Minutes after t=0 when the truck arrives at the gate." }
+        licensePlate:  { type: string, example: "OAS-L 186-1" }
+        action:        { $ref: "#/components/schemas/EOrderActionType" }
+        quantityKg:    { type: integer, minimum: 0 }
+        material:      { type: string, example: "186" }
+
+    TimeEntry:
+      type: object
+      required: [Location, Action, Start, End, Duration, Remark]
+      properties:
+        Location:
+          type: string
+          description: |
+            Entity Name. **Empty string** is a special case: it represents
+            a truck waiting *outside* the yard before its first required
+            entity (usually a CheckIn terminal) became free. The analytics
+            layer surfaces these under the synthetic name
+            `(off-yard waiting)` with type `ExternalWait`.
+          examples: ["LT010", "S3", "P010", "B010", ""]
+        Action:   { type: string, examples: [CheckIn, Driving, Parking, Authenticate, Loading, Unloading, Weighing, CheckOut, Waiting] }
+        Start:    { type: string, description: "HH:MM:SS — absolute simulation time, not relative to the truck's arrival." }
+        End:      { type: string, description: "HH:MM:SS" }
+        Duration: { type: string, description: "HH:MM:SS" }
+        Remark:   { type: string, description: "Free-form simulator note, e.g. 'Required entity for Action 'CheckIn' is occupied'." }
+
+    OrderMeasurementSummary:
+      type: object
+      required: [WaitingTime, DrivingTime, OrderState]
+      properties:
+        WaitingTime: { type: string, description: "HH:MM:SS" }
+        DrivingTime: { type: string, description: "HH:MM:SS" }
+        OrderState:  { $ref: "#/components/schemas/EOrderState" }
+
+    OrderMeasurement:
+      type: object
+      required: [TimeEntries, OrderIdent, ProcessIdent, Summary]
+      properties:
+        TimeEntries:
+          type: array
+          items: { $ref: "#/components/schemas/TimeEntry" }
+        OrderIdent:  { type: string, description: "Matches Order.licensePlate." }
+        ProcessIdent: { type: string, description: "Matches Process.Ident." }
+        Summary:     { $ref: "#/components/schemas/OrderMeasurementSummary" }
+
+    MeasurementSummary:
+      type: object
+      required: [OrdersOverall, OrdersUnhandled, OrdersIncomplete, OrdersCompleted]
+      properties:
+        OrdersOverall:    { type: integer, minimum: 0 }
+        OrdersUnhandled:  { type: integer, minimum: 0 }
+        OrdersIncomplete: { type: integer, minimum: 0 }
+        OrdersCompleted:  { type: integer, minimum: 0 }
+
+    ExportMeasurement:
+      type: object
+      required: [Summary, Measurements]
+      properties:
+        Summary:      { $ref: "#/components/schemas/MeasurementSummary" }
+        Measurements:
+          type: array
+          items: { $ref: "#/components/schemas/OrderMeasurement" }
+
+    ComparisonInformation:
+      type: object
+      required: [YardStructure, Processes, Orders]
+      properties:
+        YardStructure: { type: string, description: "SHA-256 hex of the YardStructure block. Equal hash ⇒ identical yard payload." }
+        Processes:     { type: string, description: "SHA-256 hex of the Processes list." }
+        Orders:        { type: string, description: "SHA-256 hex of the Orders list." }
+
+    YardSimulationExport:
+      description: |
+        The simulator's native `SimulationExportData` payload — accepted
+        opaquely at the API boundary and validated against this shape
+        inside the services. See
+        [_GeneralInfo/typeScheme_ExportData.json](../yard_logistics/_GeneralInfo/typeScheme_ExportData.json).
+      type: object
+      required: [ComparisonInformation, YardStructure, Processes, Orders, Measurements]
+      properties:
+        ComparisonInformation: { $ref: "#/components/schemas/ComparisonInformation" }
+        YardStructure:         { $ref: "#/components/schemas/YardDesignData" }
+        Processes:
+          type: array
+          items: { $ref: "#/components/schemas/Process" }
+        Orders:
+          type: array
+          items: { $ref: "#/components/schemas/Order" }
+        Measurements: { $ref: "#/components/schemas/ExportMeasurement" }
+
+    # -----------------------------------------------------------------------
+    # Ingest input
+    # -----------------------------------------------------------------------
+    YardRunIngestInput:
+      type: object
+      required: [run_id, label, export]
+      properties:
+        run_id:
+          type: string
+          example: "03_waiting_problem"
+          description: Uploader-supplied stable id, unique within the case.
+        label:
+          type: string
+          example: WaitingProblem
+          description: Human-readable run label (shown on tabs and in the comparison table).
+        description:
+          type: string
+          nullable: true
+        simulated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601 timestamp the simulator ran (best-effort).
+        export:
+          $ref: "#/components/schemas/YardSimulationExport"
+
+    YardSimulationIngestInput:
+      type: object
+      required: [name, runs]
+      properties:
+        name:        { type: string, example: "Yard AI4Work — sample comparison" }
+        description: { type: string, nullable: true }
+        yard_image_path:
+          type: string
+          nullable: true
+          description: "URL/path to a yard map image served alongside the data (e.g. /yard_AI4Work.png)."
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form metadata kept alongside the case (uploader, source, etc.).
+        runs:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/YardRunIngestInput" }
+
+    CreateYardSimulationResponse:
+      type: object
+      required: [caseId, runCount, resultsUrl]
+      properties:
+        caseId:    { type: string, example: "ad8a7…uuid…" }
+        runCount:  { type: integer, example: 3 }
+        resultsUrl: { type: string, format: uri, example: "https://app.localhost/yard/ad8a7…" }
+
+    # -----------------------------------------------------------------------
+    # Derived metrics
+    # -----------------------------------------------------------------------
+    SecondsStats:
+      type: object
+      required: [total, avg, max, p95]
+      properties:
+        total: { type: integer, minimum: 0 }
+        avg:   { type: number, minimum: 0 }
+        max:   { type: integer, minimum: 0 }
+        p95:   { type: integer, minimum: 0 }
+
+    OrderCounts:
+      type: object
+      required: [overall, completed, incomplete, unhandled]
+      properties:
+        overall:    { type: integer, minimum: 0 }
+        completed:  { type: integer, minimum: 0 }
+        incomplete: { type: integer, minimum: 0 }
+        unhandled:  { type: integer, minimum: 0 }
+
+    ThroughputStats:
+      type: object
+      required: [orders_per_hour, first_order_min, last_completion_min]
+      properties:
+        orders_per_hour:     { type: number, minimum: 0 }
+        first_order_min:     { type: integer, minimum: 0 }
+        last_completion_min: { type: number, minimum: 0 }
+
+    BottleneckEntry:
+      type: object
+      required: [entity, type, max_concurrent, max_occupancy, queue_score]
+      properties:
+        entity:
+          type: string
+          description: Entity Name, or `(off-yard waiting)` for the synthetic pre-CheckIn queue.
+          examples: ["B010", "P010", "(off-yard waiting)"]
+        type:
+          type: string
+          enum:
+            [Terminal, Storage, Scale, ParkingArea, Crossing, Street, ExternalWait, Unknown]
+          description: |
+            `ExternalWait` is synthetic: it represents trucks queued
+            *outside* the yard. `Crossing` and `Street` are excluded from
+            the top-N list (too transient to be actionable) but their type
+            literal stays in the schema for completeness.
+        max_concurrent: { type: integer, minimum: 0, description: "Peak simultaneous trucks at this entity." }
+        max_occupancy:  { type: integer, minimum: 1, description: "Capacity. ParkingArea uses `Capacity`; Crossing/Street use `MaxOccupancy`; serving entities (Terminal/Scale/Storage/ExternalWait) default to 1." }
+        queue_score:    { type: number, minimum: 0, description: "max_concurrent / max_occupancy. > 1.0 means the entity was saturated at some point." }
+
+    YardRunSummaryMetrics:
+      description: |
+        The pre-computed digest stored on `yard_runs.summary_metrics`.
+        Computed at ingest and reused on every read. The actual occupancy
+        timeline per entity is computed on demand via
+        `/{caseId}/{runId}/timeline`.
+      type: object
+      required:
+        [orders, waiting_seconds, driving_seconds, throughput, bottlenecks]
+      properties:
+        orders:          { $ref: "#/components/schemas/OrderCounts" }
+        waiting_seconds: { $ref: "#/components/schemas/SecondsStats" }
+        driving_seconds: { $ref: "#/components/schemas/SecondsStats" }
+        throughput:      { $ref: "#/components/schemas/ThroughputStats" }
+        bottlenecks:
+          type: array
+          items: { $ref: "#/components/schemas/BottleneckEntry" }
+
+    # -----------------------------------------------------------------------
+    # Read responses
+    # -----------------------------------------------------------------------
+    YardRunSummaryResponse:
+      type: object
+      required:
+        [run_id, label, description, simulated_at, yard_hash, processes_hash, orders_hash, summary_metrics]
+      properties:
+        run_id:          { type: string }
+        label:           { type: string }
+        description:     { type: string, nullable: true }
+        simulated_at:    { type: string, format: date-time, nullable: true }
+        yard_hash:       { type: string, nullable: true }
+        processes_hash:  { type: string, nullable: true }
+        orders_hash:     { type: string, nullable: true }
+        summary_metrics: { $ref: "#/components/schemas/YardRunSummaryMetrics" }
+
+    YardSimulationOverviewResponse:
+      type: object
+      required:
+        [case_id, name, description, yard_image_path, yard_structure, processes,
+         yard_hash, processes_hash, selected_run_id, selected_at, metadata, runs]
+      properties:
+        case_id:          { type: string }
+        name:             { type: string }
+        description:      { type: string, nullable: true }
+        yard_image_path:  { type: string, nullable: true }
+        yard_structure:
+          allOf: [{ $ref: "#/components/schemas/YardDesignData" }]
+          nullable: true
+          description: |
+            Shared yard layout when all runs match topologically. Falls back
+            to the first run's copy when the parent's is null.
+        processes:
+          type: array
+          nullable: true
+          items: { $ref: "#/components/schemas/Process" }
+        yard_hash:        { type: string, nullable: true }
+        processes_hash:   { type: string, nullable: true }
+        selected_run_id:  { type: string, nullable: true }
+        selected_at:      { type: string, format: date-time, nullable: true }
+        metadata:         { type: object, additionalProperties: true }
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/YardRunSummaryResponse" }
+
+    YardRunDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/YardRunSummaryResponse"
+        - type: object
+          required: [case_id, orders, measurements, yard_structure, processes]
+          properties:
+            case_id: { type: string }
+            orders:
+              type: array
+              items: { $ref: "#/components/schemas/Order" }
+            measurements: { $ref: "#/components/schemas/ExportMeasurement" }
+            yard_structure:
+              allOf: [{ $ref: "#/components/schemas/YardDesignData" }]
+              nullable: true
+              description: Only populated when this run's yard differs from the parent's.
+            processes:
+              type: array
+              nullable: true
+              items: { $ref: "#/components/schemas/Process" }
+
+    OccupancyTimelinePoint:
+      type: object
+      required: [t_seconds, count]
+      properties:
+        t_seconds: { type: integer, minimum: 0 }
+        count:     { type: integer, minimum: 0 }
+
+    OccupancyTimelineResponse:
+      type: object
+      required: [case_id, run_id, entity, max_occupancy, points]
+      properties:
+        case_id:       { type: string }
+        run_id:        { type: string }
+        entity:        { type: string }
+        max_occupancy: { type: integer, minimum: 1 }
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/OccupancyTimelinePoint" }
+
+    # -----------------------------------------------------------------------
+    # Selection responses
+    # -----------------------------------------------------------------------
+    SelectionEmpty:
+      type: object
+      required: [hasSelection, caseId, selectedRunId, selectedAt]
+      properties:
+        hasSelection:   { const: false }
+        caseId:         { type: string }
+        selectedRunId:  { type: "null" }
+        selectedAt:     { type: "null" }
+        warning:
+          type: string
+          description: Set when the persisted selection references a run that no longer exists.
+
+    SelectionPresent:
+      type: object
+      required: [hasSelection, caseId, selectedRunId, selectedAt, run]
+      properties:
+        hasSelection:  { const: true }
+        caseId:        { type: string }
+        selectedRunId: { type: string }
+        selectedAt:    { type: string, format: date-time }
+        run:
+          type: object
+          nullable: true
+          required: [run_id, label, summary_metrics]
+          properties:
+            run_id:          { type: string }
+            label:           { type: string }
+            summary_metrics: { $ref: "#/components/schemas/YardRunSummaryMetrics" }
+
+    # -----------------------------------------------------------------------
+    # Proposals
+    # -----------------------------------------------------------------------
+    ProposalChangeCapacity:
+      type: object
+      required: [kind, entity, from, to]
+      properties:
+        kind:   { const: capacity }
+        entity:
+          type: string
+          description: Existing entity Name. The synthetic `(off-yard waiting)` name is **rejected**; address that bottleneck via a CheckIn-terminal capacity change or `stagger_orders` instead.
+        from:   { type: integer, minimum: 0 }
+        to:     { type: integer, minimum: 1 }
+        note:   { type: string }
+
+    ProposalChangeStaggerOrders:
+      type: object
+      required: [kind, description]
+      properties:
+        kind: { const: stagger_orders }
+        description: { type: string, description: "What to change about order arrival timing." }
+        target_arrivals_per_min: { type: number, minimum: 0 }
+        spread_window_min:       { type: number, minimum: 0 }
+        note: { type: string }
+
+    ProposalChangeReroute:
+      type: object
+      required: [kind, material, from_storage, to_storage]
+      properties:
+        kind:        { const: reroute }
+        material:    { type: string, example: "186" }
+        from_storage: { type: string, example: SL729, description: Must be a Storage entity name. }
+        to_storage:   { type: string, example: SL35,  description: Must be a Storage entity name. }
+        note: { type: string }
+
+    ProposalChangeAddEntity:
+      type: object
+      required: [kind, entity_type, name]
+      properties:
+        kind:        { const: add_entity }
+        entity_type:
+          type: string
+          enum: [Terminal, ParkingArea, Scale, Storage, Crossing]
+        terminal_typ:
+          $ref: "#/components/schemas/TerminalTyp"
+          description: Required when `entity_type == Terminal`; ignored otherwise.
+        name:        { type: string, example: B020, description: New, must be unique in the yard. }
+        connects:
+          type: array
+          items: { type: string }
+          description: Existing street Names this entity ties into. Unknown streets surface as warnings, not errors.
+        note: { type: string }
+
+    ProposalChange:
+      description: |
+        Discriminated union — `kind` selects the variant. Validation runs
+        server-side on save; references to entities must exist in the
+        case's yard (or be created by an `add_entity` change earlier in
+        the proposal).
+      oneOf:
+        - $ref: "#/components/schemas/ProposalChangeCapacity"
+        - $ref: "#/components/schemas/ProposalChangeStaggerOrders"
+        - $ref: "#/components/schemas/ProposalChangeReroute"
+        - $ref: "#/components/schemas/ProposalChangeAddEntity"
+      discriminator:
+        propertyName: kind
+        mapping:
+          capacity:        "#/components/schemas/ProposalChangeCapacity"
+          stagger_orders:  "#/components/schemas/ProposalChangeStaggerOrders"
+          reroute:         "#/components/schemas/ProposalChangeReroute"
+          add_entity:      "#/components/schemas/ProposalChangeAddEntity"
+
+    YardProposalCreateInput:
+      type: object
+      required: [title, summary, changes]
+      properties:
+        target_run_id:
+          type: string
+          nullable: true
+          description: Run this proposal addresses. Null/omitted means "applies generally."
+        title:    { type: string, example: "Add a second barrier next to B010" }
+        summary:  { type: string }
+        target_bottleneck:
+          type: string
+          nullable: true
+          example: B010
+        changes:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ProposalChange" }
+        expected_impact:
+          type: string
+          nullable: true
+        risks:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum: [ai, manual]
+          default: ai
+
+    YardProposal:
+      allOf:
+        - $ref: "#/components/schemas/YardProposalCreateInput"
+        - type: object
+          required:
+            [id, case_id, sent_to_simulator_at, created_at, updated_at, source]
+          properties:
+            id:                  { type: integer }
+            case_id:             { type: string }
+            sent_to_simulator_at: { type: string, format: date-time, nullable: true, description: Populated when the proposal is forwarded to the simulator (future). }
+            created_at:          { type: string, format: date-time }
+            updated_at:          { type: string, format: date-time }
+
+    ProposalValidation:
+      type: object
+      required: [valid, errors, warnings]
+      properties:
+        valid:    { type: boolean }
+        errors:
+          type: array
+          description: Hard problems; non-empty list ⇒ proposal cannot be persisted.
+          items: { type: string }
+        warnings:
+          type: array
+          description: Soft concerns that don't block save (e.g. capacity unchanged, unknown street in `connects`).
+          items: { type: string }
+
+    ForwardProposalResponse:
+      type: object
+      required: [accepted, caseId, proposalId, expectedRunId, sentAt]
+      properties:
+        accepted:
+          type: boolean
+          example: true
+        caseId:
+          type: string
+          example: yard-sample-001
+        proposalId:
+          type: integer
+          example: 7
+        expectedRunId:
+          type: string
+          description: |
+            The `run_id` the simulator will use when it pushes the result back
+            via `POST /api/simulations/yard/{caseId}/runs`. Derived from the
+            proposal id so clients can correlate without a second round-trip.
+          example: proposal_7
+        sentAt:
+          type: string
+          format: date-time
+          description: Mirrors `yard_proposals.sent_to_simulator_at` after the forward succeeds.
+        simulatorTraceId:
+          type: string
+          nullable: true
+          description: |
+            Optional opaque id returned by the simulator partner for their
+            own job tracking — surfaced here for cross-system debugging.

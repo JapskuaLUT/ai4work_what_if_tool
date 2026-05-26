@@ -1,0 +1,131 @@
+{
+    "run_id": "minimal_second_run",
+    "label": "Minimal — second run",
+    "description": "Add another simulator run to an existing case. Same shape as one entry inside runs[] of 01_create_simulation.minimal.json.",
+    "simulated_at": "2026-01-01T11:00:00Z",
+    "export": {
+        "ComparisonInformation": {
+            "YardStructure": "0000000000000000000000000000000000000000000000000000000000000001",
+            "Processes":     "0000000000000000000000000000000000000000000000000000000000000002",
+            "Orders":        "0000000000000000000000000000000000000000000000000000000000000099"
+        },
+        "YardStructure": {
+            "Entities": {
+                "Crossings": [],
+                "ParkingAreas": [
+                    {
+                        "Id": "11111111-1111-1111-1111-111111111111",
+                        "Name": "P010",
+                        "Description": "Truck holding area",
+                        "Costs_Seconds": 180,
+                        "Actions": "Parking",
+                        "ParkingDuration": "00:03:00",
+                        "Capacity": 4
+                    }
+                ],
+                "Scales": [],
+                "Storages": [
+                    {
+                        "Id": "22222222-2222-2222-2222-222222222222",
+                        "Name": "SL100",
+                        "Description": "Material 186 silo",
+                        "Costs_Seconds": 600,
+                        "Actions": "Loading, Unloading",
+                        "Capacity": 20000,
+                        "Stock": 12000,
+                        "MaterialId": "186",
+                        "Loading_PerSecond": 1.5,
+                        "Unloading_PerSecond": 3.0
+                    }
+                ],
+                "Terminals": [
+                    {
+                        "Id": "33333333-3333-3333-3333-333333333333",
+                        "Name": "LT010",
+                        "Description": "Main check-in / check-out",
+                        "Costs_Seconds": 100,
+                        "Actions": "CheckIn",
+                        "ProcessingDuration": "00:01:40",
+                        "Typ": "CheckIn"
+                    }
+                ]
+            },
+            "Streets": [
+                {
+                    "Id": "44444444-4444-4444-4444-444444444444",
+                    "Name": "S1",
+                    "Description": "Gate to parking",
+                    "Costs_Seconds": 10,
+                    "Cost_Seconds": 10,
+                    "Actions": "None",
+                    "DrivingDuration": "00:00:10",
+                    "MaxOccupancy": 1,
+                    "ID_From": "33333333-3333-3333-3333-333333333333",
+                    "ID_To":   "11111111-1111-1111-1111-111111111111"
+                },
+                {
+                    "Id": "55555555-5555-5555-5555-555555555555",
+                    "Name": "S2",
+                    "Description": "Parking to silo",
+                    "Costs_Seconds": 10,
+                    "Cost_Seconds": 10,
+                    "Actions": "None",
+                    "DrivingDuration": "00:00:10",
+                    "MaxOccupancy": 1,
+                    "ID_From": "11111111-1111-1111-1111-111111111111",
+                    "ID_To":   "22222222-2222-2222-2222-222222222222"
+                }
+            ]
+        },
+        "Processes": [
+            {
+                "Ident": "M186_Load",
+                "Material": "186",
+                "Action": "Loading",
+                "Remark": "Load 186 from SL100",
+                "Tasks": [
+                    { "Specifications": [],         "Action": "CheckIn",  "Remark": "Check in at LT010" },
+                    { "Specifications": ["P010"],   "Action": "Parking",  "Remark": "Park at P010" },
+                    { "Specifications": ["SL100"],  "Action": "*",        "Remark": "Load at SL100" },
+                    { "Specifications": [],         "Action": "CheckOut", "Remark": "Check out" }
+                ]
+            }
+        ],
+        "Orders": [
+            {
+                "offsetMinutes": 0,
+                "licensePlate":  "EX-L 186-2",
+                "action":        "Loading",
+                "quantityKg":    3000,
+                "material":      "186"
+            }
+        ],
+        "Measurements": {
+            "Summary": {
+                "OrdersOverall":    1,
+                "OrdersUnhandled":  0,
+                "OrdersIncomplete": 0,
+                "OrdersCompleted":  1
+            },
+            "Measurements": [
+                {
+                    "OrderIdent":   "EX-L 186-2",
+                    "ProcessIdent": "M186_Load",
+                    "Summary": {
+                        "WaitingTime": "00:00:00",
+                        "DrivingTime": "00:00:20",
+                        "OrderState":  "Completed"
+                    },
+                    "TimeEntries": [
+                        { "Location": "LT010", "Action": "CheckIn",  "Start": "00:00:00", "End": "00:01:40", "Duration": "00:01:40", "Remark": "" },
+                        { "Location": "S1",    "Action": "Driving",  "Start": "00:01:40", "End": "00:01:50", "Duration": "00:00:10", "Remark": "" },
+                        { "Location": "P010",  "Action": "Parking",  "Start": "00:01:50", "End": "00:04:50", "Duration": "00:03:00", "Remark": "" },
+                        { "Location": "S2",    "Action": "Driving",  "Start": "00:04:50", "End": "00:05:00", "Duration": "00:00:10", "Remark": "" },
+                        { "Location": "SL100", "Action": "Loading",  "Start": "00:05:00", "End": "00:38:20", "Duration": "00:33:20", "Remark": "Loaded 3000kg at 1.5kg/s" },
+                        { "Location": "LT010", "Action": "CheckOut", "Start": "00:38:20", "End": "00:40:00", "Duration": "00:01:40", "Remark": "" }
+                    ]
+                }
+            ]
+        }
+    }
+}

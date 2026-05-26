@@ -27,22 +27,35 @@
 
 ### What This Tool Does
 
-The AI4Work What-If Tool is an explainable decision support system for educational course planning. It helps instructors and administrators:
+The AI4Work What-If Tool is an explainable decision support system covering two domains today:
 
-1. **Analyze** course workload and student stress levels
-2. **Generate** multiple "what-if" scenarios with different constraints
-3. **Compare** scenarios side-by-side with visualizations
-4. **Optimize** course schedules to reduce student stress while maintaining learning outcomes
-5. **Explain** the reasoning behind each optimization using AI
+1. **Educational course planning.** Instructors model student stress under different course configurations and pick the best one. Scenarios are *generated server-side* by `optimizationEngine.ts`. See [specifications/specification.yml](specifications/specification.yml).
+2. **Yard logistics.** Planners ingest simulator outputs for truck-yard runs, see per-run KPIs and bottlenecks, generate AI-authored improvement proposals, and (when partners ship their API) forward proposals to the simulator for re-evaluation. Scenarios come *from outside* — we ingest, we don't simulate. See [specifications/yard_logistics/specification.yml](specifications/yard_logistics/specification.yml) and the [design doc](specifications/yard_logistics/design.md).
+
+Both halves share the same Bun + Elysia backend, Postgres + Drizzle ORM, React/Vite UI, mkcert-signed Traefik front, and dockerised Ollama-proxy for AI features.
 
 ### Key Features
+
+#### Education
 
 -   **Scenario Builder:** Create multiple course configurations to compare
 -   **Stress Calculator:** Multi-factor stress calculation considering workload, deadlines, difficulty
 -   **Optimization Engine:** Generate optimized schedules with multiple strategies
 -   **Visual Comparisons:** Charts, graphs, and tables for easy scenario comparison
--   **AI Explanations:** Natural language explanations of optimization decisions
--   **Ollama Integration:** Local LLM for generating explanations and insights
+-   **AI Explanations + Floating Chat:** Natural language explanations and follow-up Q&A about the generated adjustments
+
+#### Yard logistics
+
+-   **Simulator-export ingest:** Accept `SimulationExportData` JSON drops; the same endpoint will receive simulator-webhooks later
+-   **Derived analytics:** Per-run KPIs (waiting/driving stats, throughput), bottleneck top-5 with `queue_score`, per-entity occupancy timelines, per-truck Gantt
+-   **Comparison view:** Side-by-side table across simulator runs (Smooth / SequencedOk / WaitingProblem in the seeded sample)
+-   **Improvements:** LLM-authored or manual proposals (typed `changes[]` union: capacity / stagger_orders / reroute / add_entity), validated server-side against the yard's entity catalogue
+-   **Discuss-with-AI:** Per-proposal chat that injects the proposal + target-run KPIs into the system context
+-   **`(off-yard waiting)` synthetic bottleneck:** Surfaces pre-CheckIn queueing so planners see when arrivals overwhelm the gate
+
+#### Shared
+
+-   **Ollama Integration:** Local LLM (host process, proxied through dockerised nginx) for chat and proposal generation
 
 ---
 
@@ -409,6 +422,35 @@ A **scenario** represents one specific configuration:
 
 The core concept: compare multiple scenarios to see which configuration works best.
 
+### 6. Yard Simulations, Runs, and Proposals (logistics domain)
+
+Parallel to the education concepts but for truck yards.
+
+-   **Yard simulation set** (`yard_simulations` table). One row per case
+    that groups N simulator runs over the same physical yard. Carries
+    the yard graph (`yard_structure`) and process recipes when all runs
+    share their topology; otherwise each run stores its own copy. The
+    UI's `/yard/:caseId` route renders this.
+-   **Yard run** (`yard_runs` table). One simulator output. Stores raw
+    `Orders` + `Measurements` JSON plus a pre-computed
+    `summary_metrics` digest (orders completed, waiting / driving
+    stats, throughput, top-5 bottlenecks). Comes either via JSON drop
+    (POST /api/simulations/yard/) or — when partners ship their API —
+    via webhook (POST /:caseId/runs).
+-   **Bottleneck**. An entity where `max_concurrent > max_occupancy`
+    (queue_score > 1.0). The special synthetic name
+    `(off-yard waiting)` with type `ExternalWait` captures trucks that
+    queued *outside* the yard because no CheckIn terminal was free —
+    surfaces gate congestion separately from intra-yard saturation.
+-   **Proposal** (`yard_proposals` table). An AI- or human-authored
+    improvement against a run. `changes[]` is a discriminated union of
+    `capacity` / `stagger_orders` / `reroute` / `add_entity`. Validated
+    server-side against the yard's entity catalogue on save. A future
+    `POST /:caseId/proposals/:id/run` will forward the proposal to the
+    simulator for a what-if run (route defined, returns 503 until
+    partners are ready — see
+    [specifications/yard_logistics/design.md §14](specifications/yard_logistics/design.md)).
+
 ---
 
 ## Coding Guidelines
@@ -766,9 +808,19 @@ Run tests:
 
 ```bash
 cd backend
-bun test
+bun test                  # full suite — unit + integration (139 tests as of now)
 bun test --coverage
+bun run test:unit         # services/* unit tests only — no network
+bun run test:integration  # HTTP integration only; needs the dev stack up
 ```
+
+The **integration suite** (`backend/src/tests/integration/`) hits the running
+backend at `https://backend.localhost` and covers the education and yard
+APIs end-to-end. Each suite probes `/api/health` first and
+`describe.skipIf(!reachable)`'s itself if the stack is down — so
+`bun test` stays green either way. The request bodies live in
+[specifications/examples/](specifications/examples/), shared with the
+human-readable docs there.
 
 ### Frontend Tests (Vitest)
 
