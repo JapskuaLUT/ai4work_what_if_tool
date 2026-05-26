@@ -38,6 +38,8 @@ import {
 import { LogSessionTable } from "@/components/logisticLogs/LogSessionTable";
 import { LogSessionDetail } from "@/components/logisticLogs/LogSessionDetail";
 import { StepDurationChart } from "@/components/logisticLogs/StepDurationChart";
+import { LogNarrativeCard } from "@/components/logisticLogs/LogNarrativeCard";
+import { FloatingLogsChat } from "@/components/logisticLogs/FloatingLogsChat";
 
 export default function LogisticLogsPage() {
     const navigate = useNavigate();
@@ -135,6 +137,13 @@ export default function LogisticLogsPage() {
                 </Button>
             </div>
 
+            {/* Narrative interpretation — plain English, no charts needed */}
+            <LogNarrativeCard
+                overview={overview}
+                sessions={sessions}
+                aggregates={aggregates}
+            />
+
             {/* Overview KPIs */}
             <Card>
                 <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6">
@@ -198,14 +207,23 @@ export default function LogisticLogsPage() {
                         backend involvement yet.
                     </p>
                     <p>
-                        Step names are kept in their original German — they
-                        come straight from the kiosk vocabulary. Driver names
-                        and signatures are masked by default; the{" "}
-                        <em>Reveal PII</em> button toggles them on for
-                        debugging.
+                        Each step shows the English description as the
+                        primary label with the original German operator
+                        name underneath, and a colour-coded pill for the
+                        workflow phase it belongs to. Driver names and
+                        signatures are masked by default — toggle with{" "}
+                        <em>Reveal PII</em> when debugging.
                     </p>
                 </CardContent>
             </Card>
+
+            {/* Floating AI chat */}
+            <FloatingLogsChat
+                overview={overview}
+                sessions={sessions}
+                aggregates={aggregates}
+                selectedSession={selectedSession}
+            />
         </div>
     );
 }
