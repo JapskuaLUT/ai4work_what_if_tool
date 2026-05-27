@@ -25,6 +25,14 @@
 
 ## Project Overview
 
+> **Looking for a hands-on walkthrough by case?** Start here:
+> - 🚚 [Yard logistics — getting started](instructions/yard_logistics/getting_started.md)
+> - 🔑 [Kiosk check-in logs — getting started](instructions/logistic_logs/getting_started.md)
+> - 📊 [Educational stress instructions](instructions/stress_simulation_instructions.md)
+>
+> Each guide is self-contained, zero-prior-knowledge, and covers UI,
+> common tasks, API, data formats, and glossary for that case.
+
 ### What This Tool Does
 
 The AI4Work What-If Tool is an explainable decision support system covering two domains today:

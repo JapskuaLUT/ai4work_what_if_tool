@@ -24,6 +24,23 @@ Docker Compose behind mkcert-signed Traefik.
 For request-body examples and curl recipes, see
 [specifications/examples/](specifications/examples/).
 
+## Getting started by case
+
+The fastest way to learn a domain is a self-contained walkthrough. Each
+guide below assumes zero prior knowledge — what the case is, how to
+boot it, what every UI panel does, how to send your own data, and a
+data-format reference.
+
+- 🚚 **[Yard logistics](instructions/yard_logistics/getting_started.md)** —
+  ingest truck-yard simulator runs, surface bottlenecks, generate AI
+  improvement proposals, attach a yard image.
+- 🔑 **[Kiosk check-in logs](instructions/logistic_logs/getting_started.md)** —
+  process-mining over self-service check-in terminals; sessions,
+  per-phase breakdown, PII-aware UI.
+- 📊 **Educational stress** —
+  [instructions/stress_simulation_instructions.md](instructions/stress_simulation_instructions.md)
+  (legacy).
+
 ## Table of Contents
 
 -   [Architecture](#architecture)

@@ -43,15 +43,25 @@ export function loadExample(...segments: string[]): unknown {
     return JSON.parse(readFileSync(path, "utf-8"));
 }
 
-/** Convenience wrapper that adds the dev-cert opt-out and JSON Content-Type. */
+/**
+ * Convenience wrapper that adds the dev-cert opt-out and a sensible
+ * default Content-Type. For multipart uploads (`body instanceof
+ * FormData`) we skip the JSON default and let fetch set the proper
+ * `multipart/form-data; boundary=...` header itself.
+ */
 export async function apiFetch(
     pathAndQuery: string,
     init: RequestInit = {}
 ): Promise<Response> {
+    const isMultipart =
+        typeof FormData !== "undefined" && init.body instanceof FormData;
+    const defaultHeaders: Record<string, string> = isMultipart
+        ? {}
+        : { "Content-Type": "application/json" };
     return fetch(`${API_URL}${pathAndQuery}`, {
         ...init,
         headers: {
-            "Content-Type": "application/json",
+            ...defaultHeaders,
             ...(init.headers as Record<string, string> | undefined)
         },
         tls: { rejectUnauthorized: false }

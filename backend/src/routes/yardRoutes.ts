@@ -11,6 +11,12 @@ import {
 import { YardIngestService } from "../services/yardIngestService";
 import { entityOccupancyTimeline } from "../services/yardAnalyticsService";
 import { validateProposal } from "../services/yardProposalService";
+import {
+    deleteYardImage,
+    mimeToExt,
+    publicUrlForImage,
+    writeYardImage
+} from "../services/yardImageService";
 import type {
     OccupancyTimelineResponse,
     YardDesignData,
@@ -456,6 +462,122 @@ export const yardRoutes = new Elysia({ prefix: "/simulations/yard" })
             params: t.Object({ caseId: t.String() }),
             detail: {
                 summary: "Get the selected yard run",
+                tags: ["Yard Logistics"]
+            }
+        }
+    )
+
+    // -----------------------------------------------------------------
+    // Yard map image upload / removal
+    // -----------------------------------------------------------------
+
+    /**
+     * POST /api/simulations/yard/:caseId/image
+     * Upload (or replace) the yard layout image for this case.
+     * Multipart body: `image` field. Allowed types: png/jpeg/webp/svg.
+     * The file is written to backend/uploads/yard_images/{caseId}.{ext}
+     * and served via the /uploads/* static handler; the public URL is
+     * stored on `yard_simulations.yard_image_path` so subsequent GETs
+     * pick it up automatically.
+     */
+    .post(
+        "/:caseId/image",
+        async ({ params, body, set }) => {
+            const file = (body as { image: File }).image;
+            const ext = mimeToExt(file.type);
+            if (!ext) {
+                set.status = 400;
+                return {
+                    error: "Unsupported image type",
+                    message: `mime ${file.type} is not in [png, jpeg, webp, svg]`
+                };
+            }
+            try {
+                const sim = await db.query.yard_simulations.findFirst({
+                    where: eq(yard_simulations.case_id, params.caseId)
+                });
+                if (!sim) {
+                    set.status = 404;
+                    return { error: "Yard simulation not found" };
+                }
+                const bytes = await file.arrayBuffer();
+                await writeYardImage(params.caseId, ext, bytes);
+                const url = publicUrlForImage(params.caseId, ext);
+                await db
+                    .update(yard_simulations)
+                    .set({ yard_image_path: url })
+                    .where(eq(yard_simulations.case_id, params.caseId));
+                set.status = 201;
+                return {
+                    caseId: params.caseId,
+                    yard_image_path: url,
+                    bytes: file.size,
+                    mimeType: file.type
+                };
+            } catch (error: any) {
+                console.error("Failed to upload yard image:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while uploading the image.",
+                    message: error.message
+                };
+            }
+        },
+        {
+            params: t.Object({ caseId: t.String() }),
+            body: t.Object({
+                image: t.File({
+                    type: [
+                        "image/png",
+                        "image/jpeg",
+                        "image/webp",
+                        "image/svg+xml"
+                    ],
+                    maxSize: "5m"
+                })
+            }),
+            type: "multipart/form-data",
+            detail: {
+                summary: "Upload (or replace) the yard layout image",
+                tags: ["Yard Logistics"]
+            }
+        }
+    )
+
+    /**
+     * DELETE /api/simulations/yard/:caseId/image
+     * Remove the stored yard image file(s) and clear yard_image_path.
+     */
+    .delete(
+        "/:caseId/image",
+        async ({ params, set }) => {
+            try {
+                const sim = await db.query.yard_simulations.findFirst({
+                    where: eq(yard_simulations.case_id, params.caseId)
+                });
+                if (!sim) {
+                    set.status = 404;
+                    return { error: "Yard simulation not found" };
+                }
+                const removed = await deleteYardImage(params.caseId);
+                await db
+                    .update(yard_simulations)
+                    .set({ yard_image_path: null })
+                    .where(eq(yard_simulations.case_id, params.caseId));
+                return { ok: true, removedFiles: removed };
+            } catch (error: any) {
+                console.error("Failed to delete yard image:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while deleting the image.",
+                    message: error.message
+                };
+            }
+        },
+        {
+            params: t.Object({ caseId: t.String() }),
+            detail: {
+                summary: "Remove the yard layout image",
                 tags: ["Yard Logistics"]
             }
         }

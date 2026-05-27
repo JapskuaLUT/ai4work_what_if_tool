@@ -171,3 +171,49 @@ export async function deleteYardProposal(
         throw new Error(err.message || "Failed to delete proposal");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Yard image upload / removal
+// ---------------------------------------------------------------------------
+
+export interface UploadYardImageResult {
+    caseId: string;
+    yard_image_path: string;
+    bytes: number;
+    mimeType: string;
+}
+
+export async function uploadYardImage(
+    caseId: string,
+    file: File
+): Promise<UploadYardImageResult> {
+    const form = new FormData();
+    form.append("image", file);
+    const res = await fetch(
+        `${API_BASE_URL}/simulations/yard/${caseId}/image`,
+        {
+            method: "POST",
+            body: form
+            // Don't set Content-Type — the browser includes the multipart
+            // boundary automatically when the body is a FormData.
+        }
+    );
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+            err.message || err.error || "Failed to upload yard image"
+        );
+    }
+    return res.json();
+}
+
+export async function deleteYardImage(caseId: string): Promise<void> {
+    const res = await fetch(
+        `${API_BASE_URL}/simulations/yard/${caseId}/image`,
+        { method: "DELETE" }
+    );
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete yard image");
+    }
+}

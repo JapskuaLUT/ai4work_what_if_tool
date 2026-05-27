@@ -243,4 +243,83 @@ describe.skipIf(!reachable)("yard logistics API — happy path", () => {
         // tighten to expect(res.status).toBe(202).
         expect([404, 501, 503]).toContain(res.status);
     });
+
+    // -----------------------------------------------------------------
+    // Image upload / delete
+    // -----------------------------------------------------------------
+
+    test("POST /:caseId/image accepts a PNG and updates yard_image_path", async () => {
+        // 1x1 transparent PNG, 68 bytes.
+        const pngBase64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
+        const pngBytes = Uint8Array.from(atob(pngBase64), (c) => c.charCodeAt(0));
+        const file = new File([pngBytes], "tiny.png", { type: "image/png" });
+        const form = new FormData();
+        form.append("image", file);
+
+        const res = await apiFetch(
+            `/api/simulations/yard/${caseId}/image`,
+            { method: "POST", headers: {}, body: form }
+        );
+        expect(res.status).toBe(201);
+        const data = (await res.json()) as {
+            caseId: string;
+            yard_image_path: string;
+            bytes: number;
+            mimeType: string;
+        };
+        expect(data.caseId).toBe(caseId);
+        expect(data.mimeType).toBe("image/png");
+        expect(data.bytes).toBe(pngBytes.byteLength);
+        expect(data.yard_image_path).toMatch(
+            /\/uploads\/yard_images\/.+\.png$/
+        );
+
+        // Overview should reflect the new path
+        const overview = (await (
+            await apiFetch(`/api/simulations/yard/${caseId}`)
+        ).json()) as { yard_image_path: string | null };
+        expect(overview.yard_image_path).toBe(data.yard_image_path);
+
+        // The file itself should be reachable via the static handler
+        const fileRes = await fetch(data.yard_image_path, {
+            tls: { rejectUnauthorized: false }
+        } as any);
+        expect(fileRes.status).toBe(200);
+        const echoed = new Uint8Array(await fileRes.arrayBuffer());
+        expect(echoed.byteLength).toBe(pngBytes.byteLength);
+    });
+
+    test("POST /:caseId/image rejects a disallowed MIME type", async () => {
+        const txt = new File(["not a real image"], "fake.txt", {
+            type: "text/plain"
+        });
+        const form = new FormData();
+        form.append("image", txt);
+        const res = await apiFetch(
+            `/api/simulations/yard/${caseId}/image`,
+            { method: "POST", headers: {}, body: form }
+        );
+        // Elysia's t.File runs MIME validation; some setups bubble it
+        // up as 422, others as 400. Both are acceptable contracts.
+        expect([400, 422]).toContain(res.status);
+    });
+
+    test("DELETE /:caseId/image clears yard_image_path", async () => {
+        const del = await apiFetch(
+            `/api/simulations/yard/${caseId}/image`,
+            { method: "DELETE" }
+        );
+        expect(del.status).toBe(200);
+        const data = (await del.json()) as {
+            ok: boolean;
+            removedFiles: number;
+        };
+        expect(data.ok).toBe(true);
+
+        const overview = (await (
+            await apiFetch(`/api/simulations/yard/${caseId}`)
+        ).json()) as { yard_image_path: string | null };
+        expect(overview.yard_image_path).toBeNull();
+    });
 });

@@ -22,9 +22,11 @@ import {
 } from "lucide-react";
 
 import {
+    deleteYardImage,
     fetchYardSimulation,
     fetchYardRun,
-    selectYardRun
+    selectYardRun,
+    uploadYardImage
 } from "@/services/yardSimulationService";
 import type {
     YardProposal,
@@ -202,6 +204,29 @@ export default function YardSimulationPage() {
                     <YardMap
                         imagePath={overview.yard_image_path}
                         name="Yard layout"
+                        onUpload={async (file) => {
+                            const result = await uploadYardImage(
+                                caseId!,
+                                file
+                            );
+                            setOverview((prev) =>
+                                prev
+                                    ? {
+                                          ...prev,
+                                          yard_image_path:
+                                              result.yard_image_path
+                                      }
+                                    : prev
+                            );
+                        }}
+                        onRemove={async () => {
+                            await deleteYardImage(caseId!);
+                            setOverview((prev) =>
+                                prev
+                                    ? { ...prev, yard_image_path: null }
+                                    : prev
+                            );
+                        }}
                     />
                 </div>
                 <YardEntitySummary overview={overview} />

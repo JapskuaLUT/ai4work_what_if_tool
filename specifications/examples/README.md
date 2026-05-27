@@ -14,9 +14,29 @@ exercise both halves of the API. Useful for:
 ```
 education/        — POST bodies for /api/simulations/education/*
 yard_logistics/   — POST bodies for /api/simulations/yard/*
+logistic_logs/    — POST bodies for /api/logs/*
 ```
 
 Each subfolder has its own README.
+
+## Two flavours of example, per domain
+
+For both yard and logs we ship **two** bodies side by side:
+
+- **Minimal synthetic** — tiny hand-built example (≤10 KB). Read it
+  end-to-end to learn the shape. Trades realism for brevity.
+- **Full realistic** — the actual vendor-supplied demo data wrapped
+  into our wire shape. The same content the `bun run seed:yard` and
+  `bun run seed:logs` scripts ingest. Drop-in POSTable; partners can
+  use it to dry-run our endpoints against the real-world dataset.
+
+| Domain | Minimal | Realistic |
+|---|---|---|
+| Yard logistics | [yard_logistics/01_create_simulation.minimal.json](yard_logistics/01_create_simulation.minimal.json) (7 KB) | [yard_logistics/05_full_three_runs.json](yard_logistics/05_full_three_runs.json) (897 KB) |
+| Kiosk logs | [logistic_logs/01_create_case.json](logistic_logs/01_create_case.json) (3.5 KB) | [logistic_logs/02_full_year_lt010.json](logistic_logs/02_full_year_lt010.json) (1.8 MB) |
+
+Education has only one example because its create endpoint *is* its
+realistic example — there's no separate vendor JSON to wrap.
 
 ## Running them
 

@@ -304,6 +304,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/simulations/yard/{caseId}/image:
+    parameters:
+      - $ref: "#/components/parameters/CaseId"
+    post:
+      tags: [Yard Logistics]
+      summary: Upload (or replace) the yard layout image
+      description: |
+        Multipart upload of a PNG / JPEG / WebP / SVG image (≤5 MB) that
+        represents this yard's physical layout. The file is written to
+        `backend/uploads/yard_images/{caseId}.{ext}`, served via the
+        `/uploads/*` static handler, and the public URL is stored on
+        `yard_simulations.yard_image_path` so the UI's `YardMap` picks
+        it up automatically on the next overview fetch.
+
+        Uploading again **replaces** the previous file — any prior file
+        for the same `caseId` (different extension included) is removed
+        from disk. To clear the image entirely, call `DELETE`.
+      operationId: uploadYardImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: |
+                    The yard layout image. Accepted MIME types:
+                    `image/png`, `image/jpeg`, `image/webp`, `image/svg+xml`.
+                    Max size: 5 MB.
+      responses:
+        "201":
+          description: Image stored and `yard_image_path` updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [caseId, yard_image_path, bytes, mimeType]
+                properties:
+                  caseId:          { type: string }
+                  yard_image_path:
+                    type: string
+                    format: uri
+                    example: "https://backend.localhost/uploads/yard_images/yard-sample-001.png"
+                  bytes:    { type: integer, description: "Size of the stored file in bytes." }
+                  mimeType: { type: string,  example: "image/png" }
+        "400":
+          description: Missing image field, unsupported MIME, or file too large.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal error (disk write failed, etc.).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Yard Logistics]
+      summary: Remove the yard layout image
+      description: |
+        Deletes any stored image for this case from disk and clears
+        `yard_simulations.yard_image_path`.
+      operationId: deleteYardImage
+      responses:
+        "200":
+          description: Image removed (or there was nothing to remove).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, removedFiles]
+                properties:
+                  ok: { type: boolean, example: true }
+                  removedFiles:
+                    type: integer
+                    description: "Files actually removed from disk. 0 means there was no prior image."
+        "404":
+          description: Simulation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/simulations/yard/{caseId}/proposals:
     parameters:
       - $ref: "#/components/parameters/CaseId"

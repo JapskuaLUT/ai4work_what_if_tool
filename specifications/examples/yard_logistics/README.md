@@ -4,25 +4,29 @@ Bodies you can POST / PUT to `/api/simulations/yard/*`.
 
 ## Files
 
-| File | POST/PUT to | Effect |
-|---|---|---|
-| `01_create_simulation.minimal.json` | `POST /api/simulations/yard/` | Creates a tiny synthetic yard (1 terminal, 1 parking, 1 silo, 1 truck) and one simulator run. ~150 lines — short enough to read end-to-end. |
-| `02_add_run.json`                    | `POST /api/simulations/yard/{caseId}/runs` | Adds a second run to an existing case (same yard, different truck). |
-| `03_create_proposal.json`            | `POST /api/simulations/yard/{caseId}/proposals` | Saves a manual proposal with two changes (capacity bump + stagger orders). |
-| `04_select_run.json`                 | `PUT /api/simulations/yard/{caseId}/select` | Marks the run as the preferred one. |
+| File | Size | POST/PUT to | Effect |
+|---|---:|---|---|
+| `01_create_simulation.minimal.json` | 7 KB | `POST /api/simulations/yard/` | Tiny **synthetic** yard (1 terminal, 1 parking, 1 silo, 1 truck) and one simulator run. ~150 lines — short enough to read end-to-end. Best for understanding the shape. |
+| `05_full_three_runs.json` | 897 KB | `POST /api/simulations/yard/` | **Realistic** body — all three vendor-supplied Results runs (Smooth / SequencedOk / WaitingProblem) wrapped into one POST. Same content the `bun run seed:yard` script ingests; partners can drop this straight onto our endpoint. |
+| `02_add_run.json` | 6 KB | `POST /api/simulations/yard/{caseId}/runs` | Adds a second run to an existing case (same yard, different truck). |
+| `03_create_proposal.json` | 1 KB | `POST /api/simulations/yard/{caseId}/proposals` | Saves a manual proposal with two changes (capacity bump + stagger orders). |
+| `04_select_run.json` | 0.1 KB | `PUT /api/simulations/yard/{caseId}/select` | Marks the run as the preferred one. |
 
-For a **realistic** dataset, use the seeded sample at
-`/yard/yard-sample-001` (created by `bun run seed:yard`) — three runs
-over a 70-entity yard with the full WaitingProblem dynamics. The raw
-simulator JSON for those runs is in
-[../../yard_logistics/Results/](../../yard_logistics/Results/).
+The realistic body (`05_full_three_runs.json`) is auto-generated from
+[../../yard_logistics/Results/](../../yard_logistics/Results/) — the raw
+simulator JSONs the partner gave us. If those vendor files are ever
+refreshed, regenerate by re-running the snippet in this folder's git
+history (or just `bun run seed:yard` directly, which produces the same
+data straight into Postgres under case id `yard-sample-001`).
 
 ## End-to-end walkthrough
 
 ```sh
 BASE=https://backend.localhost/api/simulations/yard
 
-# 1. Create the case and capture the caseId
+# 1. Create the case and capture the caseId.
+#    Use 01_create_simulation.minimal.json for a 1-truck synthetic yard,
+#    or 05_full_three_runs.json for the full realistic dataset (~1 MB).
 CASE_ID=$(curl -ksS -X POST $BASE/ \
     -H 'Content-Type: application/json' \
     -d @01_create_simulation.minimal.json \

@@ -4,21 +4,26 @@ Bodies you can POST to `/api/logs/*`.
 
 ## Files
 
-| File | POST to | Effect |
-|---|---|---|
-| `01_create_case.json` | `POST /api/logs/` | Creates a tiny synthetic case (1 driver session, 9 raw rows including the idle sentinel + one full SPRACHAUSWAHL → EINGABE KENNZEICHEN → ANZEIGE SCHLUSSBILD flow). Short enough to read in full. |
+| File | Size | POST to | Effect |
+|---|---:|---|---|
+| `01_create_case.json` | 3.5 KB | `POST /api/logs/` | Tiny **synthetic** case — 1 driver session, 9 raw rows (idle sentinel + a full SPRACHAUSWAHL → EINGABE KENNZEICHEN → ANZEIGE SCHLUSSBILD flow). Short enough to read in full. Best for understanding the shape. |
+| `02_full_year_lt010.json` | 1.8 MB | `POST /api/logs/` | **Realistic** body — the full vendor-supplied year of LT 010 events wrapped into one POST (5764 rows / 34 sessions). Same content the `bun run seed:logs` script ingests; partners can drop this straight onto our endpoint. |
 
-For a **realistic** dataset, use the seeded case at `/logs/lt010-2025-2026`
-(created by `bun run seed:logs`) — ~5764 rows / 34 sessions of real LT 010
-check-in events. The raw vendor JSON for that lives in
+The realistic body (`02_full_year_lt010.json`) is auto-generated from
 [../../logistic_logs/logdata_aggregated.data.json](../../logistic_logs/logdata_aggregated.data.json).
+If that vendor file is refreshed, regenerate by running the snippet in
+this folder's git history (or just `bun run seed:logs` directly, which
+produces the same data straight into Postgres under case id
+`lt010-2025-2026`).
 
 ## End-to-end walkthrough
 
 ```sh
 BASE=https://backend.localhost/api/logs
 
-# 1. Create the case
+# 1. Create the case.
+#    Use 01_create_case.json for a 9-row synthetic example,
+#    or 02_full_year_lt010.json for the full realistic dataset (~1.8 MB).
 CASE_ID=$(curl -ksS -X POST $BASE/ \
     -H 'Content-Type: application/json' \
     -d @01_create_case.json \
