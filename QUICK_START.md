@@ -25,15 +25,16 @@
     chmod 600 traefik/certs/*
     ```
 
-3. \*_Install all packages + build the docker images_
+3. **Install all packages + build the Docker images**
 
-First, you need to install the local packages and then build the actual docker images.
-The development has been done using `bun.sh` but `node.js` should work as well. (Notice the docker builds itself using bun.sh)
+    First, you need to install the local packages and then build the actual Docker images.
+    The development has been done using [Bun](https://bun.sh) but Node.js should work as well.
+    (The Docker build itself uses Bun.)
 
-```bash
-./install_local_packages.sh
-./build_docker_images.sh
-```
+    ```bash
+    ./install_local_packages.sh
+    ./build_docker_images.sh
+    ```
 
 4. **Start Ollama on the host (required for AI features)**
 
@@ -63,13 +64,29 @@ across reboots.
     docker-compose up -d
     ```
 
-6. **Access the application:**
+6. **Load the case-specific demo data**
+
+    Postgres auto-runs `db/schema.sql` + `db/seed.sql` on its first
+    boot — that populates the legacy *educational stress* case. The
+    yard and kiosk-log cases have their own seed scripts because their
+    sample data is too large to embed in SQL:
+
+    ```bash
+    docker-compose exec backend bun run seed:yard   # 3 simulator runs, ~70 entities
+    docker-compose exec backend bun run seed:logs   # 5764 events / 34 sessions
+    ```
+
+    After this the **Load Yard Simulation** and **Open Check-in Logs**
+    buttons on the home page will work.
+
+7. **Access the application:**
     - Frontend: https://app.localhost
     - Backend API: https://backend.localhost
     - Swagger Docs: https://backend.localhost/swagger
     - Traefik Dashboard: https://traefik.localhost
 
-**✅ That's it! Database is automatically initialized with schema and sample data.**
+**✅ That's it!** From here, the [getting-started guides per case](#-documentation)
+walk through every panel in the UI.
 
 ---
 
@@ -170,7 +187,7 @@ Workflow:
 
 ```bash
 cd backend
-bun test                  # full suite (unit + HTTP integration). ~140 tests today.
+bun test                  # full suite (unit + HTTP integration)
 ```
 
 ### Just unit tests (no network)
@@ -182,7 +199,8 @@ bun run test:unit
 
 These cover the pure logic: `stressCalculation`, `optimizationEngine`,
 `extensionService` on the education side; `yardAnalyticsService`,
-`yardProposalService`, `yardCompare` on the yard side.
+`yardProposalService`, `yardCompare` on the yard side;
+`logAnalyticsService` for the kiosk logs.
 
 ### Just HTTP integration tests (needs stack running)
 
@@ -191,10 +209,10 @@ cd backend
 bun run test:integration
 ```
 
-Hits the running backend at `https://backend.localhost` and walks both
-APIs end-to-end (create → fetch → select → proposals CRUD). The suites
-auto-skip if `/api/health` doesn't answer, so they're safe to run with
-the stack down — they just won't tell you anything in that state.
+Hits the running backend at `https://backend.localhost` and walks
+**all three domains** end-to-end (education, yard, kiosk logs).
+Each suite probes `/api/health` first and `describe.skipIf(!reachable)`'s
+itself if the stack is down — so the command stays green either way.
 
 ### Try the API with curl
 
@@ -208,11 +226,21 @@ curl -ksS -X POST https://backend.localhost/api/simulations/education/ \
   -H 'Content-Type: application/json' \
   -d @specifications/examples/education/01_create_simulation.json | jq .
 
-# Yard — ingests a tiny synthetic SimulationExportData
+# Yard — ingests a tiny synthetic SimulationExportData (1 truck, ~7 KB)
 curl -ksS -X POST https://backend.localhost/api/simulations/yard/ \
   -H 'Content-Type: application/json' \
   -d @specifications/examples/yard_logistics/01_create_simulation.minimal.json | jq .
+
+# Kiosk logs — minimal synthetic check-in session (~3.5 KB)
+curl -ksS -X POST https://backend.localhost/api/logs/ \
+  -H 'Content-Type: application/json' \
+  -d @specifications/examples/logistic_logs/01_create_case.json | jq .
 ```
+
+For **realistic** bodies (full-sized vendor data wrapped in our wire
+shape), see [`05_full_three_runs.json`](specifications/examples/yard_logistics/05_full_three_runs.json)
+and [`02_full_year_lt010.json`](specifications/examples/logistic_logs/02_full_year_lt010.json) —
+same content the seed scripts ingest, ready to POST.
 
 ---
 
@@ -269,13 +297,20 @@ docker-compose restart backend
 
 ### Port already in use
 
-**Find and kill process:**
+**Find and kill the process holding the port:**
 
 ```bash
-lsof -i :8000  # Backend
-lsof -i :5432  # PostgreSQL
+lsof -i :80    # Traefik (HTTP)
+lsof -i :443   # Traefik (HTTPS)
+lsof -i :5433  # PostgreSQL (host-side mapping; container uses 5432 internally)
+lsof -i :11434 # Ollama (on the host)
 kill -9 <PID>
 ```
+
+> Postgres host port is **5433**, not 5432, to avoid colliding with
+> another local Postgres many of us run (`alverion-postgres-local`).
+> Inside the Docker network the backend reaches Postgres as
+> `postgres:5432` — the remap only affects host-side tooling.
 
 ### Frontend not loading
 
@@ -295,8 +330,11 @@ docker-compose restart ui
 ```bash
 cd backend
 bun install
-bun run dev:migrate  # Runs migrations then starts server
+bun run dev          # bun --watch src/index.ts (hot reload)
 ```
+
+Requires Postgres reachable at `localhost:5433` (or whatever
+`DATABASE_URL` you set in `backend/.env`).
 
 ### Frontend
 
@@ -308,7 +346,9 @@ bun run dev
 
 ### Database
 
-You still need PostgreSQL running (via Docker or locally).
+You still need PostgreSQL running (via Docker, locally, or anywhere
+the `DATABASE_URL` points). The fastest path is the Dockerised one:
+`docker-compose up -d postgres`.
 
 ---
 
@@ -349,8 +389,12 @@ docker-compose exec -T postgres psql -U whatifuser -d whatifdatabase < backup.sq
 # Shell into backend container
 docker-compose exec backend /bin/bash
 
-# Run a one-off script inside the backend (e.g. seed yard sample data)
-docker-compose exec backend bun run seed:yard
+# Seed scripts — case-specific demo data the SQL seed doesn't cover
+docker-compose exec backend bun run seed:yard   # yard logistics demo
+docker-compose exec backend bun run seed:logs   # kiosk check-in logs demo
+
+# Recompute server-side analytics for a stored case (logs only today)
+curl -ksS -X POST https://backend.localhost/api/logs/lt010-2025-2026/recompute
 ```
 
 ---
@@ -415,13 +459,12 @@ All services use the same Docker network (`what_if_network`), allowing:
 
 4. **Test with known-good data:**
     ```bash
-    cd backend
-    curl -X POST https://backend.localhost/api/simulations/education/ \
-      -H "Content-Type: application/json" \
-      -d @test_simulation_realistic.json
+    curl -ksS -X POST https://backend.localhost/api/simulations/education/ \
+      -H 'Content-Type: application/json' \
+      -d @specifications/examples/education/01_create_simulation.json | jq .
     ```
 
 ---
 
-**Last Updated:** 2025-01-13
-**For detailed information, see [CLAUDE.md](CLAUDE.md)**
+**For detailed information, see [CLAUDE.md](CLAUDE.md). For a
+case-by-case walkthrough, see the guides under [instructions/](instructions/).**
