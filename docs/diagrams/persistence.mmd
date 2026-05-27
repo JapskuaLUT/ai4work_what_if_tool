@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Repo["Repo (bind-mounted into containers)"]
+        UISrc["./ui"]
+        BackendSrc["./backend"]
+        Specs["./specifications"]
+        Schema["./db/schema.sql"]
+        Seed["./db/seed.sql"]
+        TraefikCfg["./traefik/*.toml"]
+        Certs["./traefik/certs"]
+        OllamaCfg["./ollama_proxy/nginx.conf"]
+    end
+
+    subgraph Data["Persistent data"]
+        PGData[("./postgres_whatif_data")]
+    end
+
+    UISrc --> UI["UI container"]
+    BackendSrc --> Backend["Backend container"]
+    Specs --> Backend
+    TraefikCfg --> Traefik["Traefik container"]
+    Certs --> Traefik
+    OllamaCfg --> OllamaProxy["Ollama proxy container"]
+
+    Schema --> Postgres["Postgres container<br/>(first-boot init)"]
+    Seed --> Postgres
+    PGData --- Postgres

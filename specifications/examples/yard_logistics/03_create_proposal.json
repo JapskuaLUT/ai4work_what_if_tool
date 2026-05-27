@@ -1,0 +1,23 @@
+{
+    "target_run_id": "minimal_smooth",
+    "title": "Double the silo loading rate",
+    "summary": "If we increase the Loading_PerSecond at SL100, single-order loading time drops from ~33 min to ~17 min. Worth testing in the simulator.",
+    "target_bottleneck": "SL100",
+    "changes": [
+        {
+            "kind": "capacity",
+            "entity": "P010",
+            "from": 4,
+            "to": 8,
+            "note": "More buffer in front of the silo so peak arrivals don't queue at the gate."
+        },
+        {
+            "kind": "stagger_orders",
+            "description": "Spread truck arrivals over a 2-hour window instead of clustering at t=0.",
+            "target_arrivals_per_min": 0.5
+        }
+    ],
+    "expected_impact": "Eliminates parking saturation under heavier loads.",
+    "risks": "Requires physical space for additional parking spots — not modelled.",
+    "source": "manual"
+}

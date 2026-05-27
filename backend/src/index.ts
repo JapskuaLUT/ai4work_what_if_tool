@@ -22,6 +22,21 @@ const app = new Elysia()
             prefix: "/"
         })
     )
+    // User-uploaded files (yard images today; could expand later).
+    // Served at /uploads/* so a stored DB path like
+    //   https://backend.localhost/uploads/yard_images/{caseId}.png
+    // resolves without going through the API.
+    .use(
+        staticPlugin({
+            assets: "uploads",
+            prefix: "/uploads",
+            // re-scan filesystem on each request — the upload route writes
+            // new files at runtime, plugin's startup directory-walk would
+            // otherwise miss them.
+            noCache: true,
+            alwaysStatic: false
+        })
+    )
 
     // Root endpoint
     .get("/", () => "What-If Component API")

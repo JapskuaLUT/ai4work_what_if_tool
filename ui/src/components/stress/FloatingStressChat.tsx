@@ -290,21 +290,22 @@ export function FloatingStressChat({
         setIsChatOpen(true);
     };
 
-    // Get chat component styles based on expanded state
+    // Both modes need a *concrete* height: the Card uses `h-full` and the
+    // messages region uses `flex-1 min-h-0 overflow-y-auto` to scroll, and
+    // those only resolve against a parent with a defined height. With
+    // `height: auto` the flex chain collapses to natural content size and
+    // the scroll never engages.
     const getChatStyles = () => {
-        // Base position is bottom-right
         if (!isExpanded) {
             return {
-                width: "400px",
-                height: "auto",
+                width: "420px",
+                height: "min(620px, calc(100vh - 3rem))",
             };
         }
-
-        // If expanded, take up more space (responsive)
         return {
-            width: isLargeScreen ? "50%" : "90%",
-            height: "auto",
-            maxWidth: "800px",
+            width: isLargeScreen ? "60%" : "92%",
+            maxWidth: "1100px",
+            height: "calc(100vh - 3rem)",
         };
     };
 
@@ -332,8 +333,8 @@ export function FloatingStressChat({
                 ref={chatCardRef}
                 style={getChatStyles()}
             >
-                <Card className="border border-indigo-200 dark:border-indigo-900 h-full">
-                    <CardHeader className="bg-indigo-50 dark:bg-indigo-900/20 py-3 px-4 border-b border-indigo-100 dark:border-indigo-800">
+                <Card className="border border-indigo-200 dark:border-indigo-900 h-full flex flex-col overflow-hidden">
+                    <CardHeader className="bg-indigo-50 dark:bg-indigo-900/20 py-3 px-4 border-b border-indigo-100 dark:border-indigo-800 flex-shrink-0">
                         <ChatHeader
                             headerText={chatTitle}
                             description={simulation.course_info.course_name}
@@ -349,35 +350,40 @@ export function FloatingStressChat({
                         />
                     </CardHeader>
 
-                    <CardContent className="pt-4 pb-4">
+                    <CardContent className="pt-4 pb-4 flex-1 min-h-0 flex flex-col">
                         {/* Models debug info */}
                         {(isLoadingModels ||
                             mergedAvailableModels.length === 0) && (
-                            <div className="mb-4 p-2 text-xs bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200">
+                            <div className="mb-4 p-2 text-xs bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200 flex-shrink-0">
                                 {isLoadingModels
                                     ? "Loading available models..."
                                     : "No models available. Please make sure Ollama is running."}
                             </div>
                         )}
 
-                        <ChatMessagesContainer
-                            messages={messages}
-                            isExpanded={isExpanded}
-                            isLoading={loading}
-                            streamingMessageId={streamingMessageId}
-                            error={error}
-                        />
+                        {/* Scrolls when the conversation is longer than the card height */}
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                            <ChatMessagesContainer
+                                messages={messages}
+                                isExpanded={isExpanded}
+                                isLoading={loading}
+                                streamingMessageId={streamingMessageId}
+                                error={error}
+                            />
+                        </div>
 
-                        <ChatInput
-                            onSubmit={handleSubmit}
-                            onStop={cancelStream}
-                            isLoading={loading}
-                            isExpanded={isExpanded}
-                            disabled={!model}
-                        />
+                        <div className="mt-3 flex-shrink-0">
+                            <ChatInput
+                                onSubmit={handleSubmit}
+                                onStop={cancelStream}
+                                isLoading={loading}
+                                isExpanded={isExpanded}
+                                disabled={!model}
+                            />
+                        </div>
                     </CardContent>
 
-                    <CardFooter className="pt-0 border-t border-slate-200 dark:border-slate-700 px-4 py-2">
+                    <CardFooter className="pt-0 border-t border-slate-200 dark:border-slate-700 px-4 py-2 flex-shrink-0">
                         <div className="text-xs text-slate-500">
                             Shift+Enter for new line
                         </div>

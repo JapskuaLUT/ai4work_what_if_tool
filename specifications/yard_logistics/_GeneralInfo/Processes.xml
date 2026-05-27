@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Processes>
+  <Process Ident="General" Material="*" Action="Loading Unloading">
+    <Remark>General Process for loading &amp;amp; unloading of any material not defined specifically in any other Process</Remark>
+    <Tasks>
+      <Task>
+        <Specifications />
+        <Action>CheckIn</Action>
+        <Remark>Process checkin at any terminal providing a checkin</Remark>
+      </Task>
+      <Task>
+        <Specifications>
+          <Entity>P010</Entity>
+        </Specifications>
+        <Action>Parking</Action>
+        <Remark>Process parking at parkingarea P010</Remark>
+      </Task>
+	  <Task>
+        <Specifications>
+          <Entity>B010</Entity>
+        </Specifications>
+        <Action>Authenticate</Action>
+        <Remark>Pass barrier</Remark>
+      </Task>
+      <Task>
+        <Specifications />
+        <Action>*</Action>
+        <Remark>Process required process.Action (requested by Truck.Action)</Remark>
+      </Task>
+      <Task>
+        <Specifications />
+        <Action>CheckOut</Action>
+        <Remark>Process checkout at any terminal providing a checkout</Remark>
+      </Task>
+    </Tasks>
+  </Process>
+  <Process Ident="M186_Load" Material="186" Action="Loading">
+    <Remark>Process for loading material 186</Remark>
+    <Tasks>
+      <Task>
+        <Specifications>
+          <Entity>LT010</Entity>
+        </Specifications>
+        <Action>CheckIn</Action>
+        <Remark>Process checkin at LT010</Remark>
+      </Task>
+      <Task>
+        <Specifications>
+          <Entity>P010</Entity>
+        </Specifications>
+        <Action>Parking</Action>
+        <Remark>Process parking at parkingarea P010</Remark>
+      </Task>
+	  <Task>
+        <Specifications>
+          <Entity>B010</Entity>
+        </Specifications>
+        <Action>Authenticate</Action>
+        <Remark>Pass barrier</Remark>
+      </Task>
+      <Task>
+        <Specifications>
+          <Entity>SL729</Entity>
+        </Specifications>
+        <Action>*</Action>
+        <Remark>Process loading at storagelocation SL729</Remark>
+      </Task>
+      <Task>
+        <Specifications />
+        <Action>CheckOut</Action>
+        <Remark>Process checkout at any terminal providing a checkout</Remark>
+      </Task>
+    </Tasks>
+  </Process>
+</Processes>

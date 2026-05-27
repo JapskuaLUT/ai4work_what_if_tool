@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    participant U as Browser (app.localhost)
+    participant T as Traefik
+    participant F as UI (Vite)
+    participant B as Backend (Elysia)
+    participant DB as Postgres
+    participant OP as Ollama proxy
+    participant OL as Ollama (host)
+
+    U->>T: HTTPS GET https://app.localhost
+    T->>F: forward to ui:5173
+    F-->>U: HTML / JS bundle
+
+    U->>T: HTTPS POST https://backend.localhost/api/simulations
+    T->>B: forward to backend:8000
+    B->>DB: INSERT simulation_sets / scenarios
+    DB-->>B: rows + caseId
+    B-->>T: 201 Created { caseId }
+    T-->>U: 201 Created
+
+    U->>T: HTTPS POST https://ollama.localhost/api/chat
+    T->>OP: forward to ollama-proxy:80
+    OP->>OL: HTTP to host Ollama
+    OL-->>OP: streamed completion
+    OP-->>T: stream
+    T-->>U: stream

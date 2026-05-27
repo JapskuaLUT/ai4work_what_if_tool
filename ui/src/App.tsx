@@ -9,6 +9,8 @@ import ScheduleResultsPage from "./pages/ScheduleResultsPage";
 import ComparePage from "./pages/ComparePage";
 import OllamaPage from "./pages/OllamaPage";
 import EducationalStressPage from "./pages/EducationalStressPage";
+import YardSimulationPage from "./pages/YardSimulationPage";
+import LogisticLogsPage from "./pages/LogisticLogsPage";
 
 function App() {
     return (
@@ -28,6 +30,14 @@ function App() {
                         <Route
                             path="/education/:caseId"
                             element={<EducationalStressPage />}
+                        />
+                        <Route
+                            path="/yard/:caseId"
+                            element={<YardSimulationPage />}
+                        />
+                        <Route
+                            path="/logs/:caseId"
+                            element={<LogisticLogsPage />}
                         />
                         <Route path="/compare" element={<ComparePage />} />
                         <Route path="/test/ollama" element={<OllamaPage />} />

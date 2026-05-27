@@ -1,6 +1,6 @@
 services:
     traefik:
-        image: traefik:v3.6.4
+        image: traefik:v3.6.15
         command:
             - "--configFile=/app/configs/traefik.toml" # This is the traefik configuration file
         volumes:
@@ -40,6 +40,7 @@ services:
         image: whatif-backend:dev # This is the image we have built. If missing, check build_images.sh
         volumes:
             - ./backend:/usr/src/app # We want to mount our local backend folder to the container
+            - ./specifications:/usr/src/specifications:ro # Read-only access to spec files (yard sample data, schemas)
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
         command: bun dev # Simple: just start the backend
@@ -65,7 +66,12 @@ services:
             - POSTGRES_PASSWORD=whatifpassword
             - POSTGRES_DB=whatifdatabase
         ports:
-            - "5432:5432"
+            # Host 5433 → container 5432 to avoid colliding with the user's
+            # other Postgres (`alverion-postgres-local`) on host 5432. The
+            # backend talks to Postgres via the Docker network as
+            # `postgres:5432`, so this remap only affects host-side tooling
+            # (psql / Postico). Use:  psql -h localhost -p 5433 -U whatifuser
+            - "5433:5432"
         volumes:
             - ./postgres_whatif_data:/var/lib/postgresql
             # Auto-initialize database on first run with schema and seed data
@@ -86,6 +92,8 @@ services:
             - what_if_network
     ollama-proxy:
         image: whatif-ollama-proxy:dev
+        volumes:
+            - ./ollama_proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro # Live-edit nginx config without rebuilding the image
         networks:
             - what_if_network
         labels:

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose -f /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml ps)",
+      "Bash(git -C /Users/japskua/projects/lut/ai4work_what_if_tool log --oneline -15)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\).get\\('scripts',{}\\)\\)\")",
+      "Bash(bunx tsc *)",
+      "Bash(bun install *)",
+      "Bash(docker-compose restart *)",
+      "Bash(awk '/ollama-proxy:/,/^ [a-z]/' /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml)",
+      "Bash(lsof -iTCP:11434 -sTCP:LISTEN)",
+      "Bash(ollama --version)",
+      "Bash(OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' nohup ollama serve)",
+      "Bash(echo \"started with PID $!\")",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/tmp/ollama_body.json'\\)\\); print\\(len\\(d['models']\\),'models:', [m['name'] for m in d['models']]\\)\")",
+      "Bash(grep -nB1 -A8 -iE 'ollama|OLLAMA_HOST|OLLAMA_ORIGINS' /Users/japskua/projects/lut/ai4work_what_if_tool/readme.md /Users/japskua/projects/lut/ai4work_what_if_tool/QUICK_START.md /Users/japskua/projects/lut/ai4work_what_if_tool/ollama_readme.md /Users/japskua/projects/lut/ai4work_what_if_tool/ollama_proxy/readme.md)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d['proposals']\\)\\); print\\('titles:', [p['title'] for p in d['proposals']]\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', len\\(d['proposals']\\)\\)\")",
+      "Bash(echo \"=== Currently running Ollama models ===\" *)",
+      "Read(//private/tmp/**)",
+      "Bash(python3)",
+      "Bash(cd /Users/japskua/projects/lut/ai4work_what_if_tool/backend && bun test src/services/yardAnalyticsService.test.ts 2>&1 | tail -5 *)",
+      "Read(//Users/japskua/projects/lut/**)",
+      "Bash(docker-compose down *)",
+      "Bash(lsof -iTCP:5432 -sTCP:LISTEN)",
+      "Bash(grep -nB1 -A1 '\"5432' /Users/japskua/projects/lut/ai4work_what_if_tool/docker-compose.yml)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('proposals:', len\\(d['proposals']\\)\\); [print\\('  -', p['source'], '·', p['title']\\) for p in d['proposals']]\")",
+      "Bash(kill 23712)",
+      "Bash(echo \"Ollama listening: $\\(lsof -iTCP:11434 -sTCP:LISTEN)"
+    ],
+    "additionalDirectories": [
+      "/Users/japskua/projects/lut/ai4work_what_if_tool/specifications"
+    ]
+  }
+}

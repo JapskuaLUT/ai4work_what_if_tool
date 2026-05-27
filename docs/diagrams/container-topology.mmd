@@ -1,0 +1,37 @@
+flowchart TB
+    Browser([Browser])
+
+    subgraph Host["Docker host"]
+        subgraph Net["what_if_network (bridge)"]
+            Traefik["Traefik v3.6<br/>TLS termination<br/>ports 80 / 443"]
+            UI["UI<br/>React 19 + Vite<br/>:5173"]
+            Backend["Backend<br/>Bun + Elysia<br/>:8000"]
+            Postgres[("Postgres 18<br/>:5432")]
+            OllamaProxy["Ollama proxy<br/>Nginx :80"]
+        end
+        PGVolume[("./postgres_whatif_data<br/>bind mount")]
+        OllamaHost["Ollama<br/>(host-side LLM)"]
+    end
+
+    Browser -- "HTTPS :443" --> Traefik
+
+    Traefik -- "app.localhost" --> UI
+    Traefik -- "backend.localhost" --> Backend
+    Traefik -- "ollama.localhost" --> OllamaProxy
+
+    UI -- "REST via backend.localhost" --> Backend
+    UI -- "LLM via ollama.localhost" --> OllamaProxy
+
+    Backend -- "SQL" --> Postgres
+    OllamaProxy -- "HTTP" --> OllamaHost
+    Postgres --- PGVolume
+
+    classDef edge fill:#f5c542,stroke:#7a5a00,color:#000;
+    classDef svc fill:#dbe9ff,stroke:#1f4e9d,color:#000;
+    classDef data fill:#dff5dd,stroke:#1f6e2f,color:#000;
+    classDef ext fill:#eee,stroke:#666,color:#000;
+
+    class Traefik edge
+    class UI,Backend,OllamaProxy svc
+    class Postgres,PGVolume data
+    class OllamaHost,Browser ext

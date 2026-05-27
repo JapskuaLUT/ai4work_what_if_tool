@@ -1,0 +1,963 @@
+{
+  "RootType": "AI4Work_Interfaces.Simulation.Export.SimulationExportData",
+  "Types": [
+    {
+      "Name": "ComparisonInformation",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.ComparisonInformation",
+      "Description": "ComparisonInformation provide comparable hash-values and may be used when comparing different ExportData-Files. Same values indicating same (unchanged) content.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "YardStructure",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Hash-Value for the structure of the yard",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Processes",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Hash-Value for the processes of this simulation",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Orders",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Hash-Value for the orders of this simulation",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "E_EntityAction",
+      "FullName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+      "Description": "An action defines something that can be performed at an entity.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "None",
+          "Description": "No action which can be performed"
+        },
+        {
+          "Name": "Loading",
+          "Description": "Can perform loading of goods"
+        },
+        {
+          "Name": "Unloading",
+          "Description": "Can perform unloading of goods)"
+        },
+        {
+          "Name": "CheckIn",
+          "Description": "Can perform a check-in (is required at the very beginning)"
+        },
+        {
+          "Name": "CheckOut",
+          "Description": "Can perform a check-out (is required at the end)"
+        },
+        {
+          "Name": "Parking",
+          "Description": "Allows/Requires parking before beeing called to be served"
+        },
+        {
+          "Name": "Authenticate",
+          "Description": "Can perform authentication (is required to enter a yard)"
+        },
+        {
+          "Name": "Weighing",
+          "Description": "Can perform weighing-processes (may be required before and/or after loading or unloading)"
+        }
+      ]
+    },
+    {
+      "Name": "Crossing",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.Crossing",
+      "Description": "A crossing is an entity to connect streets. Crossings do not have an Action to assign - they are just for driving.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "PlanDuration",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Time-span representation of Costs_Seconds",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "MaxOccupancy",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Max. occupancy (parallel trucks)",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "ParkingArea",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.ParkingArea",
+      "Description": "ParkingArea are an entity that provide the ability to perform the action of parking.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "ParkingDuration",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Time-span representation of Costs_Seconds",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Capacity",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "The capacity of parking lots this parking has available",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Scale",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.Scale",
+      "Description": "Scales are an entity that may provide the ability to perform the action of weighing. ",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "WeighingDuration",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Time-span representation of Costs_Seconds",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Storage",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.Storage",
+      "Description": "Storages are locations where a truck can load or unload a specific material. Storages provide the ability to perform Actions of type None, Loading oder Unloading of the contained material.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Capacity",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "The max. capacity of material",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Stock",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Current stock-level, 0 to capacity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "MaterialId",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The material at this storage location",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Loading_PerSecond",
+          "TypeName": "Single",
+          "FullTypeName": "System.Single",
+          "Description": "How fast can material be loaded (in kg/second",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Unloading_PerSecond",
+          "TypeName": "Single",
+          "FullTypeName": "System.Single",
+          "Description": "How fast can material be unloaded (in kg/second",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "TerminalTyp",
+      "FullName": "AI4Work_Interfaces.YardDesigner.Entities.TerminalTyp",
+      "Description": "Terminaltype describes the type of a terminal",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "CheckIn",
+          "Description": "This type is for performing check-in"
+        },
+        {
+          "Name": "CheckOut",
+          "Description": "This type is for performing checkout"
+        },
+        {
+          "Name": "Waagenterminal",
+          "Description": "This type is for performing wheighing"
+        },
+        {
+          "Name": "Schrankenterminal",
+          "Description": "This type is for performing authentication"
+        }
+      ]
+    },
+    {
+      "Name": "Terminal",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.Terminal",
+      "Description": "",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "ProcessingDuration",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Time-span representation of Costs_Seconds",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Typ",
+          "TypeName": "TerminalTyp",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.TerminalTyp",
+          "Description": "The type of the terminal describes the type of a terminal",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Costs_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "EntityCollections",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.EntityCollections",
+      "Description": "",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Crossings",
+          "TypeName": "List<Crossing>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.Crossing, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Crossing that are used to connect streets to streets",
+          "IsCollection": true,
+          "CollectionItemType": "Crossing"
+        },
+        {
+          "Name": "ParkingAreas",
+          "TypeName": "List<ParkingArea>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.ParkingArea, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Available Parking Areas",
+          "IsCollection": true,
+          "CollectionItemType": "ParkingArea"
+        },
+        {
+          "Name": "Scales",
+          "TypeName": "List<Scale>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.Scale, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Available Scales",
+          "IsCollection": true,
+          "CollectionItemType": "Scale"
+        },
+        {
+          "Name": "Storages",
+          "TypeName": "List<Storage>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.Storage, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Available Storages",
+          "IsCollection": true,
+          "CollectionItemType": "Storage"
+        },
+        {
+          "Name": "Terminals",
+          "TypeName": "List<Terminal>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.Terminal, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Available Terminals",
+          "IsCollection": true,
+          "CollectionItemType": "Terminal"
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Street",
+      "FullName": "AI4Work_Interfaces.Simulation.Entities.Street",
+      "Description": "A street is an entity which is used by trucks to move from one entity to another. Streets do not have an Action to assign - they are just for driving.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "DrivingDuration",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Time-span representation of Costs_Seconds",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "MaxOccupancy",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Max. occupancy (parallel trucks)",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "ID_From",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "ID of the entity the road starts",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "ID_To",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "ID of the entity the road ends",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Cost_Seconds",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Cost in seconds for the usage of this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Id",
+          "TypeName": "Guid",
+          "FullTypeName": "System.Guid",
+          "Description": "Unique identification of the entity - may be used for referencing and identification",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Name",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The readable name of the entity which should be used for humans to identify the entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Description",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Optional: Some description for this specific entity.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Actions",
+          "TypeName": "E_EntityAction",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Entities.E_EntityAction",
+          "Description": "The Actions that may be performed by this entity",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "YardDesignData",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.YardDesignData",
+      "Description": "Holding the information about how the yard is configured (entities, streets).So this sctructure contains all the information about what action may be performed at the yard andhow the navigation can be performed.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Entities",
+          "TypeName": "EntityCollections",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.EntityCollections",
+          "Description": "All entities thar are available. Each entity may perform specific actions",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Streets",
+          "TypeName": "List<Street>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Entities.Street, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "All streets that are available. Streets are required to drive from an entity to another and may be also connected by crossing.",
+          "IsCollection": true,
+          "CollectionItemType": "Street"
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "EOrderActionType",
+      "FullName": "AI4Work_Interfaces.YardDesigner.Process.Process+EOrderActionType",
+      "Description": "An OrderActionType defines the action of the order to perform.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "Loading",
+          "Description": "Loading means that some material has to be loaded (taken from storage location)"
+        },
+        {
+          "Name": "Unloading",
+          "Description": "Unloading means that some material has to be unloaded (put into storage location)"
+        }
+      ]
+    },
+    {
+      "Name": "Task",
+      "FullName": "AI4Work_Interfaces.YardDesigner.Process.Process+Task",
+      "Description": "A Task defines a single step of a process that is required to be fullfilled.To perform a task it is required to identify the entities providing the required action and if specified, only entities that are allowed for this task.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Action",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The action defines an activity to be performed. Entities provide Actions that can be performed.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Remark",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "A remark for the human reader for better understanding the configured task",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Process",
+      "FullName": "AI4Work_Interfaces.YardDesigner.Process.Process",
+      "Description": "Describes a process which can be used by a truck-order.",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Ident",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The unique name of the process",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Material",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The material that can be handled by the process or '*' when any material can be handled",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Action",
+          "TypeName": "EOrderActionType",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Process.Process+EOrderActionType",
+          "Description": "The action or actions that can be handled by the process.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Remark",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "Some remarks for the human reader",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Tasks",
+          "TypeName": "List<Task>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.YardDesigner.Process.Process+Task, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "The List of tasks that are required to perform for this process in given order-direction",
+          "IsCollection": true,
+          "CollectionItemType": "Task"
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "Order",
+      "FullName": "AI4Work_Interfaces.Simulation.Order",
+      "Description": "Defines a order in simulation-mode. An order can be read as: [offsetMinutes] min after start a truck with license-plate [licensePlate]arrives to [action] (load/unload) [quantityKg] of [material]",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "offsetMinutes",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "The offset (in minutes), at which the truck should be recognized for simulation",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "licensePlate",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "License-plate of the truck, is used to identify the order/truck",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "action",
+          "TypeName": "EOrderActionType",
+          "FullTypeName": "AI4Work_Interfaces.YardDesigner.Process.Process+EOrderActionType",
+          "Description": "The action to perform (loading / unloading)",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "quantityKg",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Quantity of material to handle (in kg)",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "material",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "The material that should be handled in this order/by this truck",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "MeasurementSummary",
+      "FullName": "AI4Work_Interfaces.Simulation.MeasurementSummary",
+      "Description": "",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "OrdersOverall",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Quantity of orders overall",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "OrdersUnhandled",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Quantity of unhandled orders",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "OrdersIncomplete",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Quantity of incomplete orders",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "OrdersCompleted",
+          "TypeName": "Int32",
+          "FullTypeName": "System.Int32",
+          "Description": "Quantity of completed orders. ",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "E_OrderState",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.E_OrderState",
+      "Description": "",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [],
+      "EnumValues": [
+        {
+          "Name": "Unhandled",
+          "Description": "Unhandled at all"
+        },
+        {
+          "Name": "Incomplete",
+          "Description": "Has begun but not completed"
+        },
+        {
+          "Name": "Completed",
+          "Description": "Totally completed"
+        }
+      ]
+    },
+    {
+      "Name": "OrderMeasurementSummary",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.OrderMeasurementSummary",
+      "Description": "Summarized data of a single order",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "WaitingTime",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Summarized waiting time",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "DrivingTime",
+          "TypeName": "TimeSpan",
+          "FullTypeName": "System.TimeSpan",
+          "Description": "Summarized driving time",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "OrderState",
+          "TypeName": "E_OrderState",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.E_OrderState",
+          "Description": "Indicates the state of the order",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "OrderMeasurement",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.OrderMeasurement",
+      "Description": "Informations about the order itself",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "OrderIdent",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "References the concrete order",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "ProcessIdent",
+          "TypeName": "String",
+          "FullTypeName": "System.String",
+          "Description": "References the concrete process",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Summary",
+          "TypeName": "OrderMeasurementSummary",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.OrderMeasurementSummary",
+          "Description": "Summary of this order-measurement",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "ExportMeasurement",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.ExportMeasurement",
+      "Description": "Complete Measurement-data of all orders",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "Summary",
+          "TypeName": "MeasurementSummary",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.MeasurementSummary",
+          "Description": "Containing overall summarized information",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Measurements",
+          "TypeName": "List<OrderMeasurement>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Export.OrderMeasurement, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Containing the single order-measurements",
+          "IsCollection": true,
+          "CollectionItemType": "OrderMeasurement"
+        }
+      ],
+      "EnumValues": []
+    },
+    {
+      "Name": "SimulationExportData",
+      "FullName": "AI4Work_Interfaces.Simulation.Export.SimulationExportData",
+      "Description": "Complete structure holding all the information of a specific simulation-run",
+      "IsCollection": false,
+      "CollectionItemType": null,
+      "Properties": [
+        {
+          "Name": "ComparisonInformation",
+          "TypeName": "ComparisonInformation",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.ComparisonInformation",
+          "Description": "Structure holding information for comparing different files of this type",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "YardStructure",
+          "TypeName": "YardDesignData",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.YardDesignData",
+          "Description": "Holding the information about how the yard is configured (entities, streets)",
+          "IsCollection": false,
+          "CollectionItemType": null
+        },
+        {
+          "Name": "Processes",
+          "TypeName": "List<Process>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.YardDesigner.Process.Process, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "Processes are used to identify the actions and entities to be used to fullfill a truck-order.",
+          "IsCollection": true,
+          "CollectionItemType": "Process"
+        },
+        {
+          "Name": "Orders",
+          "TypeName": "List<Order>",
+          "FullTypeName": "System.Collections.Generic.List`1[[AI4Work_Interfaces.Simulation.Order, AI4Work_Interfaces, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+          "Description": "List of Orders used. Each order is an order to be processed.",
+          "IsCollection": true,
+          "CollectionItemType": "Order"
+        },
+        {
+          "Name": "Measurements",
+          "TypeName": "ExportMeasurement",
+          "FullTypeName": "AI4Work_Interfaces.Simulation.Export.ExportMeasurement",
+          "Description": "Measurements are the result of a simulation.",
+          "IsCollection": false,
+          "CollectionItemType": null
+        }
+      ],
+      "EnumValues": []
+    }
+  ]
+}

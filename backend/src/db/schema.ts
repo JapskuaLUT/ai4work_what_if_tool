@@ -2,6 +2,7 @@ import {
     pgTable,
     text,
     integer,
+    bigserial,
     serial,
     boolean,
     decimal,
@@ -254,3 +255,176 @@ export const adjustment_scenarios_relations = relations(
         })
     })
 );
+
+// ============================================================================
+// YARD LOGISTICS SIMULATION TABLES
+// ============================================================================
+
+/**
+ * Yard Simulations table
+ * Parent record for a yard logistics comparison set: one yard plus several
+ * simulator runs over different orders/processes. Yard graph and processes
+ * are stored at parent level when all runs share their hash.
+ */
+export const yard_simulations = pgTable("yard_simulations", {
+    case_id: text("case_id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+
+    yard_structure: jsonb("yard_structure"),
+    processes: jsonb("processes"),
+    yard_hash: text("yard_hash"),
+    processes_hash: text("processes_hash"),
+
+    yard_image_path: text("yard_image_path"),
+
+    selected_run_id: text("selected_run_id"),
+    selected_at: timestamp("selected_at"),
+
+    metadata: jsonb("metadata").notNull().default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const yard_simulations_relations = relations(
+    yard_simulations,
+    ({ many }) => ({
+        runs: many(yard_runs)
+    })
+);
+
+/**
+ * Yard Runs table
+ * One simulator run / scenario inside a yard_simulations set.
+ * Holds the raw simulator export plus derived summary_metrics.
+ */
+export const yard_runs = pgTable(
+    "yard_runs",
+    {
+        id: serial("id").primaryKey(),
+        case_id: text("case_id")
+            .notNull()
+            .references(() => yard_simulations.case_id, {
+                onDelete: "cascade"
+            }),
+        run_id: text("run_id").notNull(),
+        label: text("label").notNull(),
+        description: text("description"),
+
+        orders: jsonb("orders").notNull(),
+        measurements: jsonb("measurements").notNull(),
+        yard_structure: jsonb("yard_structure"),
+        processes: jsonb("processes"),
+
+        yard_hash: text("yard_hash"),
+        processes_hash: text("processes_hash"),
+        orders_hash: text("orders_hash"),
+
+        summary_metrics: jsonb("summary_metrics").notNull(),
+
+        simulated_at: timestamp("simulated_at"),
+        created_at: timestamp("created_at").defaultNow().notNull()
+    },
+    (table) => {
+        return {
+            unq: unique("yard_run_unique").on(table.case_id, table.run_id)
+        };
+    }
+);
+
+export const yard_runs_relations = relations(yard_runs, ({ one }) => ({
+    simulation: one(yard_simulations, {
+        fields: [yard_runs.case_id],
+        references: [yard_simulations.case_id]
+    })
+}));
+
+/**
+ * Yard Proposals table
+ * AI-generated or human-authored improvement proposals against a yard
+ * simulation set. Each proposal targets a specific run and lists structured
+ * changes (capacity / stagger / reroute / add_entity) that will eventually
+ * be forwarded to the simulator API for re-evaluation.
+ */
+export const yard_proposals = pgTable("yard_proposals", {
+    id: serial("id").primaryKey(),
+    case_id: text("case_id")
+        .notNull()
+        .references(() => yard_simulations.case_id, {
+            onDelete: "cascade"
+        }),
+    target_run_id: text("target_run_id"),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    target_bottleneck: text("target_bottleneck"),
+    changes: jsonb("changes").notNull(),
+    expected_impact: text("expected_impact"),
+    risks: text("risks"),
+    source: text("source").notNull().default("ai"),
+    sent_to_simulator_at: timestamp("sent_to_simulator_at"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const yard_proposals_relations = relations(yard_proposals, ({ one }) => ({
+    simulation: one(yard_simulations, {
+        fields: [yard_proposals.case_id],
+        references: [yard_simulations.case_id]
+    })
+}));
+
+// ============================================================================
+// LOGISTIC LOGS (kiosk check-in log ingest)
+// ============================================================================
+
+/**
+ * Log Cases — parent record for one ingest batch of raw kiosk events.
+ * `summary_metrics` is computed at ingest time so reads stay cheap.
+ */
+export const log_cases = pgTable("log_cases", {
+    case_id: text("case_id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    location: text("location").notNull(),
+    topic: text("topic").notNull(),
+    summary_metrics: jsonb("summary_metrics").notNull(),
+    related_yard_case_id: text("related_yard_case_id"),
+    metadata: jsonb("metadata").notNull().default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const log_cases_relations = relations(log_cases, ({ many }) => ({
+    rows: many(log_rows)
+}));
+
+/**
+ * Log Rows — flat fact table. One row per Start or End event from the
+ * kiosk. Sessions are reconstructed at read time by grouping on
+ * (case_id, process).
+ */
+export const log_rows = pgTable("log_rows", {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    case_id: text("case_id")
+        .notNull()
+        .references(() => log_cases.case_id, { onDelete: "cascade" }),
+    source_id: integer("source_id").notNull(),
+    date: timestamp("date").notNull(),
+    location: text("location").notNull(),
+    topic: text("topic").notNull(),
+    process: integer("process").notNull(),
+    proc: integer("proc").notNull(),
+    procstep: integer("procstep").notNull(),
+    procsteptype: text("procsteptype").notNull(),
+    procstepinfo: text("procstepinfo").notNull(),
+    procstepaction: text("procstepaction").notNull(),
+    message: text("message"),
+    value: text("value")
+});
+
+export const log_rows_relations = relations(log_rows, ({ one }) => ({
+    case: one(log_cases, {
+        fields: [log_rows.case_id],
+        references: [log_cases.case_id]
+    })
+}));

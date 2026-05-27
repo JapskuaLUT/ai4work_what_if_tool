@@ -2,3 +2,9 @@ node_modules
 postgres_whatif_data/
 *.DS_Store
 .DS_Store
+
+# User-uploaded files (keep folder structure via .gitkeep)
+backend/uploads/**
+!backend/uploads/
+!backend/uploads/**/
+!backend/uploads/**/.gitkeep

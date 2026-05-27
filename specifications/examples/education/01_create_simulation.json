@@ -1,0 +1,164 @@
+{
+    "name": "Web Development Course - Spring 2025",
+    "description": "Optimize workload distribution for a web development course with uneven homework peaks",
+    "course_info": {
+        "course_name": "Full-Stack Web Development",
+        "course_id": "CS-220",
+        "teaching_hours": 32,
+        "lab_hours": 16,
+        "ects": 5,
+        "topic_difficulty": 3,
+        "has_prerequisites": true,
+        "total_homework_hours": 100,
+        "total_weeks": 12,
+        "total_assignments": 3,
+        "attendance_method": "Hybrid",
+        "success_rate_percent": 82.0,
+        "average_grade": 3.7,
+        "course_sessions": [
+            {
+                "day": "Monday",
+                "start_time": "10:00",
+                "end_time": "12:00"
+            },
+            {
+                "day": "Wednesday",
+                "start_time": "14:00",
+                "end_time": "16:00"
+            }
+        ],
+        "lab_sessions": [
+            {
+                "day": "Friday",
+                "start_time": "13:00",
+                "end_time": "15:00"
+            }
+        ]
+    },
+    "assignment_weeks": [
+        {
+            "id": 1,
+            "start_week": 1,
+            "end_week": 4,
+            "extensions": []
+        },
+        {
+            "id": 2,
+            "start_week": 5,
+            "end_week": 8,
+            "extensions": []
+        },
+        {
+            "id": 3,
+            "start_week": 9,
+            "end_week": 12,
+            "extensions": []
+        }
+    ],
+    "current_status": {
+        "current_week": 4,
+        "latest_adjusted_week": 0
+    },
+    "week_schedules": [
+        {
+            "week_number": 1,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 6
+        },
+        {
+            "week_number": 2,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 7
+        },
+        {
+            "week_number": 3,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 9
+        },
+        {
+            "week_number": 4,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 12
+        },
+        {
+            "week_number": 5,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 7
+        },
+        {
+            "week_number": 6,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 10
+        },
+        {
+            "week_number": 7,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 0,
+            "homework_hours": 9
+        },
+        {
+            "week_number": 8,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 11
+        },
+        {
+            "week_number": 9,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 6
+        },
+        {
+            "week_number": 10,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 9
+        },
+        {
+            "week_number": 11,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 11
+        },
+        {
+            "week_number": 12,
+            "adjusted": false,
+            "teaching_hours": 3,
+            "lab_hours": 2,
+            "homework_hours": 13
+        }
+    ],
+    "optimization_request": {
+        "optimization_target": "minimize_peak_stress",
+        "stress_threshold_warning": 75.0,
+        "stress_threshold_critical": 85.0,
+        "allow_extensions": true,
+        "max_extensions_per_assignment": 2,
+        "consider_all_remaining_weeks": true
+    },
+    "students": {
+        "count": 60
+    },
+    "metadata": {
+        "created_at": "2025-01-20T10:00:00Z",
+        "creator_id": "prof_chen",
+        "semester_id": "spring_2025"
+    }
+}

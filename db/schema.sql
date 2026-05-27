@@ -114,6 +114,122 @@ CREATE TABLE adjustment_scenarios (
     CONSTRAINT case_adjustment_unique UNIQUE(case_id, adjustment_id)
 );
 
+-- Table: yard_simulations
+-- Parent record for a yard logistics comparison set (one yard, many simulator runs).
+-- Fed by JSON drops today; the same shape will receive simulator-API webhooks later.
+CREATE TABLE yard_simulations (
+    case_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+
+    -- Yard graph + processes are usually shared across runs in a set.
+    -- Stored once at parent level when all runs share the same hash;
+    -- a run that diverges carries its own copy in yard_runs.
+    yard_structure JSONB,
+    processes JSONB,
+    yard_hash TEXT,
+    processes_hash TEXT,
+
+    yard_image_path TEXT,
+
+    selected_run_id TEXT,
+    selected_at TIMESTAMP,
+
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: yard_runs
+-- One simulator run / scenario inside a yard_simulations set.
+CREATE TABLE yard_runs (
+    id SERIAL PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    description TEXT,
+
+    orders JSONB NOT NULL,
+    measurements JSONB NOT NULL,
+    yard_structure JSONB,
+    processes JSONB,
+
+    yard_hash TEXT,
+    processes_hash TEXT,
+    orders_hash TEXT,
+
+    summary_metrics JSONB NOT NULL,
+
+    simulated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+
+    FOREIGN KEY (case_id) REFERENCES yard_simulations(case_id) ON DELETE CASCADE,
+    CONSTRAINT yard_run_unique UNIQUE(case_id, run_id)
+);
+
+-- Table: yard_proposals
+-- AI-generated or human-authored improvement proposals against a yard
+-- simulation set. Each proposal targets a specific run (the "before" state)
+-- and lists structured changes that will eventually be forwarded to the
+-- simulator API for re-evaluation.
+CREATE TABLE yard_proposals (
+    id SERIAL PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    target_run_id TEXT,                       -- which run is the "before"; nullable
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    target_bottleneck TEXT,                   -- entity name addressed (e.g. "B010")
+    changes JSONB NOT NULL,                   -- typed change list (capacity / stagger / reroute / add_entity)
+    expected_impact TEXT,
+    risks TEXT,
+    source TEXT NOT NULL DEFAULT 'ai',        -- "ai" | "manual"
+    sent_to_simulator_at TIMESTAMP,           -- populated when forwarded later
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+
+    FOREIGN KEY (case_id) REFERENCES yard_simulations(case_id) ON DELETE CASCADE,
+    CHECK (source IN ('ai', 'manual'))
+);
+
+-- Table: log_cases
+-- Parent record for a kiosk-log ingest batch. Carries pre-computed
+-- summary metrics for cheap reads; raw rows live in log_rows.
+CREATE TABLE log_cases (
+    case_id              TEXT PRIMARY KEY,
+    name                 TEXT NOT NULL,
+    description          TEXT,
+    location             TEXT NOT NULL,
+    topic                TEXT NOT NULL,
+    summary_metrics      JSONB NOT NULL,
+    related_yard_case_id TEXT,
+    metadata             JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at           TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at           TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: log_rows
+-- Flat fact table — one row per kiosk Start/End event. Sessions are
+-- reconstructed at read time by grouping on (case_id, process).
+CREATE TABLE log_rows (
+    id              BIGSERIAL PRIMARY KEY,
+    case_id         TEXT NOT NULL,
+    source_id       INTEGER NOT NULL,
+    date            TIMESTAMP NOT NULL,
+    location        TEXT NOT NULL,
+    topic           TEXT NOT NULL,
+    process         INTEGER NOT NULL,
+    proc            INTEGER NOT NULL,
+    procstep        INTEGER NOT NULL,
+    procsteptype    TEXT NOT NULL,
+    procstepinfo    TEXT NOT NULL,
+    procstepaction  TEXT NOT NULL,
+    message         TEXT,
+    value           TEXT,
+    FOREIGN KEY (case_id) REFERENCES log_cases(case_id) ON DELETE CASCADE,
+    CONSTRAINT log_rows_procsteptype_chk CHECK (procsteptype IN ('PROCESS', 'DIALOG')),
+    CONSTRAINT log_rows_procstepaction_chk CHECK (procstepaction IN ('Start', 'End'))
+);
+
 -- Indexes for performance
 CREATE INDEX idx_simulation_sets_kind ON simulation_sets(kind);
 CREATE INDEX idx_simulation_sets_name ON simulation_sets(name);
@@ -123,6 +239,14 @@ CREATE INDEX idx_scenarios_current_week ON scenarios(current_week);
 CREATE INDEX idx_assignments_weeks ON assignments(start_week, end_week);
 CREATE INDEX idx_stress_metrics_calculated_at ON stress_metrics(calculated_at);
 CREATE INDEX idx_stress_metrics_scenario ON stress_metrics(case_id, scenario_id);
+CREATE INDEX idx_yard_simulations_name ON yard_simulations(name);
+CREATE INDEX idx_yard_runs_case ON yard_runs(case_id);
+CREATE INDEX idx_yard_proposals_case ON yard_proposals(case_id);
+CREATE INDEX idx_yard_proposals_target_run ON yard_proposals(case_id, target_run_id);
+CREATE INDEX idx_log_cases_location ON log_cases(location);
+CREATE INDEX idx_log_rows_case_proc ON log_rows(case_id, process, date);
+CREATE INDEX idx_log_rows_case_step ON log_rows(case_id, procstepinfo);
+CREATE INDEX idx_log_rows_case_date ON log_rows(case_id, date);
 
 -- Triggers for automatic updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -143,4 +267,16 @@ CREATE TRIGGER update_scenarios_updated_at
 
 CREATE TRIGGER update_educational_simulations_updated_at
     BEFORE UPDATE ON educational_simulations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_yard_simulations_updated_at
+    BEFORE UPDATE ON yard_simulations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_yard_proposals_updated_at
+    BEFORE UPDATE ON yard_proposals
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_log_cases_updated_at
+    BEFORE UPDATE ON log_cases
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
