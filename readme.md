@@ -1,7 +1,7 @@
 # What-If Tool
 
 This repository contains the source code for the What-If Tool, a web
-application for comparing alternative scenarios across two analysis
+application for comparing alternative scenarios across three analysis
 domains:
 
 -   **Educational course planning** — model student stress under
@@ -15,8 +15,16 @@ domains:
     [specifications/yard_logistics/design.md](specifications/yard_logistics/design.md)
     and
     [specifications/yard_logistics/specification.yml](specifications/yard_logistics/specification.yml).
+-   **Kiosk check-in logs** — process-mining over raw self-service
+    check-in terminal logs (LT 010 today). Reconstruct driver
+    sessions, see per-phase time breakdown, ask an AI assistant about
+    the kiosk experience. See
+    [specifications/logistic_logs/design.md](specifications/logistic_logs/design.md)
+    and
+    [specifications/logistic_logs/specification.yml](specifications/logistic_logs/specification.yml).
 
-Both halves share a Bun + Elysia backend, Postgres + Drizzle ORM, a
+All three domains share a Bun + Elysia backend, Postgres + Drizzle ORM
+(runtime queries only — schema is managed via plain SQL), a
 React/Vite UI, and a dockerised Ollama-proxy that connects to a host
 Ollama process for AI features. The whole stack is orchestrated with
 Docker Compose behind mkcert-signed Traefik.
@@ -77,6 +85,10 @@ All services are orchestrated by Docker Compose, making the development environm
 -   [Docker Compose](https://docs.docker.com/compose/install/)
 -   [mkcert](https://github.com/FiloSottile/mkcert) for generating trusted local certificates.
 -   [Bun](https://bun.sh/) (for local development outside of Docker)
+-   [Ollama](https://ollama.com/) — must run on the **host machine**
+    (not inside Docker) for the AI features. See
+    [ollama_readme.md](ollama_readme.md) for the required env vars and
+    troubleshooting.
 
 ### Installation
 
@@ -120,30 +132,46 @@ All services are orchestrated by Docker Compose, making the development environm
 
 ### Running the Application
 
-Once the prerequisites are met and the certificates are in place, you can start the application using Docker Compose:
+Once the prerequisites are met, the certificates are in place, and
+Ollama is running on the host, start the application:
 
 ```sh
 docker-compose up -d
 ```
 
-This command will build the Docker images (if they don't exist) and start all the services in the background.
+This builds the Docker images (if they don't exist) and starts all
+services in the background.
 
-**✅ Database automatically initialized!** PostgreSQL will create all tables and insert sample data on first startup using [db/schema.sql](db/schema.sql) and [db/seed.sql](db/seed.sql). No manual database setup is required.
+**Database initialisation.** PostgreSQL runs [db/schema.sql](db/schema.sql)
+and [db/seed.sql](db/seed.sql) automatically on first boot. That populates
+the legacy *educational stress* case. The two newer cases have their
+own seed scripts because their sample data is too large to embed in
+SQL — run these once after `docker-compose up -d`:
 
-You can access the different parts of the application at the following URLs:
+```sh
+docker-compose exec backend bun run seed:yard   # 3 simulator runs over a 70-entity yard
+docker-compose exec backend bun run seed:logs   # 5764 events / 34 sessions of kiosk check-ins
+```
+
+Access the application at:
 
 -   **UI**: `https://app.localhost`
--   **Backend**: `https://backend.localhost`
+-   **Backend API**: `https://backend.localhost`
+-   **Swagger** (interactive API docs): `https://backend.localhost/swagger`
 -   **Traefik Dashboard**: `https://traefik.localhost`
 
-**Need a fresh database?** Just delete `postgres_whatif_data/` and restart:
+**Need a fresh database?** Delete `postgres_whatif_data/` and restart:
 ```sh
 docker-compose down
 rm -rf postgres_whatif_data/
 docker-compose up -d
+docker-compose exec backend bun run seed:yard   # re-seed the case-specific demo data
+docker-compose exec backend bun run seed:logs
 ```
 
-For detailed information about database management, see [backend/DATABASE_SIMPLE_SETUP.md](backend/DATABASE_SIMPLE_SETUP.md).
+For detailed information about database management, see
+[backend/DATABASE_SIMPLE_SETUP.md](backend/DATABASE_SIMPLE_SETUP.md)
+and the "Database schema workflow" section in [CLAUDE.md](CLAUDE.md).
 
 ## Services
 
@@ -215,64 +243,23 @@ Ollama running across reboots, see [ollama_readme.md](ollama_readme.md).
 
 ## Database Schema
 
-The database schema is designed to store simulation data, including scenarios, assignments, and stress metrics.
+Tables live across all three domains:
 
-```mermaid
-erDiagram
-    simulation_sets {
-        VARCHAR_255_ case_id PK
-        VARCHAR_255_ name
-        VARCHAR_50_ kind
-        TEXT description
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    scenarios {
-        INTEGER scenario_id PK
-        VARCHAR_255_ case_id FK
-        TEXT description
-        VARCHAR_255_ course_name
-        INTEGER teaching_total_hours
-        TEXT__ teaching_days
-        VARCHAR_50_ teaching_time
-        INTEGER lab_total_hours
-        TEXT__ lab_days
-        VARCHAR_50_ lab_time
-        INTEGER ects
-        INTEGER topic_difficulty
-        BOOLEAN prerequisites
-        INTEGER weekly_homework_hours
-        INTEGER total_weeks
-        VARCHAR_50_ attendance_method
-        DECIMAL_5_2_ success_rate_percent
-        DECIMAL_3_2_ average_grade
-        INTEGER student_count
-        INTEGER current_week
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    assignments {
-        SERIAL assignment_id PK
-        VARCHAR_255_ case_id FK
-        INTEGER scenario_id FK
-        INTEGER assignment_number
-        INTEGER start_week
-        INTEGER end_week
-        INTEGER hours_per_week
-        TIMESTAMP created_at
-    }
-    stress_metrics {
-        SERIAL stress_metric_id PK
-        VARCHAR_255_ case_id FK
-        INTEGER scenario_id FK
-        DECIMAL_4_2_ current_week_average
-        DECIMAL_4_2_ current_week_maximum
-        DECIMAL_4_2_ predicted_next_week_average
-        DECIMAL_4_2_ predicted_next_week_maximum
-        TIMESTAMP calculated_at
-    }
+| Domain | Tables | Notes |
+|---|---|---|
+| Educational stress (legacy) | `simulation_sets`, `scenarios`, `assignments`, `stress_metrics` | The original coursework simulation set + per-scenario stress metrics. |
+| Educational stress (current) | `educational_simulations`, `adjustment_scenarios` | Generative API: server-side `optimizationEngine` produces 4 adjustment scenarios per case. |
+| Yard logistics | `yard_simulations`, `yard_runs`, `yard_proposals` | Parent case + N simulator runs + AI/manual improvement proposals. |
+| Kiosk check-in logs | `log_cases`, `log_rows` | Parent case + flat fact table of raw kiosk events; sessions reconstructed at read time. |
 
-    simulation_sets ||--o{ scenarios : has
-    scenarios ||--o{ assignments : has
-    scenarios ||--o{ stress_metrics : has
-```
+The canonical schema is the SQL itself —
+[db/schema.sql](db/schema.sql) is the single source of truth and runs
+on a fresh Postgres boot. The Drizzle definitions used by runtime
+queries live in [backend/src/db/schema.ts](backend/src/db/schema.ts);
+both files are kept manually in sync.
+
+For per-domain detail (column semantics, indexes, design rationale)
+see the design docs:
+
+-   [specifications/yard_logistics/design.md § Data layer](specifications/yard_logistics/design.md)
+-   [specifications/logistic_logs/design.md § Data layer](specifications/logistic_logs/design.md)
