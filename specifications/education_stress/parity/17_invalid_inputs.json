@@ -1,0 +1,393 @@
+{
+  "id": "17_invalid_inputs",
+  "description": "§13.17 — invalid dates, out-of-range and past week indices, negative hours, unknown references and duplicate ids; every one must be reported.",
+  "kind": "scenario",
+  "input": {
+    "course": {
+      "course_name": "Full-Stack Web Development",
+      "course_id": "CS-220",
+      "start_date": "2026-09-01T00:00:00Z",
+      "end_date": "2026-11-24T00:00:00Z",
+      "topic_difficulty": 3,
+      "total_homework_hours": 100,
+      "course_sessions": [
+        {
+          "day": "Monday",
+          "start_time": "10:00",
+          "end_time": "12:00"
+        },
+        {
+          "day": "Wednesday",
+          "start_time": "14:00",
+          "end_time": "16:00"
+        }
+      ],
+      "lab_sessions": [
+        {
+          "day": "Friday",
+          "start_time": "13:00",
+          "end_time": "15:00"
+        }
+      ],
+      "assignments": [
+        {
+          "assignment_id": "assignment-1",
+          "name": "Static site",
+          "start_date": "2026-09-01T00:00:00Z",
+          "end_date": "2026-09-28T23:59:59Z",
+          "estimated_hours": 20,
+          "extensions": []
+        },
+        {
+          "assignment_id": "assignment-2",
+          "name": "Project report",
+          "start_date": "2026-09-29T00:00:00Z",
+          "end_date": "2026-10-26T23:59:59Z",
+          "estimated_hours": 25,
+          "extensions": []
+        }
+      ],
+      "exams": [
+        {
+          "exam_id": "exam-1",
+          "name": "Final examination",
+          "date_time": "2026-11-10T09:00:00Z"
+        }
+      ]
+    },
+    "current_week_index": 4,
+    "adjustments": [
+      {
+        "id": "bad-01",
+        "type": "move_exam",
+        "exam_id": "exam-1",
+        "new_date": "not-a-date",
+        "reason": "invalid date"
+      },
+      {
+        "id": "bad-02",
+        "type": "move_exam",
+        "exam_id": "exam-1",
+        "new_date": "2027-03-01T09:00:00Z",
+        "reason": "outside the semester"
+      },
+      {
+        "id": "bad-03",
+        "type": "reduce_homework",
+        "source_week_index": 99,
+        "hours": 2,
+        "reason": "week out of range"
+      },
+      {
+        "id": "bad-04",
+        "type": "reduce_homework",
+        "source_week_index": 1,
+        "hours": 2,
+        "reason": "week already past"
+      },
+      {
+        "id": "bad-05",
+        "type": "move_homework",
+        "source_week_index": 6,
+        "target_week_index": 6,
+        "hours": 2,
+        "reason": "source equals target"
+      },
+      {
+        "id": "bad-06",
+        "type": "reduce_homework",
+        "source_week_index": 6,
+        "hours": -4,
+        "reason": "negative hours"
+      },
+      {
+        "id": "bad-07",
+        "type": "update_assignment",
+        "assignment_id": "assignment-9",
+        "new_estimated_hours": 5,
+        "reason": "unknown assignment"
+      },
+      {
+        "id": "bad-08",
+        "type": "cancel_exam",
+        "exam_id": "exam-9",
+        "reason": "unknown exam"
+      },
+      {
+        "id": "bad-09",
+        "type": "move_assignment",
+        "assignment_id": "assignment-1",
+        "new_start_date": "2026-10-20T00:00:00Z",
+        "new_end_date": "2026-10-05T00:00:00Z",
+        "reason": "start after end"
+      },
+      {
+        "id": "bad-10",
+        "type": "extend_assignment",
+        "assignment_id": "assignment-1",
+        "new_end_date": "2026-09-07T00:00:00Z",
+        "reason": "not later than the current deadline"
+      },
+      {
+        "id": "bad-11",
+        "type": "cancel_lecture",
+        "source_week_index": 7,
+        "reason": "valid control: this one must apply"
+      },
+      {
+        "id": "bad-11",
+        "type": "cancel_lab",
+        "source_week_index": 8,
+        "reason": "duplicate id"
+      }
+    ]
+  },
+  "expected": {
+    "baseline": {
+      "peak_stress": 45.853475543416,
+      "peak_week_number": 11,
+      "total_stress": 266.78300324759,
+      "warning_week_numbers": [],
+      "critical_week_numbers": [],
+      "predicted_stress": [
+        3.739480521979,
+        7.145631544331,
+        15.02964228338,
+        26.539198455298,
+        8.697055303956,
+        14.088659632386,
+        25.341524566653,
+        39.117921915165,
+        23.055922847384,
+        28.767384143172,
+        45.853475543416,
+        29.40710649047
+      ]
+    },
+    "simulation": {
+      "peak_stress": 49.815067710198,
+      "peak_week_number": 11,
+      "total_stress": 266.792181203809,
+      "warning_week_numbers": [],
+      "critical_week_numbers": [],
+      "predicted_stress": [
+        3.739480521979,
+        7.145631544331,
+        15.02964228338,
+        26.539198455298,
+        8.697055303956,
+        14.088659632386,
+        25.341524566653,
+        35.187202903349,
+        22.887888514189,
+        28.76082158004,
+        49.815067710198,
+        29.560008188049
+      ],
+      "week_schedules": [
+        {
+          "week_number": 1,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.050803720184,
+          "assignment_hours": 0.368695458473,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 2,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.287389240412,
+          "assignment_hours": 2.085656471032,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 3,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.791951621148,
+          "assignment_hours": 5.747393399357,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 4,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 1.625719045884,
+          "assignment_hours": 11.798254671138,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 5,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 2.840014296025,
+          "assignment_hours": 0.460869323091,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 6,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 4.479954893482,
+          "assignment_hours": 2.60707058879,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 7,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 6.586286454888,
+          "assignment_hours": 7.184241749196,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 8,
+          "lecture_hours": 0,
+          "lab_hours": 2,
+          "homework_hours": 9.196455693188,
+          "assignment_hours": 14.747818338922,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 9,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 12.345304004679,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 10,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 18.065546939089,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 11,
+          "lecture_hours": 8,
+          "lab_hours": 2,
+          "homework_hours": 20.388122214295,
+          "assignment_hours": 0,
+          "exam_hours": 6
+        },
+        {
+          "week_number": 12,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 17.739716313709,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        }
+      ]
+    },
+    "adjustment_outcomes": [
+      {
+        "adjustment_id": "bad-01",
+        "type": "move_exam",
+        "status": "rejected",
+        "code": "malformed_adjustment"
+      },
+      {
+        "adjustment_id": "bad-06",
+        "type": "reduce_homework",
+        "status": "rejected",
+        "code": "malformed_adjustment"
+      },
+      {
+        "adjustment_id": "bad-11",
+        "type": "cancel_lab",
+        "status": "rejected",
+        "code": "duplicate_adjustment_id"
+      },
+      {
+        "adjustment_id": "bad-02",
+        "type": "move_exam",
+        "status": "rejected",
+        "code": "date_outside_semester"
+      },
+      {
+        "adjustment_id": "bad-07",
+        "type": "update_assignment",
+        "status": "rejected",
+        "code": "assignment_not_found"
+      },
+      {
+        "adjustment_id": "bad-08",
+        "type": "cancel_exam",
+        "status": "rejected",
+        "code": "exam_not_found"
+      },
+      {
+        "adjustment_id": "bad-09",
+        "type": "move_assignment",
+        "status": "rejected",
+        "code": "start_after_end"
+      },
+      {
+        "adjustment_id": "bad-10",
+        "type": "extend_assignment",
+        "status": "rejected",
+        "code": "extension_not_later"
+      },
+      {
+        "adjustment_id": "bad-03",
+        "type": "reduce_homework",
+        "status": "rejected",
+        "code": "week_out_of_range"
+      },
+      {
+        "adjustment_id": "bad-04",
+        "type": "reduce_homework",
+        "status": "rejected",
+        "code": "week_in_past"
+      },
+      {
+        "adjustment_id": "bad-05",
+        "type": "move_homework",
+        "status": "rejected",
+        "code": "source_equals_target"
+      },
+      {
+        "adjustment_id": "bad-11",
+        "type": "cancel_lecture",
+        "status": "applied",
+        "code": "ok"
+      }
+    ],
+    "redistribution_flows": [
+      {
+        "source_week_number": 8,
+        "target_week_number": 11,
+        "hours": 3,
+        "workload_type": "lecture_hours",
+        "target_stress_before": 45.036034558064,
+        "target_stress_after": 48.036071560172,
+        "impact": 3.000037002108
+      },
+      {
+        "source_week_number": 8,
+        "target_week_number": 11,
+        "hours": 1,
+        "workload_type": "lecture_hours",
+        "target_stress_before": 48.036071560172,
+        "target_stress_after": 49.07115301987,
+        "impact": 1.035081459697
+      }
+    ],
+    "extensions_applied": [],
+    "objective": {
+      "peak_stress_delta": 3.961592166782,
+      "total_stress_delta": 0.009177956219,
+      "average_stress_delta": 0.000764829685,
+      "warning_week_delta": 0,
+      "critical_week_delta": 0,
+      "changed_event_count": 0,
+      "moved_workload_hours": 4,
+      "changed_week_count": 2,
+      "improved": false
+    }
+  }
+}

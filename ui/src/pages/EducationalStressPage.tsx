@@ -30,9 +30,12 @@ import {
     fetchEducationalSimulation,
     getAdjustmentName,
     getAdjustmentDescription,
+    isV1Case,
     selectAdjustment,
     getSelectedAdjustment,
 } from "@/services/educationalStressService";
+import type { EducationCaseV1 } from "@/types/educationalStress";
+import { EducationalStressV1View } from "@/components/stress/EducationalStressV1View";
 import { StressTimelineChart } from "@/components/stress/StressTimelineChart";
 import { WeeklyScheduleTable } from "@/components/stress/WeeklyScheduleTable";
 import { EducationalStressComparisonView } from "@/components/stress/EducationalStressComparisonView";
@@ -52,6 +55,10 @@ export default function EducationalStressPage() {
         string | null
     >(null);
     const [isSelectingAdjustment, setIsSelectingAdjustment] = useState(false);
+    // Which v1 scenario tab is open, so the floating chat can be grounded in it.
+    const [activeScenarioId, setActiveScenarioId] = useState<string | undefined>(
+        undefined
+    );
 
     const thresholds: StressThresholds = {
         warning:
@@ -140,6 +147,32 @@ export default function EducationalStressPage() {
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back to Home
                 </Button>
             </div>
+        );
+    }
+
+    // Cases computed with course_stress_prediction v1.0 get the v1 view: five
+    // separate workload variables, a baseline-vs-simulation comparison, the
+    // audit trail, and the what-if builder. Pre-v1.0 cases keep the original
+    // view below — their stored numbers came from a different model and must
+    // not be presented as comparable.
+    if (isV1Case(simulation as unknown as { stress_model?: { version?: string } })) {
+        const v1 = simulation as unknown as EducationCaseV1;
+        return (
+            <>
+                <EducationalStressV1View
+                    caseId={caseId!}
+                    caseData={v1}
+                    thresholds={thresholds}
+                    selectedAdjustmentId={selectedAdjustmentId}
+                    onSelectAdjustment={handleSelectAdjustment}
+                    isSelecting={isSelectingAdjustment}
+                    onActiveScenarioChange={setActiveScenarioId}
+                />
+                <FloatingStressChat
+                    simulation={simulation}
+                    adjustmentId={activeScenarioId}
+                />
+            </>
         );
     }
 

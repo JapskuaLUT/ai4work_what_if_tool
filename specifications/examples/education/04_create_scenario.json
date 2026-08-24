@@ -1,0 +1,37 @@
+{
+    "name": "Move the exam and ease the run-up",
+    "description": "Push the final exam a week later, extend the project report, and shift homework off the peak week",
+    "adjustments": [
+        {
+            "id": "adj-001",
+            "type": "move_exam",
+            "exam_id": "exam-1",
+            "new_date": "2026-11-17T09:00:00Z",
+            "reason": "Separate two high-pressure assessment weeks"
+        },
+        {
+            "id": "adj-002",
+            "type": "extend_assignment",
+            "assignment_id": "assignment-2",
+            "new_end_date": "2026-11-02T23:59:59Z",
+            "reason": "Reduce the predicted stress peak"
+        },
+        {
+            "id": "adj-003",
+            "type": "move_homework",
+            "source_week_index": 11,
+            "target_week_index": 5,
+            "hours": 6.0,
+            "reason": "Reduce the final-week peak"
+        },
+        {
+            "id": "adj-004",
+            "type": "cancel_lecture",
+            "source_week_index": 9,
+            "reason": "Public holiday"
+        }
+    ],
+    "options": {
+        "redistribution_objective": "trajectory_peak"
+    }
+}

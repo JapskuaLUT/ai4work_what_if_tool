@@ -194,6 +194,17 @@ export const educational_simulations = pgTable("educational_simulations", {
     selected_adjustment_id: text("selected_adjustment_id"), // The adjustment_id selected by user
     selected_at: timestamp("selected_at"), // When the selection was made
 
+    // course_stress_prediction v1.0 fields. The domain objects are what make
+    // assignment/exam what-if adjustments possible: exam side effects and
+    // assignment distributions are derived from these on every rebuild.
+    course_assignments: jsonb("course_assignments"), // CourseAssignment[]
+    course_exams: jsonb("course_exams"), // CourseExam[]
+    baseline_schedule: jsonb("baseline_schedule"), // WeekScheduleV1[]
+    observed_stress: jsonb("observed_stress"), // ObservedStressEntry[]
+    // Versioned model block this case was computed with. Cases predating v1.0
+    // carry { version: "legacy-0" } and render through the old calculator.
+    stress_model: jsonb("stress_model"), // StressModelConfig
+
     created_at: timestamp("created_at").defaultNow().notNull(),
     updated_at: timestamp("updated_at").defaultNow().notNull()
 });
@@ -219,19 +230,35 @@ export const adjustment_scenarios = pgTable(
             .references(() => educational_simulations.case_id, {
                 onDelete: "cascade"
             }),
-        adjustment_id: text("adjustment_id").notNull(), // e.g., "adjustment_1", "adjustment_2"
+        adjustment_id: text("adjustment_id").notNull(), // e.g., "adjustment_1", "scenario-..."
+
+        // "generated" (engine-authored) or "user" (what-if authored in the UI
+        // or over the API). Both share this table because both flow through
+        // simulateScenario() and produce the same output shape.
+        origin: text("origin").notNull().default("generated"),
+        name: text("name"),
+        description: text("description"),
 
         // JSONB column for week schedules array
-        week_schedules: jsonb("week_schedules").notNull(), // WeekSchedule[]
+        week_schedules: jsonb("week_schedules").notNull(), // WeekScheduleV1[]
 
         // Optional modified assignments (for extension scenarios)
-        assignment_weeks: jsonb("assignment_weeks"), // AssignmentWeek[] - only populated for extension scenarios
+        assignment_weeks: jsonb("assignment_weeks"), // AssignmentWeek[] / CourseAssignment[]
 
         // Optional extension applications tracking
-        extensions_applied: jsonb("extensions_applied"), // ExtensionApplication[] - tracks all extensions
+        extensions_applied: jsonb("extensions_applied"), // AppliedExtensionRecord[]
 
         // Optional summary metrics for quick access
         summary_metrics: jsonb("summary_metrics"), // OptimizationSummary object
+
+        // Audit trail: what was requested, what happened to each request, where
+        // redistributed hours went, and the baseline/simulation comparison.
+        adjustments: jsonb("adjustments"), // AdjustmentRequest[]
+        adjustment_outcomes: jsonb("adjustment_outcomes"), // AdjustmentOutcome[]
+        redistribution_flows: jsonb("redistribution_flows"), // RedistributionFlow[]
+        comparison: jsonb("comparison"), // baseline/simulation summaries + objective
+        warnings: jsonb("warnings"), // ScenarioWarning[]
+        stress_model_version: text("stress_model_version"),
 
         created_at: timestamp("created_at").defaultNow().notNull()
     },

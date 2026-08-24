@@ -1,0 +1,75 @@
+{
+  "id": "04_assignment_heavy",
+  "description": "§13.4 — assignment hours at and beyond the P^assign saturation point of 14h.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 3,
+        "lab_hours": 2,
+        "homework_hours": 2,
+        "assignment_hours": 14,
+        "exam_hours": 0,
+        "actual_stress": null
+      },
+      {
+        "lecture_hours": 3,
+        "lab_hours": 2,
+        "homework_hours": 2,
+        "assignment_hours": 20,
+        "exam_hours": 0,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 5,
+          "independent_load": 16,
+          "total_load": 21,
+          "base": 21.76,
+          "teaching": 1.818181818182,
+          "homework": 0,
+          "assignment": 18,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 0,
+          "raw": 41.578181818182,
+          "soft_capped": 28.380015847534,
+          "schedule_only": 28.380015847534
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 28.380015847534
+      },
+      {
+        "week_index": 1,
+        "components": {
+          "teaching_load": 5,
+          "independent_load": 22,
+          "total_load": 27,
+          "base": 29.92,
+          "teaching": 1.818181818182,
+          "homework": 0,
+          "assignment": 18,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 1.986601109327,
+          "raw": 51.724782927509,
+          "soft_capped": 33.821202002987,
+          "schedule_only": 33.821202002987
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 33.821202002987
+      }
+    ]
+  }
+}

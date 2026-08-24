@@ -1,0 +1,75 @@
+{
+  "id": "01_light_week",
+  "description": "§13.1 — an empty and a light week, both below every activation point.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 0,
+        "lab_hours": 0,
+        "homework_hours": 0,
+        "assignment_hours": 0,
+        "exam_hours": 0,
+        "actual_stress": null
+      },
+      {
+        "lecture_hours": 1,
+        "lab_hours": 0,
+        "homework_hours": 1,
+        "assignment_hours": 0,
+        "exam_hours": 0,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 0,
+          "independent_load": 0,
+          "total_load": 0,
+          "base": 0,
+          "teaching": 0,
+          "homework": 0,
+          "assignment": 0,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 0,
+          "raw": 0,
+          "soft_capped": 0,
+          "schedule_only": 0
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 0
+      },
+      {
+        "week_index": 1,
+        "components": {
+          "teaching_load": 1,
+          "independent_load": 1,
+          "total_load": 2,
+          "base": 0,
+          "teaching": 0,
+          "homework": 0,
+          "assignment": 0,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 0,
+          "raw": 0,
+          "soft_capped": 0,
+          "schedule_only": 0
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 0
+      }
+    ]
+  }
+}

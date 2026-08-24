@@ -1,0 +1,44 @@
+{
+  "id": "02_ordinary_week",
+  "description": "§13.2 — an ordinary lecture and laboratory week.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 4,
+        "lab_hours": 2,
+        "homework_hours": 6,
+        "assignment_hours": 2,
+        "exam_hours": 0,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 6,
+          "independent_load": 8,
+          "total_load": 14,
+          "base": 12.24,
+          "teaching": 2.727272727273,
+          "homework": 3.428571428571,
+          "assignment": 1.384615384615,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 0,
+          "raw": 19.78045954046,
+          "soft_capped": 14.842365166584,
+          "schedule_only": 14.842365166584
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 14.842365166584
+      }
+    ]
+  }
+}

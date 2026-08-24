@@ -1,0 +1,106 @@
+{
+  "id": "07_fatigue_carryover",
+  "description": "§13.7 — a high-stress week followed by two normal weeks; only the fatigue term differs.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 8,
+        "lab_hours": 6,
+        "homework_hours": 18,
+        "assignment_hours": 16,
+        "exam_hours": 10,
+        "actual_stress": null
+      },
+      {
+        "lecture_hours": 4,
+        "lab_hours": 2,
+        "homework_hours": 6,
+        "assignment_hours": 2,
+        "exam_hours": 0,
+        "actual_stress": null
+      },
+      {
+        "lecture_hours": 4,
+        "lab_hours": 2,
+        "homework_hours": 6,
+        "assignment_hours": 2,
+        "exam_hours": 0,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 14,
+          "independent_load": 34,
+          "total_load": 58,
+          "base": 34,
+          "teaching": 10,
+          "homework": 12,
+          "assignment": 18,
+          "exam": 30,
+          "overload": 14,
+          "fatigue": 0,
+          "raw": 118,
+          "soft_capped": 59.286614810861,
+          "schedule_only": 59.286614810861
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 59.286614810861
+      },
+      {
+        "week_index": 1,
+        "components": {
+          "teaching_load": 6,
+          "independent_load": 8,
+          "total_load": 14,
+          "base": 12.24,
+          "teaching": 2.727272727273,
+          "homework": 3.428571428571,
+          "assignment": 1.384615384615,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 4.15006303676,
+          "raw": 23.93052257722,
+          "soft_capped": 17.631145513647,
+          "schedule_only": 17.631145513647
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 17.631145513647
+      },
+      {
+        "week_index": 2,
+        "components": {
+          "teaching_load": 6,
+          "independent_load": 8,
+          "total_load": 14,
+          "base": 12.24,
+          "teaching": 2.727272727273,
+          "homework": 3.428571428571,
+          "assignment": 1.384615384615,
+          "exam": 0,
+          "overload": 0,
+          "fatigue": 1.234180185955,
+          "raw": 21.014639726415,
+          "soft_capped": 15.682760318593,
+          "schedule_only": 15.682760318593
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 15.682760318593
+      }
+    ]
+  }
+}

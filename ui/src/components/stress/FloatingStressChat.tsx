@@ -21,7 +21,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 
 // Import types
-import { Message } from "@/types/chat";
+import { Message, type ChatMessage } from "@/types/chat";
 
 interface FloatingStressChatProps {
     simulation: CourseAnalysisOutput;
@@ -212,7 +212,7 @@ export function FloatingStressChat({
 
         try {
             // Create chat messages array with system prompt and context
-            const chatMessages = [
+            const chatMessages: ChatMessage[] = [
                 {
                     role: "system" as const,
                     content:
@@ -404,6 +404,9 @@ function createSystemPrompt(
     simulation: CourseAnalysisOutput,
     adjustmentId?: string
 ): string {
+    if (isV1Simulation(simulation)) {
+        return createV1SystemPrompt(simulation as unknown as V1Like, adjustmentId);
+    }
     if (adjustmentId) {
         return `You are an AI assistant specialized in educational stress management and course optimization. You are analyzing a specific optimization scenario "${getAdjustmentName(adjustmentId)}" for the course "${simulation.course_info.course_name}".
 
@@ -431,11 +434,177 @@ Your role is to help the user understand:
 Be concise, clear, and focused on practical guidance that helps educators make informed decisions about their course structure.`;
 }
 
+// ---------------------------------------------------------------------------
+// course_stress_prediction v1.0 grounding
+// ---------------------------------------------------------------------------
+//
+// A v1 case stores a CourseDefinition in `course_info` and carries a
+// `scenarios[]` array with the full comparison. The legacy builders below read
+// `ects`, `total_weeks` and `stress_metrics`, none of which exist on a v1
+// case, so they are branched around rather than patched — mixing the two would
+// silently produce undefined values in the prompt.
+
+type V1Like = {
+    stress_model?: { version?: string };
+    course?: any;
+    course_assignments?: any[];
+    course_exams?: any[];
+    current_status?: { current_week_number?: number };
+    baseline_schedule?: any[];
+    scenarios?: any[];
+};
+
+function isV1Simulation(simulation: any): boolean {
+    const version = simulation?.stress_model?.version;
+    return Boolean(version) && version !== "legacy-0";
+}
+
+/** Grounds the model in the actual component breakdown, not just one number. */
+function createV1Context(simulation: V1Like, adjustmentId?: string): string {
+    const course = simulation.course ?? {};
+    const scenarios = simulation.scenarios ?? [];
+    const weeks = simulation.baseline_schedule ?? [];
+
+    let context = `Course: "${course.course_name}" (${course.course_id})\n`;
+    context += `Semester: ${String(course.start_date).slice(0, 10)} to ${String(course.end_date).slice(0, 10)} (${weeks.length} weeks)\n`;
+    context += `Difficulty: ${course.topic_difficulty}/5\n`;
+    context += `Current week: ${simulation.current_status?.current_week_number ?? 1}\n\n`;
+
+    context += `Stress model: course_stress_prediction v${simulation.stress_model?.version}. `;
+    context += `Predicted stress runs 0-90. Bands: Low 0-33, Moderate 33-66, High 66-90. `;
+    context += `Each week's score is the sum of seven components - base load, teaching density, homework, assignment, exam, overload and a 7% fatigue carry-over from the previous week - passed through a soft cap. `;
+    context += `Note that the schedule-only model saturates near 60, so a "Moderate" week can still be the worst week of the semester; compare weeks against each other, not only against the thresholds.\n\n`;
+
+    if (course.assignments?.length) {
+        context += `Assignments:\n`;
+        for (const a of course.assignments) {
+            context += `- ${a.name} (${a.assignment_id}): ${String(a.start_date).slice(0, 10)} to ${String(a.end_date).slice(0, 10)}, ${a.estimated_hours}h\n`;
+        }
+        context += `\n`;
+    }
+    if (course.exams?.length) {
+        context += `Exams:\n`;
+        for (const x of course.exams) {
+            context += `- ${x.name} (${x.exam_id}): ${String(x.date_time).slice(0, 10)}\n`;
+        }
+        context += `\n`;
+    }
+
+    const scenario = adjustmentId
+        ? scenarios.find((s: any) => s.scenario_id === adjustmentId)
+        : undefined;
+
+    if (scenario?.comparison) {
+        const c = scenario.comparison;
+        context += `Scenario under discussion: "${scenario.name ?? scenario.scenario_id}" (${scenario.origin}).\n`;
+        context += `Baseline peak ${c.baseline.peak_stress.toFixed(2)} in week ${c.baseline.peak_week_number}; simulated peak ${c.simulation.peak_stress.toFixed(2)} in week ${c.simulation.peak_week_number}.\n`;
+        context += `Average ${c.baseline.average_stress.toFixed(2)} -> ${c.simulation.average_stress.toFixed(2)}. `;
+        context += `Warning weeks ${c.baseline.warning_week_numbers.length} -> ${c.simulation.warning_week_numbers.length}.\n`;
+        context += `The scenario changed ${c.objective.changed_week_count} week(s) and ${c.objective.changed_event_count} academic event(s), moving ${c.objective.moved_workload_hours.toFixed(1)}h of workload.\n\n`;
+
+        const changed = (c.weekly_results ?? []).filter((w: any) => w.adjusted);
+        if (changed.length) {
+            context += `Weeks that changed:\n`;
+            for (const w of changed) {
+                const sim = w.simulation;
+                context += `- Week ${w.week_number}: ${w.baseline.predicted_stress.toFixed(2)} -> ${sim.predicted_stress.toFixed(2)} (${sim.classification}). `;
+                context += `lecture ${sim.lecture_hours.toFixed(1)}h, lab ${sim.lab_hours.toFixed(1)}h, homework ${sim.homework_hours.toFixed(1)}h, assignment ${sim.assignment_hours.toFixed(1)}h, exam ${sim.exam_hours.toFixed(1)}. `;
+                context += `Largest components: ${topComponents(sim.components)}. `;
+                if (w.adjustment_details?.length) {
+                    context += `Changes: ${w.adjustment_details.join("; ")}.`;
+                }
+                context += `\n`;
+            }
+        }
+        return context;
+    }
+
+    context += `Scenarios available (${scenarios.length}), ranked by peak predicted stress:\n`;
+    for (const s of [...scenarios].sort(
+        (a: any, b: any) =>
+            (a.summary_metrics?.peak_stress ?? 999) -
+            (b.summary_metrics?.peak_stress ?? 999)
+    )) {
+        const m = s.summary_metrics;
+        if (!m) continue;
+        const delta = s.comparison?.objective?.peak_stress_delta ?? 0;
+        context += `- "${s.name ?? s.scenario_id}" (${s.origin}): peak ${m.peak_stress.toFixed(2)} (${delta >= 0 ? "+" : ""}${delta.toFixed(2)} vs baseline), average ${m.average_stress.toFixed(2)}, ${m.total_adjustments_made} adjustment(s)\n`;
+    }
+    return context;
+}
+
+/** The three components contributing most to a week's raw score. */
+function topComponents(components: any): string {
+    const named = [
+        ["base load", components.base],
+        ["teaching", components.teaching],
+        ["homework", components.homework],
+        ["assignment", components.assignment],
+        ["exam", components.exam],
+        ["overload", components.overload],
+        ["fatigue", components.fatigue],
+    ] as Array<[string, number]>;
+    return named
+        .filter(([, v]) => v > 0.01)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([k, v]) => `${k} ${v.toFixed(1)}`)
+        .join(", ");
+}
+
+function createV1SystemPrompt(simulation: V1Like, adjustmentId?: string): string {
+    const name = simulation.course?.course_name ?? "this course";
+    const scope = adjustmentId
+        ? `a specific what-if scenario for "${name}"`
+        : `the stress trajectory and what-if scenarios for "${name}"`;
+
+    return `You are an AI assistant specialised in course workload planning. You are analysing ${scope}.
+
+The numbers you are given come from the course_stress_prediction model, which estimates the pressure created by the *course plan*. It is not a measurement of any individual student's stress, and it is not a clinical instrument. Say so if the user starts treating it as one.
+
+Ground every claim in the component breakdown you were given. When a week is bad, name which components drove it - exam pressure, assignment pressure, homework, overload or fatigue carried from the previous week - rather than repeating the single stress number. When a change did not help, say so plainly.
+
+Be concise, concrete and practical.`;
+}
+
+function createV1WelcomeMessage(simulation: V1Like, adjustmentId?: string): string {
+    const name = simulation.course?.course_name ?? "this course";
+    const scenario = adjustmentId
+        ? (simulation.scenarios ?? []).find((s: any) => s.scenario_id === adjustmentId)
+        : undefined;
+
+    if (scenario?.comparison) {
+        const c = scenario.comparison;
+        return `I can help you work through "${scenario.name ?? scenario.scenario_id}" for ${name}. It takes the peak from ${c.baseline.peak_stress.toFixed(1)} (week ${c.baseline.peak_week_number}) to ${c.simulation.peak_stress.toFixed(1)} (week ${c.simulation.peak_week_number}).
+
+You can ask me about:
+• Which components are driving the worst weeks
+• Whether this change is worth its disruption
+• What else could be moved
+• How the fatigue carry-over is affecting later weeks
+
+What would you like to know?`;
+    }
+
+    return `I can help you interpret the stress trajectory for ${name} and compare the ${(simulation.scenarios ?? []).length} scenario(s) on this case.
+
+You can ask me about:
+• Why a particular week scores the way it does
+• Which scenario is the best trade-off
+• What the components mean
+• What to try next in the what-if builder
+
+What would you like to know?`;
+}
+
 // Create a string representation of the simulation for context
 function createSimulationContext(
     simulation: CourseAnalysisOutput,
     adjustmentId?: string
 ): string {
+    if (isV1Simulation(simulation)) {
+        return createV1Context(simulation as unknown as V1Like, adjustmentId);
+    }
     let context = `Course: "${simulation.course_info.course_name}" (${simulation.course_info.course_id})\n`;
     context += `ECTS Credits: ${simulation.course_info.ects}\n`;
     context += `Total Weeks: ${simulation.course_info.total_weeks}\n`;
@@ -533,6 +702,9 @@ function createWelcomeMessage(
     simulation: CourseAnalysisOutput,
     adjustmentId?: string
 ): string {
+    if (isV1Simulation(simulation)) {
+        return createV1WelcomeMessage(simulation as unknown as V1Like, adjustmentId);
+    }
     if (adjustmentId) {
         const scenario = simulation.week_schedules.find(
             (s) => s.adjustment_id === adjustmentId

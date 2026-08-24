@@ -1,0 +1,44 @@
+{
+  "id": "06_combined_overload",
+  "description": "§13.6 — a combined week past the 32h overload threshold.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 6,
+        "lab_hours": 4,
+        "homework_hours": 14,
+        "assignment_hours": 10,
+        "exam_hours": 6,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 10,
+          "independent_load": 24,
+          "total_load": 40,
+          "base": 34,
+          "teaching": 6.363636363636,
+          "homework": 10.285714285714,
+          "assignment": 12.461538461538,
+          "exam": 27,
+          "overload": 14,
+          "fatigue": 0,
+          "raw": 104.110889110889,
+          "soft_capped": 55.143355055234,
+          "schedule_only": 55.143355055234
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 55.143355055234
+      }
+    ]
+  }
+}
