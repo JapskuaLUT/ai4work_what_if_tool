@@ -35,7 +35,7 @@ export function OllamaChatHistory() {
     const [model, setModel] = useState("");
     const [temperature, setTemperature] = useState(0.7);
     const [messages, setMessages] = useState<Message[]>([]);
-    const [context, setContext] = useState<number[]>([]);
+    const [context] = useState<number[]>([]);
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
     // Track currently streaming message ID

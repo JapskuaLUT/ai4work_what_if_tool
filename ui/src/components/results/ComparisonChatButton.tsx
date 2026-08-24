@@ -15,7 +15,7 @@ import { MessageSquareText, X } from "lucide-react";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessagesContainer } from "@/components/chat/ChatMessagesContainer";
 import { ChatInput } from "@/components/chat/ChatInput";
-import { Message } from "@/types/chat";
+import { Message, type ChatMessage } from "@/types/chat";
 import { Plan } from "@/types/builder";
 
 interface ComparisonChatButtonProps {
@@ -218,7 +218,7 @@ What would you like to know about these scenarios?`
 
         try {
             // Create chat messages array
-            const chatMessages = [
+            const chatMessages: ChatMessage[] = [
                 {
                     role: "system" as const,
                     content:

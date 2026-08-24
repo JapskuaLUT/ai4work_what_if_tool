@@ -1,9 +1,14 @@
 // ui/src/components/MarkdownDisplay/MarkdownDisplay.tsx
 
+import type { CSSProperties } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkGfm from "remark-gfm";
+
+// react-syntax-highlighter types its bundled themes as a union that includes a
+// bare CSSProperties, but SyntaxHighlighter only accepts the keyed form.
+const codeTheme = atomDark as { [key: string]: CSSProperties };
 
 interface MarkdownDisplayProps {
     content: string;
@@ -19,19 +24,41 @@ export function MarkdownDisplay({
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                    // Handle code blocks with syntax highlighting
-                    code({ node, inline, className, children, ...props }) {
+                    // Handle code blocks with syntax highlighting.
+                    // react-markdown v10 no longer passes an `inline` prop, so
+                    // inline code is identified the way the renderer itself
+                    // does it: a fenced block is wrapped in <pre>, inline code
+                    // is not.
+                    code({ node, className, children, ...props }) {
+                        const isInline =
+                            (node as { tagName?: string } | undefined)
+                                ?.tagName === "code" &&
+                            !/language-/.test(className || "");
                         const match = /language-(\w+)/.exec(className || "");
-                        return !inline && match ? (
-                            <SyntaxHighlighter
-                                style={atomDark}
-                                language={match[1]}
-                                PreTag="div"
-                                {...props}
-                            >
-                                {String(children).replace(/\n$/, "")}
-                            </SyntaxHighlighter>
-                        ) : (
+
+                        if (!isInline && match) {
+                            // SyntaxHighlighter is a class component, so its
+                            // `ref` is typed for the component instance rather
+                            // than an HTMLElement, and its `style` must be the
+                            // keyed theme form. Neither of the values
+                            // react-markdown hands us fits, so drop both
+                            // instead of forwarding them.
+                            const { ref, style, ...highlighterProps } = props;
+                            void ref;
+                            void style;
+                            return (
+                                <SyntaxHighlighter
+                                    {...highlighterProps}
+                                    style={codeTheme}
+                                    language={match[1]}
+                                    PreTag="div"
+                                >
+                                    {String(children).replace(/\n$/, "")}
+                                </SyntaxHighlighter>
+                            );
+                        }
+
+                        return (
                             <code
                                 className={`${className} bg-slate-100 dark:bg-slate-800 px-1 rounded`}
                                 {...props}

@@ -11,7 +11,7 @@ import {
     CardHeader
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CourseworkPlan } from "@/types/builder";
+import { isBuilderScenario, CourseworkPlan } from "@/types/builder";
 
 // Import sub-components
 import { ChatHeader } from "@/components/chat/ChatHeader";
@@ -20,7 +20,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 
 // Import types and utilities
-import { Message } from "@/types/chat";
+import { Message, type ChatMessage } from "@/types/chat";
 
 interface FloatingPlanChatProps {
     plan: CourseworkPlan;
@@ -32,7 +32,7 @@ export function FloatingPlanChat({ plan }: FloatingPlanChatProps) {
 
     // State
     const [model, setModel] = useState<string>("");
-    const [systemPrompt, setSystemPrompt] = useState(createSystemPrompt(plan));
+    const [systemPrompt] = useState(createSystemPrompt(plan));
     const [messages, setMessages] = useState<Message[]>([]);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -200,7 +200,7 @@ export function FloatingPlanChat({ plan }: FloatingPlanChatProps) {
 
         try {
             // Create chat messages array
-            const chatMessages = [
+            const chatMessages: ChatMessage[] = [
                 {
                     role: "system" as const,
                     content:
@@ -390,22 +390,33 @@ function createPlanContext(plan: CourseworkPlan): string {
     let planContext = `Plan: "${plan.name}"\n`;
     planContext += `Description: ${plan.description}\n\n`;
 
+    // Only builder scenarios carry a scheduling outcome; course scenarios
+    // describe a course and have no feasible/infeasible status at all.
+    const builderScenarios = plan.scenarios.filter(isBuilderScenario);
+
     planContext += `Total Scenarios: ${plan.scenarios.length}\n`;
     planContext += `Feasible Scenarios: ${
-        plan.scenarios.filter((s) => s.output?.status === "feasible").length
+        builderScenarios.filter((s) => s.output?.status === "feasible").length
     }\n`;
     planContext += `Infeasible Scenarios: ${
-        plan.scenarios.filter((s) => s.output?.status === "infeasible").length
+        builderScenarios.filter((s) => s.output?.status === "infeasible").length
     }\n\n`;
 
     // Add a summary of each scenario
     planContext += "Scenario Summaries:\n";
     plan.scenarios.forEach((scenario) => {
-        planContext += `- Scenario ${scenario.scenarioId}: "${
-            scenario.description
-        }" (${scenario.output?.status || "unknown"})\n`;
-        planContext += `  Lectures: ${scenario.input.tasks.lectures.length}, Exercise Hours: ${scenario.input.tasks.exercisesHours}, Project Hours: ${scenario.input.tasks.projectHours}, Self-learning Hours: ${scenario.input.tasks.selfLearningHours}\n`;
-        planContext += `  Constraints: ${scenario.input.constraints.length}\n`;
+        if (isBuilderScenario(scenario)) {
+            planContext += `- Scenario ${scenario.scenarioId}: "${
+                scenario.description
+            }" (${scenario.output?.status || "unknown"})\n`;
+            planContext += `  Lectures: ${scenario.input.tasks.lectures.length}, Exercise Hours: ${scenario.input.tasks.exercisesHours}, Project Hours: ${scenario.input.tasks.projectHours}, Self-learning Hours: ${scenario.input.tasks.selfLearningHours}\n`;
+            planContext += `  Constraints: ${scenario.input.constraints.length}\n`;
+        } else {
+            planContext += `- Scenario ${scenario.scenarioId}: "${scenario.description}"\n`;
+            planContext += `  Course: ${scenario.input.courseName} (${scenario.input.courseId}), ${scenario.input.totalWeeks} weeks, difficulty ${scenario.input.topicDifficulty}\n`;
+            planContext += `  Teaching: ${scenario.input.teachingTotalHours}h, Lab: ${scenario.input.labTotalHours}h, Weekly homework: ${scenario.input.weeklyHomeworkHours}h\n`;
+            planContext += `  Assignments: ${scenario.assignments.length}\n`;
+        }
     });
 
     return planContext;
@@ -413,10 +424,11 @@ function createPlanContext(plan: CourseworkPlan): string {
 
 // Create a welcome message for the chat
 function createWelcomeMessage(plan: CourseworkPlan): string {
-    const feasibleCount = plan.scenarios.filter(
+    const builderScenarios = plan.scenarios.filter(isBuilderScenario);
+    const feasibleCount = builderScenarios.filter(
         (s) => s.output?.status === "feasible"
     ).length;
-    const infeasibleCount = plan.scenarios.length - feasibleCount;
+    const infeasibleCount = builderScenarios.length - feasibleCount;
 
     return `I'm here to help you analyze the "${plan.name}" plan containing ${plan.scenarios.length} scenarios (${feasibleCount} feasible, ${infeasibleCount} infeasible). You can ask me about:
 
