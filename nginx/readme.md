@@ -51,15 +51,22 @@ This nginx configuration provides:
 ### Starting Services
 
 ```bash
+# Build the images first if you have not already
+./build_docker_images.sh
+
 # Use the nginx compose file instead of the default
 docker-compose -f docker-compose-nginx.yml up -d
 ```
+
+This file mirrors `docker-compose.yml` — same images, volumes and environment
+— and differs only in the proxy layer. Postgres is published on host port
+**5433** in both, to avoid colliding with another Postgres on 5432.
 
 ### Testing Configuration
 
 ```bash
 # Test nginx configuration syntax
-docker run --rm -v $(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro nginx:1.25-alpine nginx -t
+docker run --rm -v $(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro nginx:1.29.3-alpine nginx -t
 
 # Test service accessibility
 curl -k https://app.localhost

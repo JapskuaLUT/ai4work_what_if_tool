@@ -28,8 +28,10 @@
 3. **Install all packages + build the Docker images**
 
     First, you need to install the local packages and then build the actual Docker images.
-    The development has been done using [Bun](https://bun.sh) but Node.js should work as well.
-    (The Docker build itself uses Bun.)
+    The development has been done using [Bun](https://bun.sh) **1.4.0**.
+    The Docker images pin `oven/bun:1.4.0` and install with
+    `--frozen-lockfile`, so keep the host on the same version — host and
+    container share the lockfiles.
 
     ```bash
     ./install_local_packages.sh
@@ -404,6 +406,10 @@ curl -ksS -X POST https://backend.localhost/api/logs/lt010-2025-2026/recompute
 ### Hot Reload
 
 -   **Backend:** Code changes reload automatically (via `bun --watch`)
+-   **Dependencies:** after adding or upgrading a package, rebuild the images
+    (`./build_docker_images.sh`) — the containers install into
+    `/usr/src/node_modules`, which a host-side `bun install` does not touch.
+    See the Docker troubleshooting section in `CLAUDE.md` for why.
 -   **Frontend:** HMR (Hot Module Replacement) enabled
 -   **Database:** Schema changes require editing **both** `db/schema.sql`
     and `backend/src/db/schema.ts`, then either resetting the DB volume

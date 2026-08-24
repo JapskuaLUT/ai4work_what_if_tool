@@ -1,4 +1,8 @@
-version: "3.8"
+# Alternative to docker-compose.yml that fronts the stack with nginx instead of
+# Traefik. See nginx/readme.md.
+#
+# Keep this file in step with docker-compose.yml: same images, same volumes,
+# same environment. Only the proxy layer and the labels differ.
 
 services:
     nginx:
@@ -8,7 +12,7 @@ services:
             - "443:443"
         volumes:
             - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-            - ./traefik/certs:/etc/nginx/certs:ro
+            - ./traefik/certs:/etc/nginx/certs:ro # Same mkcert-signed certs as the Traefik setup
         depends_on:
             - ui
             - backend
@@ -18,32 +22,53 @@ services:
             - what_if_network
 
     ui:
-        image: whatif-ui:dev
+        image: whatif-ui:dev # Built by build_docker_images.sh
         volumes:
             - ./ui:/usr/src/app
+        tmpfs:
+            # Masks the host's node_modules, which the bind mount above would
+            # otherwise expose to the container. It has to be tmpfs rather than
+            # an anonymous volume: Docker seeds an anonymous volume from
+            # whatever is already at the path, and since the bind mount is
+            # applied first that means it seeds from the host's macOS tree —
+            # exactly what we are trying to hide. A tmpfs is always empty, so
+            # dependency resolution falls through to /usr/src/node_modules,
+            # installed inside the image for the right platform.
             - /usr/src/app/node_modules
         networks:
             - what_if_network
         environment:
             - VITE_BACKEND_API_URL=https://backend.localhost/api
             - VITE_OLLAMA_API_URL=https://ollama.localhost/api
-        command: bun dev -- --host
-        # Removed all Traefik labels
+        command: bun dev -- --host # --host so nginx can reach the dev server
 
     backend:
-        image: whatif-backend:dev
+        image: whatif-backend:dev # Built by build_docker_images.sh
         volumes:
             - ./backend:/usr/src/app
+            - ./specifications:/usr/src/specifications:ro # Yard sample data and schemas, used by the seed scripts
+        tmpfs:
+            # Masks the host's node_modules, which the bind mount above would
+            # otherwise expose to the container. It has to be tmpfs rather than
+            # an anonymous volume: Docker seeds an anonymous volume from
+            # whatever is already at the path, and since the bind mount is
+            # applied first that means it seeds from the host's macOS tree —
+            # exactly what we are trying to hide. A tmpfs is always empty, so
+            # dependency resolution falls through to /usr/src/node_modules,
+            # installed inside the image for the right platform.
+            - /usr/src/app/node_modules
         networks:
             - what_if_network
         command: bun dev
         environment:
             - SERVER_URL=https://backend.localhost
             - DATABASE_URL=postgres://whatifuser:whatifpassword@postgres:5432/whatifdatabase
-            - JWT_SECRET=your-SHARED-strong-jwt-secret
+            - JWT_SECRET=your-SHARED-strong-jwt-secret # Must match the one used elsewhere
             - APP_BASE_URL=https://app.localhost
             - API_BASE_URL=https://backend.localhost
-        # Removed all Traefik labels
+        depends_on:
+            postgres:
+                condition: service_healthy
 
     postgres:
         image: postgres:18.1
@@ -52,10 +77,15 @@ services:
             - POSTGRES_PASSWORD=whatifpassword
             - POSTGRES_DB=whatifdatabase
         ports:
-            - "5432:5432"
+            # Host 5433 → container 5432, matching docker-compose.yml, to avoid
+            # colliding with another Postgres already on host 5432. The backend
+            # reaches Postgres over the Docker network as postgres:5432, so this
+            # only affects host-side tooling (psql / Postico):
+            #   psql -h localhost -p 5433 -U whatifuser
+            - "5433:5432"
         volumes:
             - ./postgres_whatif_data:/var/lib/postgresql
-            # To automatically initialize DB on first run, uncomment and ensure files exist:
+            # Auto-initialize database on first run with schema and seed data
             - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
             - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
         healthcheck:
@@ -65,13 +95,13 @@ services:
             retries: 5
         networks:
             - what_if_network
-        # Removed all Traefik labels
 
     ollama-proxy:
-        image: whatif-ollama-proxy:dev
+        image: whatif-ollama-proxy:dev # Built by build_docker_images.sh
+        volumes:
+            - ./ollama_proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro # Live-edit without rebuilding the image
         networks:
             - what_if_network
-        # Removed all Traefik labels
 
 networks:
     what_if_network:

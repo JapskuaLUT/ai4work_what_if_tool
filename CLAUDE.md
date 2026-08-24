@@ -28,7 +28,8 @@
 > **Looking for a hands-on walkthrough by case?** Start here:
 > - 🚚 [Yard logistics — getting started](instructions/yard_logistics/getting_started.md)
 > - 🔑 [Kiosk check-in logs — getting started](instructions/logistic_logs/getting_started.md)
-> - 📊 [Educational stress instructions](instructions/stress_simulation_instructions.md)
+> - 🎓 [Education what-if — getting started](instructions/education/getting_started.md)
+> - 📊 [Educational stress instructions](instructions/stress_simulation_instructions.md) (pre-v1.0 model)
 >
 > Each guide is self-contained, zero-prior-knowledge, and covers UI,
 > common tasks, API, data formats, and glossary for that case.
@@ -37,7 +38,7 @@
 
 The AI4Work What-If Tool is an explainable decision support system covering two domains today:
 
-1. **Educational course planning.** Instructors model student stress under different course configurations and pick the best one. Scenarios are *generated server-side* by `optimizationEngine.ts`. See [specifications/specification.yml](specifications/specification.yml).
+1. **Educational course planning.** Instructors model course-plan stress under different configurations and pick the best one. Scenarios are both *generated server-side* and *authored by the user*; both go through the same engine. The stress model is `course_stress_prediction` v1.0, shared with the main AI4Work education application — see [specifications/education_stress/](specifications/education_stress/) and its [design doc](specifications/education_stress/design.md). Legacy API contract: [specifications/specification.yml](specifications/specification.yml).
 2. **Yard logistics.** Planners ingest simulator outputs for truck-yard runs, see per-run KPIs and bottlenecks, generate AI-authored improvement proposals, and (when partners ship their API) forward proposals to the simulator for re-evaluation. Scenarios come *from outside* — we ingest, we don't simulate. See [specifications/yard_logistics/specification.yml](specifications/yard_logistics/specification.yml) and the [design doc](specifications/yard_logistics/design.md).
 
 Both halves share the same Bun + Elysia backend, Postgres + Drizzle ORM, React/Vite UI, mkcert-signed Traefik front, and dockerised Ollama-proxy for AI features.
@@ -46,11 +47,35 @@ Both halves share the same Bun + Elysia backend, Postgres + Drizzle ORM, React/V
 
 #### Education
 
--   **Scenario Builder:** Create multiple course configurations to compare
--   **Stress Calculator:** Multi-factor stress calculation considering workload, deadlines, difficulty
--   **Optimization Engine:** Generate optimized schedules with multiple strategies
--   **Visual Comparisons:** Charts, graphs, and tables for easy scenario comparison
--   **AI Explanations + Floating Chat:** Natural language explanations and follow-up Q&A about the generated adjustments
+-   **Shared stress model (`course_stress_prediction` v1.0):** Seven components
+    per week — base load, teaching density, homework, assignment, exam,
+    overload, and a 7% fatigue carry-over — summed and soft-capped into 0–90.
+    Pure and deterministic; computed sequentially because each week reads the
+    previous week's final stress
+-   **Separate workload variables:** lecture / lab / homework / assignment /
+    exam hours are never merged — each contributes differently and caps
+    differently
+-   **Schedule builder:** Builds weekly workload from a course definition
+    (dated assignments with hours, explicit exams). Assignment and exam effects
+    are *derived*, so cancelling an exam and rebuilding removes all three of
+    its effects
+-   **User-authored what-ifs:** Nine adjustment types across weeks, assignments
+    and exams. Applied in a fixed order — domain changes, rebuild, then
+    week-level changes — so a rebuild cannot discard a week-level edit
+-   **Auditable output:** Every adjustment returns `applied` /
+    `partially_applied` / `rejected` with a machine-readable code; every
+    redistributed hour is recorded as a flow; the model version and parameters
+    ship with every response
+-   **Optimization Engine:** Generates comparison scenarios by greedy descent
+    on peak stress (the §8 primary objective), emitting adjustment lists that
+    run through the same engine as a hand-built what-if
+-   **Observed-stress calibration:** Optional weekly readings blend at α = 0.45
+    and train a bias carried into future weeks. Matched to weeks by date, never
+    by array position
+-   **Visual Comparisons:** Baseline-vs-simulated trajectories, per-week
+    component breakdowns, scenario ranking
+-   **AI Explanations + Floating Chat:** Grounded in the component breakdown, so
+    explanations cite what actually drove a week
 
 #### Yard logistics
 
@@ -299,11 +324,15 @@ ai4work_what_if_tool/
 
 ### Prerequisites
 
-1. **Bun:** Install from [bun.sh](https://bun.sh)
+1. **Bun 1.4.0:** Install from [bun.sh](https://bun.sh)
 
     ```bash
     curl -fsSL https://bun.sh/install | bash
     ```
+
+    Both Dockerfiles pin `oven/bun:1.4.0`. Keep the host on the same version —
+    the lockfiles are shared between host and container, and the images install
+    with `--frozen-lockfile`.
 
 2. **Docker & Docker Compose:** For containerized development
 
@@ -419,12 +448,35 @@ A **scenario** represents one specific configuration:
 
 ### 4. Adjustments
 
-**Adjustments** are optimized versions of scenarios:
+An **adjustment** is one requested change. Nine types across three scopes:
 
--   Different strategies (minimal, balanced, aggressive, extension-based)
--   Hour redistributions
--   Deadline extensions
--   Stress reduction while maintaining learning outcomes
+-   *Week-level:* `cancel_lecture`, `cancel_lab`, `reduce_homework`,
+    `move_homework`
+-   *Assignment:* `move_assignment`, `update_assignment`, `extend_assignment`
+-   *Exam:* `move_exam`, `cancel_exam`
+
+A **scenario** is an adjustment list plus its simulated result. Generated
+scenarios (`origin: "generated"`) and user-authored ones (`origin: "user"`)
+share a table and an output contract because they share the engine —
+`simulateScenario()` in
+[education/simulate.ts](backend/src/services/education/simulate.ts).
+
+Cancelled lecture and lab hours are redistributed into later weeks, at most 3h
+per iteration, choosing the week with the smallest stress increase. Every
+placement is recorded as a `RedistributionFlow`.
+
+**Two model versions coexist.** Cases created before v1.0 carry
+`stress_model.version = "legacy-0"`, still render through the original
+`StressCalculator`, and are never recomputed. Their numbers came from a
+different formula family with a different range and are not comparable with
+v1.0 numbers.
+
+**A property of v1.0 worth knowing:** the schedule-only model saturates around
+60.4, so the warning (75) and critical (85) thresholds cannot be reached. They
+are implemented and reported exactly as specified, but the scenario search runs
+on the primary objective (minimise peak stress) instead — a threshold-driven
+search would be a no-op on every course. See
+[design.md §3.1](specifications/education_stress/design.md).
 
 ### 5. What-If Analysis
 
@@ -816,11 +868,19 @@ Run tests:
 
 ```bash
 cd backend
-bun test                  # full suite — unit + integration (139 tests as of now)
+bun test                  # full suite — unit + integration (275 tests as of now)
 bun test --coverage
 bun run test:unit         # services/* unit tests only — no network
 bun run test:integration  # HTTP integration only; needs the dev stack up
 ```
+
+The **parity suite** (`backend/src/services/education/parity.test.ts`) runs the
+eighteen fixtures in
+[specifications/education_stress/parity/](specifications/education_stress/parity/)
+and compares every intermediate component at 1e-6. These are the files the main
+AI4Work education application should also run — read
+[parity/README.md](specifications/education_stress/parity/README.md) before
+treating parity as established.
 
 The **integration suite** (`backend/src/tests/integration/`) hits the running
 backend at `https://backend.localhost` and covers the education and yard
@@ -870,9 +930,12 @@ bun build src/index.ts --outdir dist
 ```bash
 cd ui
 bun install --production
-bun run build
+bun run build     # tsc -b && vite build — must stay clean
 # Output in dist/ folder
 ```
+
+`bun run build` typechecks the whole UI before bundling, so it is the real
+gate on frontend type errors — `bun dev` does not typecheck. Keep it green.
 
 ### Docker Deployment
 
@@ -945,7 +1008,8 @@ When adding a new table or column:
    `db/<name>_migration.sql` (use `CREATE TABLE IF NOT EXISTS`, `DO $$
    BEGIN ... IF NOT EXISTS ... END $$` for triggers, etc.) and apply it via
    the psql command above. See `db/yard_logistics_migration.sql` for a
-   working example.
+   working example, and `db/education_stress_v1_migration.sql` for the
+   education stress v1.0 columns.
 3. For a **fresh database**, no migration is needed — `db/schema.sql` will
    be picked up automatically on first boot.
 
@@ -1009,6 +1073,48 @@ git push origin feature/my-feature
 
 -   **Solution:** Run `bun install` in the correct directory
 
+#### "Cannot find module @rollup/rollup-linux-arm64-gnu" (or similar) in Docker
+
+This means the container is resolving the **host's** `node_modules`. The host
+tree is built for macOS; rollup (via Vite) ships a platform-specific native
+binary, so the Linux container cannot load it.
+
+Two things together prevent it:
+
+1. Both images install dependencies **one directory above** the app, so the
+   compose bind mount cannot shadow them:
+
+    ```
+    /usr/src/node_modules      <- installed by the Dockerfile, correct platform
+    /usr/src/app               <- bind-mounted from the host by docker-compose
+    /usr/src/app/node_modules  <- tmpfs, always empty, masks the host tree
+    ```
+
+2. Both compose files mask `/usr/src/app/node_modules` with a **tmpfs**, not an
+   anonymous volume.
+
+The tmpfs is the part worth understanding. An anonymous volume looks like the
+obvious choice and is what this project used before, but Docker seeds such a
+volume from whatever is already at the mount point — and since the bind mount
+is applied first, that means it seeds from the host's macOS `node_modules`,
+which is precisely what the mask is supposed to hide. Creating an empty
+directory at that path in the image does not change the seeding. A tmpfs is
+always empty, so resolution falls through to `/usr/src/node_modules` every
+time. Verify with:
+
+```bash
+docker-compose exec ui sh -c 'ls -A /usr/src/app/node_modules | wc -l'   # 0, or 2 once Vite writes its cache
+docker-compose exec ui bun -e 'console.log(require.resolve("vite"))'      # /usr/src/node_modules/vite/...
+```
+
+Vite writes its dependency cache into the tmpfs (`.vite`, `.vite-temp`), so it
+is re-optimised on container restart. That takes about a second and avoids a
+stale cache surviving a dependency change.
+
+-   **After changing dependencies:** rebuild the image
+    (`./build_docker_images.sh`) so `/usr/src/node_modules` picks up the change.
+    A `bun install` on the host alone will not reach the container.
+
 #### Schema is out of date / "relation does not exist" on a non-fresh DB
 
 -   **Solution:** Write or apply an idempotent SQL migration. See the
@@ -1032,8 +1138,13 @@ git push origin feature/my-feature
 
 ### Project-Specific Docs
 
--   `specifications/stress_updates.md` - Educational stress implementation
--   `specifications/specification.yml` - API specification
+-   `specifications/education_stress/` - The shared `course_stress_prediction`
+    model: the original [request](specifications/education_stress/request.md),
+    the [design and findings](specifications/education_stress/design.md), the
+    [API contract](specifications/education_stress/specification.yml), and the
+    [parity fixtures](specifications/education_stress/parity/)
+-   `specifications/specification.yml` - Pre-v1.0 API specification
+-   `specifications/yard_logistics/` - Yard logistics design and contract
 -   `worklog/stress_updates_log.md` - Implementation log
 
 ---
@@ -1071,6 +1182,6 @@ type(scope): description
 
 ---
 
-**Last Updated:** 2025-11-13
+**Last Updated:** 2026-08-24
 **Maintainer:** AI4Work Team
 **Claude Assistant:** Ready to help with this project!
