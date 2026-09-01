@@ -64,7 +64,11 @@
         "new_end_date": "2026-11-09T23:59:59Z",
         "reason": "Reduce the predicted stress peak"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

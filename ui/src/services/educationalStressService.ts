@@ -266,6 +266,17 @@ import type {
     WeekScheduleV1,
 } from "../types/educationalStress";
 
+/**
+ * Warning/critical thresholds calibrated to the model's own output range —
+ * what the tool displays and defaults to. The specification's 75/85 belong to
+ * a total-stress scale (personal baseline + course) that this model's
+ * additive output cannot reach. See specifications/education_stress/decisions.md §1.
+ */
+export const COURSE_MODEL_THRESHOLDS = { warning: 45, critical: 55 };
+
+/** Practical ceiling of schedule-only predictions (fixed point of the soft cap). */
+export const SCHEDULE_ONLY_CEILING = 60.45;
+
 /** §2 — the classification bands. Distinct from the warning/critical thresholds. */
 export type StressClassification = "Low" | "Moderate" | "High";
 

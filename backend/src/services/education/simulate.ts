@@ -18,7 +18,9 @@
 
 import {
     buildWeekSchedules,
+    COURSE_MODEL_THRESHOLDS,
     COURSE_STRESS_MODEL_V1,
+    SCHEDULE_ONLY_STRESS_CEILING,
     parseDate,
     predictTrajectory,
     rawWeekIndexForDate,
@@ -90,8 +92,13 @@ export interface SimulationOptions {
 export const DEFAULT_SIMULATION_OPTIONS: SimulationOptions = {
     redistribution_objective: "local_week",
     max_extensions_per_assignment: 2,
-    stress_threshold_warning: 75,
-    stress_threshold_critical: 85,
+    // Course-model thresholds (45/55), not the specification's 75/85. The
+    // model owners have clarified that 75/85 belong to a total-stress scale
+    // this model's additive output cannot reach; thresholds used inside the
+    // tool are calibrated to the model's own range instead. See
+    // specifications/education_stress/decisions.md §1 and constants.ts.
+    stress_threshold_warning: COURSE_MODEL_THRESHOLDS.warning,
+    stress_threshold_critical: COURSE_MODEL_THRESHOLDS.critical,
     allow_past_week_changes: false,
     config: COURSE_STRESS_MODEL_V1,
 };
@@ -903,6 +910,18 @@ export function simulateScenario(
     };
     const warnings: ScenarioWarning[] = [];
     const outcomes: AdjustmentOutcome[] = [];
+
+    // A threshold above the schedule-only ceiling can never fire on this
+    // model's output. That usually means the caller passed total-stress
+    // values (75/85), which the model owners have said belong to a broader
+    // baseline-plus-course scale — say so instead of reporting empty warning
+    // lists that look like a healthy course. decisions.md §1.
+    if (options.stress_threshold_warning > SCHEDULE_ONLY_STRESS_CEILING) {
+        warnings.push({
+            code: "thresholds_exceed_model_range",
+            message: `stress_threshold_warning ${options.stress_threshold_warning} is above the schedule-only ceiling of ${SCHEDULE_ONLY_STRESS_CEILING.toFixed(2)}, so no week can ever be flagged. These values belong to the total-stress scale (personal baseline + course); the course-model equivalents are ${COURSE_MODEL_THRESHOLDS.warning}/${COURSE_MODEL_THRESHOLDS.critical}.`,
+        });
+    }
 
     const currentWeekIndex = Math.max(0, context.current_week_index ?? 0);
 

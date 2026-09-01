@@ -16,10 +16,12 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { adjustment_scenarios, educational_simulations } from "../db/schema";
 import {
+    classifyStress,
+    COURSE_MODEL_THRESHOLDS,
     COURSE_STRESS_MODEL_V1,
     predictTrajectory,
+    SCHEDULE_ONLY_STRESS_CEILING,
     STRESS_BANDS,
-    classifyStress,
     type CourseDefinition,
 } from "../services/stressModel";
 import {
@@ -137,12 +139,34 @@ export const educationStressV1Routes = new Elysia({
         "/stress-model",
         () => ({
             stress_model: COURSE_STRESS_MODEL_V1,
+            /**
+             * decisions.md §1: the model's output is the course's additive
+             * contribution on top of an unobserved personal baseline
+             * (~25–40), so there are two threshold scales and they must not
+             * be confused.
+             */
+            interpretation: {
+                output_is:
+                    "The course's estimated additive contribution to a student's stress, not the student's complete stress level.",
+                personal_baseline_range: { min: 25, max: 40 },
+                schedule_only_ceiling: SCHEDULE_ONLY_STRESS_CEILING,
+            },
+            thresholds: {
+                course_model: {
+                    warning: COURSE_MODEL_THRESHOLDS.warning,
+                    critical: COURSE_MODEL_THRESHOLDS.critical,
+                    note: "Calibrated to this model's own output range; the tool's display and reporting defaults.",
+                },
+                total_stress: {
+                    warning: STRESS_BANDS.warning,
+                    critical: STRESS_BANDS.critical,
+                    note: "The specification's 75/85, which apply to baseline + course. Not reachable by schedule-only output.",
+                },
+            },
             classification_bands: {
                 low: { min: 0, max: STRESS_BANDS.low_max },
                 moderate: { min: STRESS_BANDS.low_max, max: STRESS_BANDS.moderate_max },
                 high: { min: STRESS_BANDS.moderate_max, max: COURSE_STRESS_MODEL_V1.maximum_stress },
-                warning_threshold: STRESS_BANDS.warning,
-                critical_threshold: STRESS_BANDS.critical,
             },
             components: {
                 base: { start: 5, end: 30, max: 34 },
@@ -169,6 +193,8 @@ export const educationStressV1Routes = new Elysia({
             response: {
                 200: t.Object({
                     stress_model: StressModelConfigSchema,
+                    interpretation: t.Any(),
+                    thresholds: t.Any(),
                     classification_bands: t.Any(),
                     components: t.Any(),
                     schedule_build: t.Any(),
@@ -290,9 +316,11 @@ export const educationStressV1Routes = new Elysia({
                         current_week_index: currentStatus.current_week_index ?? 0,
                         options: {
                             stress_threshold_warning:
-                                (stored.stress_threshold_warning as number) ?? 75,
+                                (stored.stress_threshold_warning as number) ??
+                                COURSE_MODEL_THRESHOLDS.warning,
                             stress_threshold_critical:
-                                (stored.stress_threshold_critical as number) ?? 85,
+                                (stored.stress_threshold_critical as number) ??
+                                COURSE_MODEL_THRESHOLDS.critical,
                             max_extensions_per_assignment:
                                 (stored.max_extensions_per_assignment as number) ?? 2,
                             ...(input.options ?? {}),

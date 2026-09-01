@@ -20,7 +20,10 @@ import {
     YAxis,
 } from "recharts";
 import type { StressThresholds, WeeklyResult } from "@/types/educationalStress";
-import { classifyStress } from "@/services/educationalStressService";
+import {
+    classifyStress,
+    SCHEDULE_ONLY_CEILING,
+} from "@/services/educationalStressService";
 
 type Props = {
     weeklyResults: WeeklyResult[];
@@ -38,6 +41,7 @@ const COLORS = {
     warning: "#F59E0B",
     critical: "#DC2626",
     current: "#0F766E",
+    ceiling: "#94A3B8",
 };
 
 export function StressTrajectoryChart({
@@ -111,8 +115,12 @@ export function StressTrajectoryChart({
                 />
                 <YAxis
                     domain={[0, maximumStress]}
-                    ticks={[0, 15, 33, 45, 66, 75, 85, maximumStress]}
-                    label={{ value: "Predicted stress", angle: -90, position: "insideLeft" }}
+                    ticks={[0, 15, 33, 45, 55, 66, maximumStress]}
+                    label={{
+                        value: "Course stress (additive)",
+                        angle: -90,
+                        position: "insideLeft",
+                    }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="top" height={30} />
@@ -121,14 +129,29 @@ export function StressTrajectoryChart({
                     y={thresholds.warning}
                     stroke={COLORS.warning}
                     strokeDasharray="6 3"
-                    label={{ value: `Warning ${thresholds.warning}`, position: "right", fontSize: 11 }}
+                    label={{ value: `Course warning ${thresholds.warning}`, position: "right", fontSize: 11 }}
                 />
                 <ReferenceLine
                     y={thresholds.critical}
                     stroke={COLORS.critical}
                     strokeDasharray="6 3"
-                    label={{ value: `Critical ${thresholds.critical}`, position: "right", fontSize: 11 }}
+                    label={{ value: `Course critical ${thresholds.critical}`, position: "right", fontSize: 11 }}
                 />
+                {/* The model's own ceiling: schedule-only predictions cannot
+                    exceed this, whatever the plan looks like. Drawn only when
+                    it is meaningfully below the axis top. */}
+                {maximumStress > SCHEDULE_ONLY_CEILING + 5 && (
+                    <ReferenceLine
+                        y={SCHEDULE_ONLY_CEILING}
+                        stroke={COLORS.ceiling}
+                        strokeDasharray="2 5"
+                        label={{
+                            value: `model ceiling ${SCHEDULE_ONLY_CEILING}`,
+                            position: "right",
+                            fontSize: 10,
+                        }}
+                    />
+                )}
                 {currentWeekNumber !== undefined && currentWeekNumber > 1 && (
                     <ReferenceLine
                         x={currentWeekNumber}

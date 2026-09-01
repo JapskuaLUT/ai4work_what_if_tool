@@ -27,6 +27,7 @@ import type {
     StressThresholds,
 } from "@/types/educationalStress";
 import {
+    COURSE_MODEL_THRESHOLDS,
     fetchEducationalSimulation,
     getAdjustmentName,
     getAdjustmentDescription,
@@ -60,11 +61,20 @@ export default function EducationalStressPage() {
         undefined
     );
 
+    // Fallbacks differ by model generation: v1 cases display the calibrated
+    // course-model thresholds (decisions.md §1); pre-v1.0 cases keep the 75/85
+    // their 0-100 calculator was built around. Stored per-case values always
+    // win over either fallback.
+    const caseIsV1 = isV1Case(
+        simulation as unknown as { stress_model?: { version?: string } }
+    );
     const thresholds: StressThresholds = {
         warning:
-            simulation?.optimization_request?.stress_threshold_warning || 75,
+            simulation?.optimization_request?.stress_threshold_warning ||
+            (caseIsV1 ? COURSE_MODEL_THRESHOLDS.warning : 75),
         critical:
-            simulation?.optimization_request?.stress_threshold_critical || 85,
+            simulation?.optimization_request?.stress_threshold_critical ||
+            (caseIsV1 ? COURSE_MODEL_THRESHOLDS.critical : 85),
     };
 
     // Fetch simulation data and selection on mount
@@ -155,7 +165,7 @@ export default function EducationalStressPage() {
     // audit trail, and the what-if builder. Pre-v1.0 cases keep the original
     // view below — their stored numbers came from a different model and must
     // not be presented as comparable.
-    if (isV1Case(simulation as unknown as { stress_model?: { version?: string } })) {
+    if (caseIsV1) {
         const v1 = simulation as unknown as EducationCaseV1;
         return (
             <>

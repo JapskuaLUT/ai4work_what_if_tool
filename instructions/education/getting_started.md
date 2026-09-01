@@ -39,26 +39,31 @@ its own and get the right answer; the semester has to be computed front to back.
 
 ### Reading the numbers
 
-| Range | Band |
-|---|---|
-| 0 – 33 | Low |
-| 33 – 66 | Moderate |
-| 66 – 90 | High |
+**The number is the course's *contribution* to stress, not anyone's total
+stress level.** The model owners have confirmed this interpretation
+([decisions.md](../../specifications/education_stress/decisions.md)): a
+student already carries a personal baseline of roughly 25–40 points — health,
+work, life — that the model cannot see. What this tool predicts is what the
+course plan *adds on top*. Schedule-only predictions top out around **60.45**;
+even a 70-hour week with a maximum-difficulty exam scores about 60.
 
-There are also warning (75) and critical (85) thresholds, reported in every
-response.
+Thresholds shown in the tool are calibrated to that course-model scale:
 
-**One thing you need to know before you read a result.** With the constants the
-specification fixes, the schedule-only model saturates around **60.4**. Even a
-70-hour week with a maximum-difficulty exam scores about 60. The warning and
-critical thresholds therefore never fire, and no week can ever be classified
-"High" on schedule alone.
+| Threshold | Value | Meaning |
+|---|---|---|
+| Course warning | **45** | the course alone is adding a lot |
+| Course critical | **55** | the course alone is near the model's ceiling |
 
-So: **compare weeks against each other, not against the thresholds.** A week
-scoring 55 in a semester whose median is 20 is your problem week, even though
-the tool will call it "Moderate". This is a property of the shared model, not a
-bug in this tool — it is implemented exactly as specified, and flagged in
-[the design document](../../specifications/education_stress/design.md).
+(The specification also defines warning 75 / critical 85 — those apply to the
+*total*-stress scale, baseline plus course, and can never fire on this model's
+output. If an API caller passes them, the response says so with a
+`thresholds_exceed_model_range` warning.)
+
+The Low (0–33) / Moderate (33–66) / High (66–90) band labels come from the
+shared specification. Under the additive interpretation, "High" is out of
+reach for schedule-only predictions — so still **compare weeks against each
+other** as well as against the thresholds. A week scoring 55 in a semester
+whose median is 20 is your problem week, whatever the band label says.
 
 ### Where the weekly numbers come from
 

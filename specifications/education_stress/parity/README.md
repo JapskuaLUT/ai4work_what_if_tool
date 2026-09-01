@@ -74,17 +74,26 @@ repository's implementation and frozen, by
 That means these files currently prove that *this* implementation is
 self-consistent and has not regressed. They do **not**, on their own, prove
 that the two systems agree — for that, the main application has to run them and
-report the diff, or supply its own expected values so the two sets can be
-compared.
+report the diff.
 
-Before treating parity as established, one of these should happen:
+**Status (2026-08-25):** the model owners have agreed to run these fixtures
+against their implementation in their dev environment
+([decisions.md §6](../decisions.md)), and confirmed the verification is
+non-blocking. The complete set has been handed over. Until their run comes
+back clean, "parity" here still means "implemented to the written
+specification".
 
-1. the main application runs these fixtures and confirms it matches, or
-2. the main application exports its own component-level expectations, and any
-   disagreement is resolved into a single agreed set.
+## A note on thresholds inside the fixtures
 
-Until then, "parity" here means "implemented to the written specification",
-which is not the same thing.
+Scenario fixtures pin `stress_threshold_warning: 75` and
+`stress_threshold_critical: 85` explicitly in their inputs. Those are the
+specification's §8 values — deliberately, so the fixtures test the shared
+specification and are unaffected by what any one tool displays. (This tool's
+own display defaults are the course-model 45/55 per
+[decisions.md §1](../decisions.md); a fixture must not depend on a default.)
+With 75/85 pinned, every `warning_week_numbers` and `critical_week_numbers`
+in the expected blocks is empty — that is correct, since those thresholds
+belong to the total-stress scale and schedule-only output tops out at 60.45.
 
 ## Regenerating
 

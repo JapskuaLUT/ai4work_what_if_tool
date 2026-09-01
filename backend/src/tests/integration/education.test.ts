@@ -127,7 +127,16 @@ describe.skipIf(!reachable)("education stress model API — happy path", () => {
             fatigue_carry_over: 0.07,
             soft_cap_softness: 0.82
         });
-        expect(data.classification_bands.warning_threshold).toBe(75);
+        // Two threshold scales, per the model owners' decision
+        // (specifications/education_stress/decisions.md §1): the spec's 75/85
+        // are total-stress values; the tool displays and defaults to the
+        // course-model calibration.
+        expect(data.thresholds.total_stress.warning).toBe(75);
+        expect(data.thresholds.total_stress.critical).toBe(85);
+        expect(data.thresholds.course_model.warning).toBe(45);
+        expect(data.thresholds.course_model.critical).toBe(55);
+        expect(data.interpretation.schedule_only_ceiling).toBeCloseTo(60.448, 2);
+        expect(data.classification_bands.high.min).toBe(66);
         expect(data.components.exam.max).toBe(30);
         expect(data.schedule_build.build_order).toHaveLength(4);
     });
@@ -235,8 +244,11 @@ describe.skipIf(!reachable)("education v1 scenarios — happy path", () => {
         expect(res.status).toBe(201);
         const data = (await res.json()) as any;
         expect(data.stress_model_version).toBe("1.0");
-        // A clean v1 payload needs no up-conversion and matches our rebuild.
+        // A clean v1 payload needs no up-conversion, matches our rebuild, and
+        // (leaving thresholds unset) gets the course-model defaults rather
+        // than the unreachable total-stress values.
         expect(data.warnings).toEqual([]);
+        expect(data.baseline.warning_week_numbers.length).toBeGreaterThan(0);
         expect(data.scenario_ids.length).toBeGreaterThanOrEqual(3);
         expect(data.baseline.peak_stress).toBeGreaterThan(0);
         v1CaseId = data.caseId;
@@ -254,6 +266,9 @@ describe.skipIf(!reachable)("education v1 scenarios — happy path", () => {
         expect(codes).toContain("legacy_payload_upconverted");
         expect(codes).toContain("assignment_hours_unavailable");
         expect(codes).toContain("exam_hours_unavailable");
+        // The legacy example passes the spec's 75/85, which are total-stress
+        // values the model cannot reach — the response says so.
+        expect(codes).toContain("thresholds_exceed_model_range");
     });
 
     test("GET /:caseId exposes the model version and domain objects", async () => {

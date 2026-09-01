@@ -27,13 +27,17 @@ info:
     calculator. Their numbers came from a different formula family and are not
     comparable with v1.0 numbers. Nothing recomputes them in place.
 
-    **A note on the thresholds.** The model's schedule-only output saturates
-    around 60.4 and cannot exceed roughly 73.7 by any path, while the spec's
-    warning and critical thresholds are 75 and 85. Those thresholds are
-    implemented exactly as specified and are reported in every response, but
-    they cannot fire. The scenario search therefore optimises the specified
-    *primary* objective — minimise peak predicted stress — rather than keying
-    on thresholds that would never trigger. See design.md §3.1.
+    **A note on the thresholds.** Per the model owners' clarification
+    (decisions.md §1), the model's output is the course's *additive*
+    contribution to stress, on top of a personal baseline (~25-40) the model
+    cannot observe. Schedule-only output saturates around 60.45, so the
+    specification's 75/85 thresholds — which belong to the *total*-stress
+    scale — can never fire on it. The tool therefore displays and defaults to
+    course-model thresholds calibrated to the model's own range: warning 45,
+    critical 55. Callers may override per case; values above the ceiling
+    return a `thresholds_exceed_model_range` warning. The scenario search
+    optimises the primary objective — minimise peak predicted stress. See
+    design.md §3.1 and §10.
 
 servers:
   - url: https://backend.localhost/api
@@ -66,13 +70,29 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [stress_model, classification_bands, components, schedule_build]
+                required: [stress_model, interpretation, thresholds, classification_bands, components, schedule_build]
                 properties:
                   stress_model:
                     $ref: "#/components/schemas/StressModelConfig"
+                  interpretation:
+                    type: object
+                    description: |
+                      What the output means (decisions.md §1): the course's
+                      additive contribution to stress, the personal-baseline
+                      range it sits on top of (25-40), and the computed
+                      schedule-only ceiling (~60.448).
+                  thresholds:
+                    type: object
+                    description: |
+                      Both threshold scales, so they cannot be confused:
+                      `course_model` (warning 45 / critical 55 — the tool's
+                      display and reporting defaults, calibrated to the model's
+                      own range) and `total_stress` (the specification's
+                      75/85, which apply to baseline + course and are not
+                      reachable by schedule-only output).
                   classification_bands:
                     type: object
-                    description: Low/Moderate/High bands plus the warning and critical thresholds.
+                    description: Low/Moderate/High bands as defined by the shared specification.
                   components:
                     type: object
                     description: Activation, saturation and maximum for every component.
@@ -302,8 +322,14 @@ paths:
                       type: boolean
                       default: false
                       description: When false, week-level edits and redistribution targets must be in the future.
-                    stress_threshold_warning: { type: number }
-                    stress_threshold_critical: { type: number }
+                    stress_threshold_warning:
+                      type: number
+                      default: 45
+                      description: Course-model scale. Passing total-scale values (75/85) yields a thresholds_exceed_model_range warning.
+                    stress_threshold_critical:
+                      type: number
+                      default: 55
+                      description: Course-model scale.
                     max_extensions_per_assignment: { type: integer }
       responses:
         "201":
@@ -539,8 +565,14 @@ components:
         optimization_request:
           type: object
           properties:
-            stress_threshold_warning: { type: number, default: 75 }
-            stress_threshold_critical: { type: number, default: 85 }
+            stress_threshold_warning:
+              type: number
+              default: 45
+              description: Course-model scale (see the API description); the specification's 75/85 are total-stress values that cannot fire on this model's output.
+            stress_threshold_critical:
+              type: number
+              default: 55
+              description: Course-model scale.
             max_extensions_per_assignment: { type: integer, default: 2 }
             redistribution_objective: { type: string, enum: [local_week, trajectory_peak] }
             allow_past_week_changes: { type: boolean, default: false }

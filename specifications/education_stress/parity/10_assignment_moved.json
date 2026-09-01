@@ -65,7 +65,11 @@
         "new_end_date": "2026-11-02T23:59:59Z",
         "reason": "Avoid overlap with the midterm examination"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

@@ -1,7 +1,8 @@
 # Education Stress Parity & Adjustment Engine — Design Document
 
-**Status:** Implemented. The specification was adopted verbatim; §10 records
-the decisions taken where it was silent, and the two things worth confirming.
+**Status:** Implemented; model owners' decisions received and applied. The
+specification was adopted verbatim; §10 records the decisions taken where it
+was silent and the owners' answers ([decisions.md](decisions.md), 2026-08-25).
 **Owner:** AI4Work team
 **Last updated:** 2026-08-24
 **Request source:** "What-If Tool: Stress Prediction and Course Adjustment Specification"
@@ -139,8 +140,11 @@ no-ops** — the optimiser will report "nothing to do" for every course. The
 against the thresholds becomes vacuous.
 
 This is not a reason to reject the model; it is a reason to pin down what the
-thresholds mean before we wire them to behaviour. Options are laid out in
-§10 Q1.
+thresholds mean before we wire them to behaviour. **Resolved 2026-08-25:** the
+output is the course's *additive* contribution on top of an unobserved
+personal baseline, 75/85 belong to the total-stress scale, and the tool now
+displays course-model thresholds (45/55) instead — see §10 and
+[decisions.md](decisions.md).
 
 ### 3.2 Semester-wide homework skew is very aggressive
 
@@ -531,77 +535,98 @@ On the seeded 12-week course this takes the peak from 59.95 to 49.11.
 | Risk | Status |
 |---|---|
 | No reference fixtures from the main app, so parity is asserted rather than tested | **Open.** Mitigated as far as we can from this side: an independent second implementation agrees with ours across 196,752 comparisons, and `stress-model/evaluate` lets the other system check us continuously. It still needs someone on that side to run it. |
-| Thresholds unreachable (§3.1) | **Handled, needs confirmation.** Implemented and reported as specified; the search runs on the primary objective instead, so the tool works. If the thresholds were meant to be meaningful, see §10. |
+| Thresholds unreachable (§3.1) | **Resolved.** Confirmed as intended: the output is additive and 75/85 are total-stress values. The tool now defaults to course-model thresholds 45/55, warns when total-scale values are passed, and the search continues to run on the primary objective. |
 | Homework skew (§3.2) reshapes every baseline | **Handled.** Implemented as written. No stored case is recomputed in place — pre-v1.0 cases stay on `legacy-0` — and the rebuild diff surfaces disagreement with a supplied schedule immediately. |
 | Model drifts again after this work | **Mitigated.** Versioned config block, model version on every stored row, `GET /stress-model` for boot-time assertion, and shared fixtures in version control. The model directory imports nothing from the rest of the backend, so it can be extracted to a package without moving logic. |
 
 ---
 
-## 10. Decisions taken, and what to confirm
+## 10. Decisions taken, and the owners' answers
 
 The instruction was to trust the specification completely, so nothing here
-blocked delivery. These are the points where the request was silent or where
-following it has a consequence worth knowing about.
+blocked delivery. On 2026-08-25 the model owners answered every open point —
+their response is kept verbatim in [decisions.md](decisions.md), and what we
+changed as a result is in [followup.md](followup.md).
 
-### Decisions taken where the specification was silent
+### The interpretation that resolves §3.1: output is *additive*
 
-**Exam side-effect ordering (§3.5).** The rules `H_{x-1} += 2` and
-`H_{x+1} ← 0.7 H_{x+1}` are not commutative: for exams in weeks `x` and `x+2`,
-week `x+1` gets both, and `(H × 0.7) + 2 ≠ (H + 2) × 0.7`. We build exams in
-**chronological order**, ties broken by `exam_id`, each exam applying all three
-of its effects before the next is processed. The full build order — lectures
-and labs, then homework, then assignments, then exams — is returned by
-`GET /stress-model` under `schedule_build.build_order` so the other system can
-check it against its own.
+The owners' clarification (decisions.md §1): the model's output is the
+course's **additive contribution** to a student's stress, on top of a personal
+baseline of roughly **25–40 points** the model cannot observe. A course
+contribution of 0–60 is the intended range — which is why the schedule-only
+ceiling of 60.45 is design, not accident — and the specification's 75/85
+thresholds belong to the **total-stress** scale (baseline + course), which is
+why they can never fire on this model's output.
 
-**Extension cap (§6.2).** "At most two extensions per assignment" is read as
-two extension *events*, not two weeks of total extension. It is configurable
+What that required of us, and what we did:
+
+- **Formula unchanged.** Explicitly confirmed: do not rescale.
+- **Displayed thresholds recalibrated.** Thresholds shown or defaulted inside
+  this tool are now the course-model values **45 / 55**
+  (`COURSE_MODEL_THRESHOLDS` in
+  [constants.ts](../../backend/src/services/stressModel/constants.ts)). Two
+  independent derivations agree: total thresholds minus a representative
+  baseline of 30 (75−30, 85−30), and comparable depth into the reachable
+  range (74% / 91% of the 60.45 ceiling vs 83% / 94% of the nominal 90).
+  Callers can still override per case; passing values above the ceiling now
+  returns a `thresholds_exceed_model_range` warning instead of silently empty
+  warning lists.
+- **Interface framing.** The UI, the chat grounding and `GET /stress-model`
+  all state that values are the course's contribution, not a total stress
+  level, per the owners' explicit instruction. `GET /stress-model` exposes
+  both threshold scales and the computed ceiling.
+- **Parity fixtures pin 75/85 explicitly** in their inputs, so they test the
+  specification and are unaffected by this tool's display calibration.
+
+### Decisions taken where the specification was silent — all accepted
+
+decisions.md §5 accepts our interpretations wholesale. For the record:
+
+**Exam side-effect ordering (§3.5).** Chronological, ties broken by
+`exam_id`, each exam applying all three effects before the next. Full build
+order — lectures and labs, then homework, then assignments, then exams — is
+returned by `GET /stress-model` under `schedule_build.build_order`. The
+pre-exam +2h and post-exam ×0.7 are confirmed as deliberate behavioural
+modelling (preparation ramp-up, post-exam recovery).
+
+**Extension cap (§6.2).** Two extension *events*, not two weeks. Configurable
 per case.
 
-**`new_end_week` in extension records.** One-based, matching `original_end_week`
-and the displayed week number.
+**`new_end_week` in extension records.** One-based, matching
+`original_end_week`.
 
-**Authority when both are supplied (§9).** A supplied `week_schedules` becomes
-the baseline; our own rebuild is used only to check agreement, and any week
-differing by more than 1e-6 is reported as a `schedule_rebuild_mismatch`
-warning. A rebuild only happens when an adjustment actually changes an
-assignment or exam. (Up-converted legacy payloads skip this check — their
-schedule cannot match a rebuild by construction, and warning on every week
-would bury the warnings that matter.)
+**Authority when both are supplied (§9).** A supplied `week_schedules` is the
+baseline; our rebuild only checks agreement (`schedule_rebuild_mismatch` at
+1e-6). Up-converted legacy payloads skip the check.
 
-**Past weeks.** §8 restricts redistribution targets to future weeks. We
-generalise: by default, no week-level adjustment may target a week before the
-current one, and the past is identical between baseline and simulation. Set
-`allow_past_week_changes` to lift it.
+**Past weeks.** By default no week-level adjustment may target a week before
+the current one; `allow_past_week_changes` lifts it.
 
-### Consequences worth confirming
+### Other confirmations received
 
-**The thresholds cannot fire (§3.1).** Implemented as specified. Reported in
-every response. Never reached by any input. The user-facing guide tells
-instructors to compare weeks against each other rather than against the bands,
-and the scenario search is driven by the primary objective instead — see §7.
+- **Homework skew (§3.2) retained** — it deliberately models observed student
+  behaviour (little early review, ramp-up toward examinations), not an ideal
+  routine. The per-assignment deadline weighting stays too.
+- **Exam load in both pathways (§3.3) is intentional** — workload represents
+  preparation effort; `P^exam` represents the distinct pressure of being
+  examined. Exams are meant to weigh more than ordinary work.
+- **The 12-point exam floor is intentional** — any examination creates a
+  meaningful minimum pressure regardless of difficulty.
+- **Parity fixtures:** they will run our complete fixtures (inputs + expected
+  component-level outputs) in their dev environment; verification is
+  explicitly non-blocking.
 
-If the intent was for these thresholds to be meaningful, one of three things
-needs to change, and all three are one-line edits here:
- (a) rescale the thresholds (warning ≈ 45, critical ≈ 55 sit at comparable
- percentiles of the reachable range);
- (b) raise `soft_cap_softness` above 0.82 so the range is actually used;
- (c) treat the bands as belonging to a blended clinical scale that the
- schedule model only feeds, and stop gating on them entirely.
+### Still open
 
-**Homework skew (§3.2).** `((i+1)/N)^2.5` is applied across the whole semester
-as written. For 100h over 12 weeks that is 0.05h in week 1 and 25.3h in week 12,
-which structurally guarantees a final-week peak whatever the instructor planned.
-If the intent was a flat semester-wide distribution with the skew applying only
-per-assignment (§3.4), that is a one-line change in `scheduleBuilder.ts`.
-
-**Exam load counts three times (§3.3).** `E_w = 2d` feeds `P^base` and `P^over`
-through `W_w` *and* drives `P^exam`, which also has a 12-point floor.
-Implemented as written. The audit output attributes it explicitly, so users
-will see it.
-
-**Parity is asserted, not yet tested.** We have no reference fixtures from the
-main application, so our expected values are our own. Running
-`POST /stress-model/evaluate` from that side against
-[parity/](parity/) closes this — see
-[parity/README.md](parity/README.md).
+- **Calibrated values 45/55 are our proposal**, sent for confirmation in
+  [followup.md](followup.md); the owners asked for calibration but left the
+  numbers to us.
+- **The Low/Moderate/High band table (§2)** was not addressed: "High" starts
+  at 66 and remains unreachable by schedule-only output. Bands are kept as
+  specified and displayed with the additive framing; raised in followup.md.
+- **The scale of observed stress (`actual_stress`).** The additive
+  interpretation raises it: if observations are *total* stress (baseline
+  included), §5.1 blends two different scales and the ±12 bias cap absorbs
+  only part of a 25–40 baseline. We implement §5 exactly as written either
+  way; raised in followup.md.
+- **The parity run itself** — fixtures handed over, their run pending.

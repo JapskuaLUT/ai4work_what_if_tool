@@ -69,7 +69,11 @@
         "source_week_index": 5,
         "reason": "Laboratory refurbishment"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

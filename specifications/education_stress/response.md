@@ -3,6 +3,7 @@
 **From:** AI4Work What-If Tool team
 **Date:** 2026-08-24
 **Re:** [request.md](request.md)
+**Their answer:** [decisions.md](decisions.md) (2026-08-25) · **our follow-up:** [followup.md](followup.md)
 
 ---
 

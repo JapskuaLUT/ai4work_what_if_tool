@@ -64,7 +64,11 @@
         "new_date": "2026-11-17T09:00:00Z",
         "reason": "Separate two high-pressure assessment weeks"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

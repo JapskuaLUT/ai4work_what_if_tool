@@ -94,8 +94,16 @@ export const SimulationOptionsSchema = t.Object({
         })
     ),
     max_extensions_per_assignment: t.Optional(t.Number({ examples: [2] })),
-    stress_threshold_warning: t.Optional(t.Number({ examples: [75] })),
-    stress_threshold_critical: t.Optional(t.Number({ examples: [85] })),
+    stress_threshold_warning: t.Optional(
+        t.Number({
+            description:
+                "Course-model scale; defaults to 45. The specification's 75/85 belong to the total-stress scale (personal baseline + course) and can never fire on this model's output — passing them returns a thresholds_exceed_model_range warning.",
+            examples: [45],
+        })
+    ),
+    stress_threshold_critical: t.Optional(
+        t.Number({ description: "Course-model scale; defaults to 55.", examples: [55] })
+    ),
     allow_past_week_changes: t.Optional(
         t.Boolean({ description: "Default false: week-level edits and redistribution targets must be in the future (§8).", examples: [false] })
     ),
@@ -169,8 +177,12 @@ export const EducationV1CreateSchema = t.Object({
     optimization_request: t.Optional(
         t.Object({
             optimization_target: t.Optional(t.String({ examples: ["minimize_peak_stress"] })),
-            stress_threshold_warning: t.Optional(t.Number({ examples: [75] })),
-            stress_threshold_critical: t.Optional(t.Number({ examples: [85] })),
+            stress_threshold_warning: t.Optional(
+                t.Number({ description: "Course-model scale; defaults to 45. See SimulationOptions.", examples: [45] })
+            ),
+            stress_threshold_critical: t.Optional(
+                t.Number({ description: "Course-model scale; defaults to 55.", examples: [55] })
+            ),
             allow_extensions: t.Optional(t.Boolean({ examples: [true] })),
             max_extensions_per_assignment: t.Optional(t.Number({ examples: [2] })),
             consider_all_remaining_weeks: t.Optional(t.Boolean({ examples: [true] })),

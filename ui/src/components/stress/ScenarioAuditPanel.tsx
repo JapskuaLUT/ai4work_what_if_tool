@@ -391,6 +391,12 @@ export function ScenarioAuditPanel({ result }: Props) {
                             </AlertDescription>
                         </Alert>
                     )}
+                    <p className="text-xs text-gray-500">
+                        Predicted values are the course&rsquo;s additive
+                        contribution to stress (schedule-only ceiling &asymp;
+                        60.45), not a total stress level. Warning and critical
+                        here use the course-model scale.
+                    </p>
                     <p className="text-xs text-gray-400">
                         Scenario {result.scenario_id} · created{" "}
                         {new Date(result.created_at).toLocaleString()} · current week{" "}

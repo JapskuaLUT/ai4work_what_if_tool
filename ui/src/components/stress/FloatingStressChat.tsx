@@ -471,9 +471,10 @@ function createV1Context(simulation: V1Like, adjustmentId?: string): string {
     context += `Current week: ${simulation.current_status?.current_week_number ?? 1}\n\n`;
 
     context += `Stress model: course_stress_prediction v${simulation.stress_model?.version}. `;
-    context += `Predicted stress runs 0-90. Bands: Low 0-33, Moderate 33-66, High 66-90. `;
-    context += `Each week's score is the sum of seven components - base load, teaching density, homework, assignment, exam, overload and a 7% fatigue carry-over from the previous week - passed through a soft cap. `;
-    context += `Note that the schedule-only model saturates near 60, so a "Moderate" week can still be the worst week of the semester; compare weeks against each other, not only against the thresholds.\n\n`;
+    context += `Predicted values are the course's ADDITIVE contribution to a student's stress, on top of a personal baseline of roughly 25-40 points the model cannot observe - they are not anyone's total stress level (this interpretation is the model owners' own clarification). `;
+    context += `Each week's score is the sum of seven components - base load, teaching density, homework, assignment, exam, overload and a 7% fatigue carry-over from the previous week - passed through a soft cap; schedule-only output tops out near 60.45. `;
+    context += `Thresholds shown in this tool are calibrated to the course-model scale (defaults: warning 45, critical 55). The specification's 75/85 belong to the total-stress scale and cannot fire on this model's output. `;
+    context += `A "Moderate" band label can still be the worst week of the semester; compare weeks against each other as well as against the thresholds.\n\n`;
 
     if (course.assignments?.length) {
         context += `Assignments:\n`;
@@ -560,7 +561,7 @@ function createV1SystemPrompt(simulation: V1Like, adjustmentId?: string): string
 
     return `You are an AI assistant specialised in course workload planning. You are analysing ${scope}.
 
-The numbers you are given come from the course_stress_prediction model, which estimates the pressure created by the *course plan*. It is not a measurement of any individual student's stress, and it is not a clinical instrument. Say so if the user starts treating it as one.
+The numbers you are given come from the course_stress_prediction model, which estimates the pressure the *course plan* adds on top of a student's personal baseline (roughly 25-40 points of health, work and life circumstances the model cannot see). It is the course's additive contribution, not a measurement of any individual student's total stress, and it is not a clinical instrument. Say so if the user starts treating it as one.
 
 Ground every claim in the component breakdown you were given. When a week is bad, name which components drove it - exam pressure, assignment pressure, homework, overload or fatigue carried from the previous week - rather than repeating the single stress number. When a change did not help, say so plainly.
 

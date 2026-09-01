@@ -471,12 +471,15 @@ placement is recorded as a `RedistributionFlow`.
 different formula family with a different range and are not comparable with
 v1.0 numbers.
 
-**A property of v1.0 worth knowing:** the schedule-only model saturates around
-60.4, so the warning (75) and critical (85) thresholds cannot be reached. They
-are implemented and reported exactly as specified, but the scenario search runs
-on the primary objective (minimise peak stress) instead — a threshold-driven
-search would be a no-op on every course. See
-[design.md §3.1](specifications/education_stress/design.md).
+**A property of v1.0 worth knowing:** the model's output is the course's
+*additive* contribution to stress, on top of an unobserved personal baseline
+(~25–40) — confirmed by the model owners in
+[decisions.md](specifications/education_stress/decisions.md). Schedule-only
+output saturates around 60.45, so the specification's 75/85 thresholds
+(total-stress scale) can never fire; the tool displays and defaults to the
+calibrated course-model thresholds **45/55** (`COURSE_MODEL_THRESHOLDS`), and
+the scenario search runs on the primary objective (minimise peak stress). See
+[design.md §3.1 and §10](specifications/education_stress/design.md).
 
 ### 5. What-If Analysis
 
@@ -1182,6 +1185,6 @@ type(scope): description
 
 ---
 
-**Last Updated:** 2026-08-24
+**Last Updated:** 2026-09-01
 **Maintainer:** AI4Work Team
 **Claude Assistant:** Ready to help with this project!

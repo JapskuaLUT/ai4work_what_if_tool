@@ -80,7 +80,11 @@
         "hours": 50,
         "reason": "Over-request: week 2 has far less than 50h available"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

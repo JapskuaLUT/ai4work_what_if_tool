@@ -160,6 +160,13 @@ export function EducationalStressV1View({
                     </div>
                     <h1 className="text-3xl font-bold">{caseData.name}</h1>
                     <p className="text-gray-600 mt-1">{caseData.description}</p>
+                    <p className="text-sm text-gray-500 mt-2 max-w-2xl">
+                        Values shown are the course&rsquo;s estimated{" "}
+                        <em>contribution</em> to student stress, on top of a
+                        personal baseline the model cannot see &mdash; not
+                        anyone&rsquo;s complete stress level. Thresholds are
+                        calibrated to this course-model scale.
+                    </p>
                 </div>
                 <Button variant="outline" onClick={() => navigate("/")}>
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back

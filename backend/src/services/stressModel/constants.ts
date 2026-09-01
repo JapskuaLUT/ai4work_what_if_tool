@@ -81,13 +81,70 @@ export const SCHEDULE_BUILD = {
     days_per_week: 7,
 };
 
-/** §2 classification bands and §8 optimisation thresholds. */
+/**
+ * §2 classification bands, and §8's warning/critical thresholds.
+ *
+ * The model owners have clarified what these thresholds mean
+ * (specifications/education_stress/decisions.md §1): the model's output is the
+ * course's *additive* contribution to stress, on top of a personal baseline of
+ * roughly 25–40 points that the model cannot observe. The 75/85 thresholds
+ * belong to that broader **total-stress** interpretation, which is why the
+ * schedule-only output (ceiling ≈ 60.45) can never reach them. They are kept
+ * here because they are part of the shared specification; anything *displayed*
+ * inside this tool uses COURSE_MODEL_THRESHOLDS below instead.
+ */
 export const STRESS_BANDS = {
     low_max: 33,
     moderate_max: 66,
+    /** Total-stress scale (baseline + course). Not reachable by this model alone. */
     warning: 75,
+    /** Total-stress scale (baseline + course). Not reachable by this model alone. */
     critical: 85,
 };
+
+/**
+ * Warning/critical thresholds calibrated to this model's own output range —
+ * the values the tool displays and defaults to, per decisions.md §1
+ * ("thresholds displayed inside the course what-if tool … should be calibrated
+ * for this model's output range").
+ *
+ * Two independent derivations land on the same numbers:
+ *  - subtract a representative personal baseline of 30 (the middle of the
+ *    owners' 25–40 range) from the total-stress thresholds: 75−30 = 45,
+ *    85−30 = 55;
+ *  - place them at comparable depths of the reachable range: 45 and 55 sit at
+ *    74% and 91% of the 60.45 ceiling, close to 75 and 85 at 83% and 94% of
+ *    the nominal 0–90.
+ *
+ * Callers may still override per case; these are defaults, not caps.
+ */
+export const COURSE_MODEL_THRESHOLDS = {
+    warning: 45,
+    critical: 55,
+};
+
+/**
+ * The fixed point of the schedule-only model at every component's maximum:
+ * S = SoftCap(118 + fatigue·S). No schedule can predict more than this, so a
+ * threshold above it can never fire on schedule-only output. Computed rather
+ * than hardcoded so it tracks the constants above; ≈ 60.448.
+ */
+export const SCHEDULE_ONLY_STRESS_CEILING = (() => {
+    const maxRaw =
+        COMPONENT_BOUNDS.base.max +
+        COMPONENT_BOUNDS.teaching.max +
+        COMPONENT_BOUNDS.homework.max +
+        COMPONENT_BOUNDS.assignment.max +
+        (EXAM_PRESSURE.floor + EXAM_PRESSURE.cap) +
+        OVERLOAD_PRESSURE.cap;
+    const { maximum_stress: c, soft_cap_softness: k, fatigue_carry_over: f } =
+        COURSE_STRESS_MODEL_V1;
+    let s = 0;
+    for (let i = 0; i < 64; i++) {
+        s = c * (1 - Math.exp((-k * (maxRaw + f * s)) / c));
+    }
+    return s;
+})();
 
 /** §7 — at most three hours are placed per redistribution iteration. */
 export const REDISTRIBUTION_CHUNK_HOURS = 3;

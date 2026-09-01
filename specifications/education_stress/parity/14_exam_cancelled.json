@@ -63,7 +63,11 @@
         "exam_id": "exam-1",
         "reason": "Replaced by continuous assessment"
       }
-    ]
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
   },
   "expected": {
     "baseline": {

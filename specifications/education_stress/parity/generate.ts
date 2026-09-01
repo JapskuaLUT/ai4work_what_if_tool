@@ -95,6 +95,18 @@ interface ScenarioFixture {
     };
 }
 
+/**
+ * Fixtures pin the specification's §8 threshold values explicitly, so the
+ * warning/critical week lists in the expected blocks stay stable no matter
+ * what display defaults this tool calibrates to (the tool's own defaults are
+ * the course-model 45/55 — see decisions.md §1). A fixture should never
+ * depend on a default.
+ */
+const PINNED_SPEC_OPTIONS: ScenarioContext["options"] = {
+    stress_threshold_warning: 75,
+    stress_threshold_critical: 85,
+};
+
 const modelFixtures: ModelFixture[] = [
     {
         id: "01_light_week",
@@ -388,7 +400,7 @@ for (const fixture of scenarioFixtures) {
             course: fixture.input.course,
             current_week_index: fixture.input.current_week_index,
             observed_stress: fixture.input.observed_stress,
-            options: fixture.input.options,
+            options: { ...PINNED_SPEC_OPTIONS, ...(fixture.input.options ?? {}) },
         },
         fixture.input.adjustments,
         {
@@ -440,9 +452,16 @@ for (const fixture of scenarioFixtures) {
         extensions_applied: result.extensions_applied,
         objective: result.objective,
     };
+    const pinnedFixture = {
+        ...fixture,
+        input: {
+            ...fixture.input,
+            options: { ...PINNED_SPEC_OPTIONS, ...(fixture.input.options ?? {}) },
+        },
+    };
     writeFileSync(
         join(OUT_DIR, `${fixture.id}.json`),
-        JSON.stringify(round({ ...fixture, expected }), null, 2) + "\n"
+        JSON.stringify(round({ ...pinnedFixture, expected }), null, 2) + "\n"
     );
     written++;
 }
