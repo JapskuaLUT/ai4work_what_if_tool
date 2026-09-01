@@ -5,6 +5,7 @@ import { db } from "../db";
 import { yard_simulations, yard_runs } from "../db/schema";
 import { summarizeRun } from "./yardAnalyticsService";
 import { yardTopologyEqual } from "./yardCompare";
+import { validateRunExport } from "./yardIngestValidation";
 import type {
     YardRunIngestInput,
     YardSimulationIngestInput
@@ -43,6 +44,9 @@ export class YardIngestService {
         if (input.runs.length === 0) {
             throw new Error("createSimulation requires at least one run");
         }
+        // Fail fast with an actionable message when an export payload is
+        // malformed (see yardIngestValidation.ts) — routes map this to 400.
+        input.runs.forEach((run, i) => validateRunExport(run, `runs[${i}]`));
 
         const caseId = options.caseId ?? crypto.randomUUID();
 
@@ -112,6 +116,7 @@ export class YardIngestService {
      * hashes differ from what the parent has on file.
      */
     async addRun(caseId: string, run: YardRunIngestInput): Promise<void> {
+        validateRunExport(run, "body");
         const parent = await db.query.yard_simulations.findFirst({
             where: eq(yard_simulations.case_id, caseId)
         });
