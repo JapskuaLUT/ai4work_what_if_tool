@@ -9,6 +9,7 @@ import {
     yard_proposals
 } from "../db/schema";
 import { YardIngestService } from "../services/yardIngestService";
+import { YardIngestValidationError } from "../services/yardIngestValidation";
 import { entityOccupancyTimeline } from "../services/yardAnalyticsService";
 import { validateProposal } from "../services/yardProposalService";
 import {
@@ -73,6 +74,15 @@ export const yardRoutes = new Elysia({ prefix: "/simulations/yard" })
                     }/yard/${result.case_id}`
                 };
             } catch (error: any) {
+                // Malformed export payloads (e.g. a double-serialized JSON
+                // string) get a 400 with the actionable message, not a 500.
+                if (error instanceof YardIngestValidationError) {
+                    set.status = 400;
+                    return {
+                        error: "Invalid simulation payload.",
+                        message: error.message
+                    };
+                }
                 console.error("Failed to create yard simulation:", error);
                 set.status = 500;
                 return {
@@ -105,6 +115,13 @@ export const yardRoutes = new Elysia({ prefix: "/simulations/yard" })
                 set.status = 201;
                 return { caseId: params.caseId, runId: (body as any).run_id };
             } catch (error: any) {
+                if (error instanceof YardIngestValidationError) {
+                    set.status = 400;
+                    return {
+                        error: "Invalid run payload.",
+                        message: error.message
+                    };
+                }
                 console.error("Failed to add yard run:", error);
                 if (
                     error.message?.includes("not found") ||
