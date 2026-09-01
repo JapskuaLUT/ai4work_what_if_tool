@@ -4,7 +4,9 @@ import { BuilderScenario, CourseScenario } from "@/types/builder";
 
 // Create a system prompt based on the scenario type
 export function createSystemPrompt(
-    scenario: BuilderScenario | CourseScenario,
+    // Reserved: the prompt does not vary by scenario yet, but callers pass it
+    // positionally so the parameter stays in the signature.
+    _scenario: BuilderScenario | CourseScenario,
     kind: "coursework" | "stress"
 ): string {
     if (kind === "coursework") {

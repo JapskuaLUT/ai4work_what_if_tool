@@ -27,12 +27,16 @@ import type {
     StressThresholds,
 } from "@/types/educationalStress";
 import {
+    COURSE_MODEL_THRESHOLDS,
     fetchEducationalSimulation,
     getAdjustmentName,
     getAdjustmentDescription,
+    isV1Case,
     selectAdjustment,
     getSelectedAdjustment,
 } from "@/services/educationalStressService";
+import type { EducationCaseV1 } from "@/types/educationalStress";
+import { EducationalStressV1View } from "@/components/stress/EducationalStressV1View";
 import { StressTimelineChart } from "@/components/stress/StressTimelineChart";
 import { WeeklyScheduleTable } from "@/components/stress/WeeklyScheduleTable";
 import { EducationalStressComparisonView } from "@/components/stress/EducationalStressComparisonView";
@@ -52,12 +56,25 @@ export default function EducationalStressPage() {
         string | null
     >(null);
     const [isSelectingAdjustment, setIsSelectingAdjustment] = useState(false);
+    // Which v1 scenario tab is open, so the floating chat can be grounded in it.
+    const [activeScenarioId, setActiveScenarioId] = useState<string | undefined>(
+        undefined
+    );
 
+    // Fallbacks differ by model generation: v1 cases display the calibrated
+    // course-model thresholds (decisions.md §1); pre-v1.0 cases keep the 75/85
+    // their 0-100 calculator was built around. Stored per-case values always
+    // win over either fallback.
+    const caseIsV1 = isV1Case(
+        simulation as unknown as { stress_model?: { version?: string } }
+    );
     const thresholds: StressThresholds = {
         warning:
-            simulation?.optimization_request?.stress_threshold_warning || 75,
+            simulation?.optimization_request?.stress_threshold_warning ||
+            (caseIsV1 ? COURSE_MODEL_THRESHOLDS.warning : 75),
         critical:
-            simulation?.optimization_request?.stress_threshold_critical || 85,
+            simulation?.optimization_request?.stress_threshold_critical ||
+            (caseIsV1 ? COURSE_MODEL_THRESHOLDS.critical : 85),
     };
 
     // Fetch simulation data and selection on mount
@@ -140,6 +157,32 @@ export default function EducationalStressPage() {
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back to Home
                 </Button>
             </div>
+        );
+    }
+
+    // Cases computed with course_stress_prediction v1.0 get the v1 view: five
+    // separate workload variables, a baseline-vs-simulation comparison, the
+    // audit trail, and the what-if builder. Pre-v1.0 cases keep the original
+    // view below — their stored numbers came from a different model and must
+    // not be presented as comparable.
+    if (caseIsV1) {
+        const v1 = simulation as unknown as EducationCaseV1;
+        return (
+            <>
+                <EducationalStressV1View
+                    caseId={caseId!}
+                    caseData={v1}
+                    thresholds={thresholds}
+                    selectedAdjustmentId={selectedAdjustmentId}
+                    onSelectAdjustment={handleSelectAdjustment}
+                    isSelecting={isSelectingAdjustment}
+                    onActiveScenarioChange={setActiveScenarioId}
+                />
+                <FloatingStressChat
+                    simulation={simulation}
+                    adjustmentId={activeScenarioId}
+                />
+            </>
         );
     }
 

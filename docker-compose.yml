@@ -23,7 +23,16 @@ services:
         image: whatif-ui:dev # This is the image we have built. If missing, check build_docker_images.sh
         volumes:
             - ./ui:/usr/src/app # We want to mount our local ui folder to the container
-            - /usr/src/app/node_modules # A neat trick: We want to make sure the container node_modules does not get written by our local node_modules
+        tmpfs:
+            # Masks the host's node_modules, which the bind mount above would
+            # otherwise expose to the container. It has to be tmpfs rather than
+            # an anonymous volume: Docker seeds an anonymous volume from
+            # whatever is already at the path, and since the bind mount is
+            # applied first that means it seeds from the host's macOS tree —
+            # exactly what we are trying to hide. A tmpfs is always empty, so
+            # dependency resolution falls through to /usr/src/node_modules,
+            # installed inside the image for the right platform.
+            - /usr/src/app/node_modules
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
         environment:
@@ -41,6 +50,16 @@ services:
         volumes:
             - ./backend:/usr/src/app # We want to mount our local backend folder to the container
             - ./specifications:/usr/src/specifications:ro # Read-only access to spec files (yard sample data, schemas)
+        tmpfs:
+            # Masks the host's node_modules, which the bind mount above would
+            # otherwise expose to the container. It has to be tmpfs rather than
+            # an anonymous volume: Docker seeds an anonymous volume from
+            # whatever is already at the path, and since the bind mount is
+            # applied first that means it seeds from the host's macOS tree —
+            # exactly what we are trying to hide. A tmpfs is always empty, so
+            # dependency resolution falls through to /usr/src/node_modules,
+            # installed inside the image for the right platform.
+            - /usr/src/app/node_modules
         networks:
             - what_if_network # Note the network is the same as for traefik! Otherwise this won't work!
         command: bun dev # Simple: just start the backend

@@ -93,7 +93,11 @@ export const ModelProvider = ({ children }: { children: ReactNode }) => {
         availableModels,
         isLoading,
         error,
-        refreshModels: fetchModels
+        // fetchModels resolves with the model list; the context contract is
+        // Promise<void>, so swallow the value rather than widening the type.
+        refreshModels: async () => {
+            await fetchModels();
+        }
     };
 
     return (

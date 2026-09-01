@@ -161,11 +161,90 @@ export interface AdjustmentDetail {
     week_schedules: WeekSchedule[];
 }
 
-export interface CourseAnalysisOutput extends CourseAnalysisInput {
+/**
+ * The output replaces `week_schedules` with one entry per adjustment scenario,
+ * so the field has to be omitted from the base before being redeclared.
+ */
+export interface CourseAnalysisOutput
+    extends Omit<CourseAnalysisInput, "week_schedules"> {
     week_schedules: AdjustmentScenario[];
 }
 
 export interface SimulationStartResponse {
     caseId: string;
     resultsUrl: string;
+}
+
+// ============================================================================
+// course_stress_prediction v1.0
+// ============================================================================
+//
+// Everything below belongs to the shared stress model described in
+// specifications/education_stress/. The legacy types above are retained for
+// simulations stored before v1.0 (`stress_model.version === "legacy-0"`), which
+// are still rendered by the original StressCalculator and are never recomputed.
+
+export type {
+    StressModelConfig,
+    WeeklyLoad,
+    WeekStressComponents,
+    TrajectoryWeekInput,
+    TrajectoryWeekResult,
+    CourseSession,
+    CourseAssignment,
+    CourseExam,
+    CourseDefinition,
+    WeekScheduleV1,
+    AssignmentExtension,
+    ScheduleBuildWarning,
+} from "../services/stressModel";
+
+export type {
+    AdjustmentRequest,
+    AdjustmentType,
+    AdjustmentOutcome,
+    AdjustmentStatus,
+    RedistributionFlow,
+    RedistributionObjective,
+    ObservedStressEntry,
+    SimulationOptions,
+    ScenarioContext,
+    ScenarioMeta,
+    ScenarioResult,
+    ScenarioWarning,
+    AppliedExtensionRecord,
+    TrajectorySummary,
+    ObjectiveMetrics,
+    WeeklyResult,
+} from "../services/education";
+
+/**
+ * §9 — the v1 creation payload. `week_schedules` is optional: when the main
+ * application has already built the schedule we take it as the baseline and
+ * diff it against our own rebuild; otherwise we build it from the course.
+ */
+export interface EducationSimulationV1Input {
+    name: string;
+    description?: string;
+    course: import("../services/stressModel").CourseDefinition;
+    week_schedules?: import("../services/stressModel").WeekScheduleV1[];
+    observed_stress?: import("../services/education").ObservedStressEntry[];
+    current_status: {
+        current_week_index?: number;
+        current_week_number?: number;
+    };
+    optimization_request?: Partial<OptimizationRequest> & {
+        redistribution_objective?: import("../services/education").RedistributionObjective;
+        allow_past_week_changes?: boolean;
+    };
+    students?: { count: number };
+    metadata?: Metadata;
+}
+
+/** §10 — the body of POST /:caseId/scenarios. */
+export interface ScenarioCreateInput {
+    name?: string;
+    description?: string;
+    adjustments: import("../services/education").AdjustmentRequest[];
+    options?: Partial<import("../services/education").SimulationOptions>;
 }

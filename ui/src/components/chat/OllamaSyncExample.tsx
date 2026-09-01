@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoaderCircle } from "lucide-react";
 import { MarkdownDisplay } from "@/components/MarkdownDisplay/MarkdownDisplay"; // Fixed import path
+import type { ChatMessage } from "@/types/chat";
 
 export function OllamaSyncExample() {
     // State
@@ -109,7 +110,7 @@ export function OllamaSyncExample() {
 
             // Step 2: Make the first chat API call
             setSteps((prev) => [...prev, "2. Sending initial query..."]);
-            const messages = [
+            const messages: ChatMessage[] = [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: prompt }
             ];
@@ -131,7 +132,7 @@ export function OllamaSyncExample() {
                 ...prev,
                 "4. Requesting additional details..."
             ]);
-            const followUpMessages = [
+            const followUpMessages: ChatMessage[] = [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: prompt },
                 { role: "assistant", content: initialResponse },

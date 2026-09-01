@@ -94,25 +94,56 @@ CREATE TABLE educational_simulations (
     metadata JSONB NOT NULL,
     selected_adjustment_id TEXT,
     selected_at TIMESTAMP,
+
+    -- course_stress_prediction v1.0 fields. The domain objects are what make
+    -- assignment/exam what-if adjustments possible: exam side effects and
+    -- assignment distributions are derived from these on every rebuild.
+    course_assignments JSONB,
+    course_exams JSONB,
+    baseline_schedule JSONB,
+    observed_stress JSONB,
+    -- The versioned model block this case was computed with. Cases predating
+    -- v1.0 carry {"version": "legacy-0"} and are rendered by the old calculator.
+    stress_model JSONB,
+
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
 -- Table: adjustment_scenarios
--- Stores optimization scenarios (adjustments) for educational simulations
+-- Stores both engine-generated optimization scenarios and user-authored
+-- what-if scenarios. Both flow through the same simulation engine and share
+-- one output shape, so they share one table; `origin` tells them apart.
 CREATE TABLE adjustment_scenarios (
     id SERIAL PRIMARY KEY,
     case_id TEXT NOT NULL,
     adjustment_id TEXT NOT NULL,
+    origin TEXT NOT NULL DEFAULT 'generated',
+    name TEXT,
+    description TEXT,
     week_schedules JSONB NOT NULL,
     assignment_weeks JSONB,
     extensions_applied JSONB,
     summary_metrics JSONB,
+
+    -- Audit trail (§11): what was requested, what happened to each request,
+    -- where redistributed hours went, and the baseline/simulation comparison.
+    adjustments JSONB,
+    adjustment_outcomes JSONB,
+    redistribution_flows JSONB,
+    comparison JSONB,
+    warnings JSONB,
+    stress_model_version TEXT,
+
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
 
     FOREIGN KEY (case_id) REFERENCES educational_simulations(case_id) ON DELETE CASCADE,
-    CONSTRAINT case_adjustment_unique UNIQUE(case_id, adjustment_id)
+    CONSTRAINT case_adjustment_unique UNIQUE(case_id, adjustment_id),
+    CONSTRAINT adjustment_scenarios_origin_check CHECK (origin IN ('generated', 'user'))
 );
+
+CREATE INDEX idx_adjustment_scenarios_case_origin
+    ON adjustment_scenarios(case_id, origin);
 
 -- Table: yard_simulations
 -- Parent record for a yard logistics comparison set (one yard, many simulator runs).

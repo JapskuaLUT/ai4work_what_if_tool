@@ -1,0 +1,75 @@
+{
+  "id": "18_soft_saturation",
+  "description": "§13.18 — raw stress far above the range, verifying soft saturation and clipping.",
+  "kind": "model",
+  "input": {
+    "weeks": [
+      {
+        "lecture_hours": 40,
+        "lab_hours": 40,
+        "homework_hours": 60,
+        "assignment_hours": 60,
+        "exam_hours": 40,
+        "actual_stress": null
+      },
+      {
+        "lecture_hours": 40,
+        "lab_hours": 40,
+        "homework_hours": 60,
+        "assignment_hours": 60,
+        "exam_hours": 40,
+        "actual_stress": null
+      }
+    ]
+  },
+  "expected": {
+    "weeks": [
+      {
+        "week_index": 0,
+        "components": {
+          "teaching_load": 80,
+          "independent_load": 120,
+          "total_load": 240,
+          "base": 34,
+          "teaching": 10,
+          "homework": 12,
+          "assignment": 18,
+          "exam": 30,
+          "overload": 14,
+          "fatigue": 0,
+          "raw": 118,
+          "soft_capped": 59.286614810861,
+          "schedule_only": 59.286614810861
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 59.286614810861
+      },
+      {
+        "week_index": 1,
+        "components": {
+          "teaching_load": 80,
+          "independent_load": 120,
+          "total_load": 240,
+          "base": 34,
+          "teaching": 10,
+          "homework": 12,
+          "assignment": 18,
+          "exam": 30,
+          "overload": 14,
+          "fatigue": 4.15006303676,
+          "raw": 122.15006303676,
+          "soft_capped": 60.426257978146,
+          "schedule_only": 60.426257978146
+        },
+        "observed_stress": null,
+        "observed_applied": false,
+        "calibration_bias_in": 0,
+        "calibration_bias_out": 0,
+        "predicted_stress": 60.426257978146
+      }
+    ]
+  }
+}

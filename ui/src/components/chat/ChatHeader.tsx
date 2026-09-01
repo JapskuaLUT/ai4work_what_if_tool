@@ -58,10 +58,6 @@ export function ChatHeader({
                     value={model}
                     onValueChange={onModelChange}
                     disabled={loadingModels || availableModels.length === 0}
-                    // Prevent event propagation when clicking the select or its dropdown
-                    onOpenChange={(open) => {
-                        // If necessary, we can do additional handling here
-                    }}
                 >
                     <SelectTrigger
                         className={cn(

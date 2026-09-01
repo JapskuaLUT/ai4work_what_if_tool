@@ -33,7 +33,10 @@ interface ScenarioViewProps {
 
 export function ScenarioView({ scenario }: ScenarioViewProps) {
     const isFeasible = scenario.output?.status === "feasible";
-    const hasSchedule = isFeasible && scenario.output?.schedule?.length > 0;
+    // `schedule` is optional on BuilderScenario — an infeasible scenario has
+    // none. Resolve it once instead of re-narrowing at every use.
+    const schedule = scenario.output?.schedule ?? [];
+    const hasSchedule = isFeasible && schedule.length > 0;
 
     // Calculate task statistics
     const taskStats = {
@@ -47,7 +50,7 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
     };
 
     if (hasSchedule) {
-        scenario.output?.schedule.forEach((day) => {
+        schedule.forEach((day) => {
             let dailyHours = 0;
 
             day.timeBlocks.forEach((block) => {
@@ -380,7 +383,7 @@ export function ScenarioView({ scenario }: ScenarioViewProps) {
 
                                     {/* Daily Schedule */}
                                     <div className="space-y-3">
-                                        {scenario.output?.schedule.map(
+                                        {schedule.map(
                                             (day) => (
                                                 <DailyScheduleView
                                                     key={day.day}

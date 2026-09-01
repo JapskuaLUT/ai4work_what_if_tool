@@ -48,7 +48,6 @@ export function AIExplanationBox({ plan }: AIExplanationBoxProps) {
         error,
         streamingResponse,
         streamGenerate,
-        generateSync,
         availableModels,
         loadingModels,
         fetchModels,

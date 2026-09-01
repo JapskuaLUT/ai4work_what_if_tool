@@ -1,0 +1,236 @@
+{
+  "id": "13_exam_moved",
+  "description": "§13.13 — exam-1 moved one week later; exam-week, pre-exam and post-exam effects all move with it.",
+  "kind": "scenario",
+  "input": {
+    "course": {
+      "course_name": "Full-Stack Web Development",
+      "course_id": "CS-220",
+      "start_date": "2026-09-01T00:00:00Z",
+      "end_date": "2026-11-24T00:00:00Z",
+      "topic_difficulty": 3,
+      "total_homework_hours": 100,
+      "course_sessions": [
+        {
+          "day": "Monday",
+          "start_time": "10:00",
+          "end_time": "12:00"
+        },
+        {
+          "day": "Wednesday",
+          "start_time": "14:00",
+          "end_time": "16:00"
+        }
+      ],
+      "lab_sessions": [
+        {
+          "day": "Friday",
+          "start_time": "13:00",
+          "end_time": "15:00"
+        }
+      ],
+      "assignments": [
+        {
+          "assignment_id": "assignment-1",
+          "name": "Static site",
+          "start_date": "2026-09-01T00:00:00Z",
+          "end_date": "2026-09-28T23:59:59Z",
+          "estimated_hours": 20,
+          "extensions": []
+        },
+        {
+          "assignment_id": "assignment-2",
+          "name": "Project report",
+          "start_date": "2026-09-29T00:00:00Z",
+          "end_date": "2026-10-26T23:59:59Z",
+          "estimated_hours": 25,
+          "extensions": []
+        }
+      ],
+      "exams": [
+        {
+          "exam_id": "exam-1",
+          "name": "Final examination",
+          "date_time": "2026-11-10T09:00:00Z"
+        }
+      ]
+    },
+    "current_week_index": 0,
+    "adjustments": [
+      {
+        "id": "adj-013",
+        "type": "move_exam",
+        "exam_id": "exam-1",
+        "new_date": "2026-11-17T09:00:00Z",
+        "reason": "Separate two high-pressure assessment weeks"
+      }
+    ],
+    "options": {
+      "stress_threshold_warning": 75,
+      "stress_threshold_critical": 85
+    }
+  },
+  "expected": {
+    "baseline": {
+      "peak_stress": 45.853475543416,
+      "peak_week_number": 11,
+      "total_stress": 266.78300324759,
+      "warning_week_numbers": [],
+      "critical_week_numbers": [],
+      "predicted_stress": [
+        3.739480521979,
+        7.145631544331,
+        15.02964228338,
+        26.539198455298,
+        8.697055303956,
+        14.088659632386,
+        25.341524566653,
+        39.117921915165,
+        23.055922847384,
+        28.767384143172,
+        45.853475543416,
+        29.40710649047
+      ]
+    },
+    "simulation": {
+      "peak_stress": 49.22754532297,
+      "peak_week_number": 12,
+      "total_stress": 271.328673921064,
+      "warning_week_numbers": [],
+      "critical_week_numbers": [],
+      "predicted_stress": [
+        3.739480521979,
+        7.145631544331,
+        15.02964228338,
+        26.539198455298,
+        8.697055303956,
+        14.088659632386,
+        25.341524566653,
+        39.117921915165,
+        23.055922847384,
+        27.230944286784,
+        32.115147240778,
+        49.22754532297
+      ],
+      "week_schedules": [
+        {
+          "week_number": 1,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.050803720184,
+          "assignment_hours": 0.368695458473,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 2,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.287389240412,
+          "assignment_hours": 2.085656471032,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 3,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 0.791951621148,
+          "assignment_hours": 5.747393399357,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 4,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 1.625719045884,
+          "assignment_hours": 11.798254671138,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 5,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 2.840014296025,
+          "assignment_hours": 0.460869323091,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 6,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 4.479954893482,
+          "assignment_hours": 2.60707058879,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 7,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 6.586286454888,
+          "assignment_hours": 7.184241749196,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 8,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 9.196455693188,
+          "assignment_hours": 14.747818338922,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 9,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 12.345304004679,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 10,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 16.065546939089,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 11,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 22.388122214295,
+          "assignment_hours": 0,
+          "exam_hours": 0
+        },
+        {
+          "week_number": 12,
+          "lecture_hours": 4,
+          "lab_hours": 2,
+          "homework_hours": 25.342451876727,
+          "assignment_hours": 0,
+          "exam_hours": 6
+        }
+      ]
+    },
+    "adjustment_outcomes": [
+      {
+        "adjustment_id": "adj-013",
+        "type": "move_exam",
+        "status": "applied",
+        "code": "ok"
+      }
+    ],
+    "redistribution_flows": [],
+    "extensions_applied": [],
+    "objective": {
+      "peak_stress_delta": 3.374069779554,
+      "total_stress_delta": 4.545670673474,
+      "average_stress_delta": 0.378805889456,
+      "warning_week_delta": 0,
+      "critical_week_delta": 0,
+      "changed_event_count": 1,
+      "moved_workload_hours": 9.801367781509,
+      "changed_week_count": 3,
+      "improved": false
+    }
+  }
+}

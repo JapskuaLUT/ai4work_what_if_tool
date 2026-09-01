@@ -62,6 +62,23 @@ export interface CourseScenario {
     };
 }
 
+/**
+ * Narrows the scenario union. `BuilderScenario` is the only variant that
+ * carries `input.tasks`, `input.constraints` and `output`; `CourseScenario`
+ * describes a course and carries assignments and stress metrics instead.
+ * Anything reading scheduling fields has to narrow first.
+ */
+export function isBuilderScenario(
+    scenario: BuilderScenario | CourseScenario
+): scenario is BuilderScenario {
+    return (
+        scenario != null &&
+        typeof scenario.input === "object" &&
+        scenario.input !== null &&
+        "tasks" in scenario.input
+    );
+}
+
 // Union type for any plan
 export type Plan = CourseworkPlan | StressPlan;
 

@@ -9,7 +9,20 @@ import {
 import { eq, and } from "drizzle-orm";
 import { StressCalculator } from "../services/stressCalculation";
 import { CourseOptimizationEngine } from "../services/optimizationEngine";
-import type { CourseAnalysisInput } from "../types/educationalStress";
+import { COURSE_STRESS_MODEL_V1 } from "../services/stressModel";
+import {
+    generateScenarios,
+    normalizeSimulationInput,
+    rankScenarios,
+    simulateScenario,
+    type ScenarioContext,
+} from "../services/education";
+import { persistScenario } from "./educationStressV1Routes";
+import { EducationV1CreateSchema } from "./educationSchemas";
+import type {
+    CourseAnalysisInput,
+    EducationSimulationV1Input,
+} from "../types/educationalStress";
 
 /**
  * Helper function to get key changes description for an adjustment
@@ -115,87 +128,8 @@ function calculateFeasibilityScore(
     return Math.max(0, Math.min(100, Math.round(score * 10) / 10));
 }
 
-/**
- * Educational Stress API Routes
- * Endpoints for creating and retrieving educational stress simulations
- */
-export const educationalStressRoutes = new Elysia({ prefix: "/simulations/education" })
-
-    /**
-     * POST /api/simulations/education/
-     * Create a new educational stress simulation
-     */
-    .post(
-        "/",
-        async ({ body }) => {
-            const input = body as CourseAnalysisInput;
-
-            // Generate a new UUID for caseId
-            const caseId = crypto.randomUUID();
-
-            try {
-                // Generate optimization scenarios
-                const optimizer = new CourseOptimizationEngine();
-                const scenarios = optimizer.generateOptimizationScenarios(input);
-
-                await db.transaction(async (tx) => {
-                    // 1. Insert the main educational simulation
-                    await tx.insert(educational_simulations).values({
-                        case_id: caseId,
-                        name: input.name,
-                        description: input.description,
-                        course_info: input.course_info,
-                        assignment_weeks: input.assignment_weeks,
-                        current_status: input.current_status,
-                        optimization_request: input.optimization_request,
-                        students: input.students,
-                        metadata: input.metadata,
-                    });
-
-                    // 2. Insert all generated adjustment scenarios
-                    for (const scenario of scenarios) {
-                        // Calculate summary metrics
-                        const summary = optimizer.calculateAdjustmentSummary(scenario);
-
-                        await tx.insert(adjustment_scenarios).values({
-                            case_id: caseId,
-                            adjustment_id: scenario.adjustment_id,
-                            week_schedules: scenario.week_schedules,
-                            assignment_weeks: scenario.assignment_weeks || null,
-                            extensions_applied: scenario.extensions_applied || null,
-                            summary_metrics: summary,
-                        });
-                    }
-                });
-
-                return new Response(
-                    JSON.stringify({
-                        caseId: caseId,
-                        resultsUrl: `${
-                            process.env.APP_BASE_URL || "http://localhost"
-                        }/education/${caseId}`,
-                    }),
-                    {
-                        status: 201,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
-            } catch (error: any) {
-                console.error("Failed to save educational simulation:", error);
-                return new Response(
-                    JSON.stringify({
-                        error: "An error occurred while saving the simulation.",
-                        message: error.message,
-                    }),
-                    {
-                        status: 500,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
-            }
-        },
-        {
-            body: t.Object({
+/** The pre-v1.0 creation payload, kept so existing callers keep working. */
+const LEGACY_BODY = t.Object({
                 name: t.String({ description: "Name of the simulation", examples: ["Web Development - Spring 2025"] }),
                 description: t.Optional(t.String({ description: "Optional description of the simulation" })),
                 course_info: t.Object({
@@ -262,11 +196,153 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     creator_id: t.String({ description: "ID of the creator", examples: ["instructor_1"] }),
                     semester_id: t.String({ description: "Semester/term identifier", examples: ["spring_2025"] })
                 })
+            });
+
+/**
+ * Educational Stress API Routes
+ * Endpoints for creating and retrieving educational stress simulations
+ */
+export const educationalStressRoutes = new Elysia({ prefix: "/simulations/education" })
+
+    /**
+     * POST /api/simulations/education/
+     * Create a new educational stress simulation
+     */
+    .post(
+        "/",
+        async ({ body, set }) => {
+            const caseId = crypto.randomUUID();
+            const createdAt = new Date().toISOString();
+
+            try {
+                // Accepts both payload versions. A pre-v1.0 body is
+                // up-converted here, with warnings naming exactly what could
+                // not be recovered (§12.1, §12.2).
+                const normalized = normalizeSimulationInput(
+                    body as CourseAnalysisInput | EducationSimulationV1Input
+                );
+
+                const context: ScenarioContext = {
+                    course: normalized.course,
+                    supplied_schedule: normalized.supplied_schedule,
+                    verify_supplied_schedule: normalized.verify_supplied_schedule,
+                    observed_stress: normalized.observed_stress,
+                    current_week_index: normalized.current_week_index,
+                    options: normalized.options,
+                };
+
+                // The untouched baseline: same engine, empty adjustment list.
+                const baseline = simulateScenario(context, [], {
+                    scenario_id: "baseline",
+                    created_at: createdAt,
+                    name: "Baseline",
+                    origin: "generated",
+                });
+
+                const scenarios = rankScenarios(generateScenarios(context, {
+                    scenario_id: "",
+                    created_at: createdAt,
+                }));
+
+                await db.transaction(async (tx) => {
+                    await tx.insert(educational_simulations).values({
+                        case_id: caseId,
+                        name: normalized.name,
+                        description: normalized.description,
+                        // The full CourseDefinition; assignments and exams are
+                        // mirrored into their own columns for querying.
+                        course_info: normalized.course,
+                        assignment_weeks: normalized.course.assignments,
+                        course_assignments: normalized.course.assignments,
+                        course_exams: normalized.course.exams,
+                        baseline_schedule: baseline.baseline.week_schedules,
+                        observed_stress: normalized.observed_stress,
+                        stress_model: COURSE_STRESS_MODEL_V1,
+                        current_status: {
+                            current_week_index: normalized.current_week_index,
+                            current_week_number: normalized.current_week_index + 1,
+                        },
+                        // The simulation options, plus whether a supplied
+                        // schedule should be diffed against our rebuild on
+                        // later scenario runs. Up-converted legacy cases set
+                        // this false — their schedule cannot match a rebuild
+                        // by construction.
+                        optimization_request: {
+                            ...normalized.options,
+                            verify_supplied_schedule:
+                                normalized.verify_supplied_schedule,
+                        },
+                        students: normalized.students,
+                        metadata: normalized.metadata ?? { created_at: createdAt },
+                    });
+
+                    for (const scenario of scenarios) {
+                        await persistScenario(caseId, scenario, tx);
+                    }
+                });
+
+                const warnings = [
+                    ...normalized.warnings,
+                    ...baseline.warnings,
+                ];
+
+                return new Response(
+                    JSON.stringify({
+                        caseId,
+                        resultsUrl: `${
+                            process.env.APP_BASE_URL || "http://localhost"
+                        }/education/${caseId}`,
+                        stress_model_version: COURSE_STRESS_MODEL_V1.version,
+                        baseline: {
+                            peak_stress: baseline.baseline.summary.peak_stress,
+                            peak_week_number: baseline.baseline.summary.peak_week_number,
+                            warning_week_numbers:
+                                baseline.baseline.summary.warning_week_numbers,
+                            critical_week_numbers:
+                                baseline.baseline.summary.critical_week_numbers,
+                        },
+                        scenario_ids: scenarios.map((s) => s.scenario_id),
+                        warnings,
+                    }),
+                    {
+                        status: 201,
+                        headers: { "Content-Type": "application/json" },
+                    }
+                );
+            } catch (error: any) {
+                console.error("Failed to save educational simulation:", error);
+                set.status = 500;
+                return {
+                    error: "An error occurred while saving the simulation.",
+                    message: error.message,
+                };
+            }
+        },
+        {
+            body: t.Union([
+                EducationV1CreateSchema,
+                LEGACY_BODY,
+            ], {
+                description:
+                    "Either the course_stress_prediction v1.0 payload (with `course`, dated assignments and exams) or the pre-v1.0 payload (with `course_info` and week-numbered assignments). A legacy payload is up-converted and the response lists what could not be recovered.",
             }),
             response: {
                 201: t.Object({
                     caseId: t.String({ description: "Unique identifier for this simulation", examples: ["6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
-                    resultsUrl: t.String({ description: "URL to view results in frontend", examples: ["https://app.localhost/education/6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] })
+                    resultsUrl: t.String({ description: "URL to view results in frontend", examples: ["https://app.localhost/education/6c1c66ec-c0c1-4483-ac64-3a9ad58f4f1c"] }),
+                    stress_model_version: t.String({ examples: ["1.0"] }),
+                    baseline: t.Object({
+                        peak_stress: t.Number(),
+                        peak_week_number: t.Number(),
+                        warning_week_numbers: t.Array(t.Number()),
+                        critical_week_numbers: t.Array(t.Number()),
+                    }),
+                    scenario_ids: t.Array(t.String(), { description: "Generated scenarios, best first by the §8 objective" }),
+                    warnings: t.Array(t.Object({
+                        code: t.String(),
+                        message: t.String(),
+                        subject: t.Optional(t.String()),
+                    })),
                 }, { description: "Simulation successfully created" }),
                 500: t.Object({
                     error: t.String({ examples: ["An error occurred while saving the simulation."] }),
@@ -276,7 +352,7 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
             detail: {
                 summary: "Create a new educational stress simulation",
                 description:
-                    "Analyzes course workload and generates 4 optimization scenarios (Minimal, Balanced, Aggressive, Extension-Based) that suggest how to reduce student stress while maintaining learning outcomes. Each scenario provides week-by-week stress calculations and specific recommendations for homework hour adjustments or deadline extensions.",
+                    "Builds the weekly schedule (or accepts one and diffs it against our rebuild), computes the baseline stress trajectory with course_stress_prediction v1.0, and generates four comparison scenarios. Each scenario is produced by the same engine a user-authored what-if goes through, so all of them carry the full §11 audit trail. The search minimises peak stress, which is the §8 primary objective.",
                 tags: ["Educational Stress"],
             },
         }
@@ -321,6 +397,31 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     optimization_request: simulation.optimization_request,
                     students: simulation.students,
                     metadata: simulation.metadata,
+
+                    // v1.0 additions. `stress_model` tells a reader which model
+                    // produced these numbers; cases created before v1.0 report
+                    // version "legacy-0" and must not be compared against it.
+                    stress_model: simulation.stress_model,
+                    course: simulation.course_info,
+                    course_assignments: simulation.course_assignments,
+                    course_exams: simulation.course_exams,
+                    baseline_schedule: simulation.baseline_schedule,
+                    observed_stress: simulation.observed_stress,
+                    scenarios: simulation.adjustments.map((adj) => ({
+                        scenario_id: adj.adjustment_id,
+                        origin: adj.origin,
+                        name: adj.name,
+                        description: adj.description,
+                        stress_model_version: adj.stress_model_version,
+                        summary_metrics: adj.summary_metrics,
+                        comparison: adj.comparison,
+                        adjustments: adj.adjustments,
+                        adjustment_outcomes: adj.adjustment_outcomes,
+                        redistribution_flows: adj.redistribution_flows,
+                        extensions_applied: adj.extensions_applied,
+                        warnings: adj.warnings,
+                        week_schedules: adj.week_schedules,
+                    })),
                 };
             } catch (error: any) {
                 console.error("Failed to retrieve simulation:", error);
@@ -348,7 +449,14 @@ export const educationalStressRoutes = new Elysia({ prefix: "/simulations/educat
                     })),
                     optimization_request: t.Any({ description: "Optimization configuration" }),
                     students: t.Any({ description: "Student information" }),
-                    metadata: t.Any({ description: "Simulation metadata" })
+                    metadata: t.Any({ description: "Simulation metadata" }),
+                    stress_model: t.Any({ description: "The versioned model this case was computed with; { version: \"legacy-0\" } for pre-v1.0 cases" }),
+                    course: t.Any({ description: "The v1 CourseDefinition" }),
+                    course_assignments: t.Any({ description: "Dated assignments with hours and extensions" }),
+                    course_exams: t.Any({ description: "Dated exams" }),
+                    baseline_schedule: t.Any({ description: "The unadjusted weekly schedule" }),
+                    observed_stress: t.Any({ description: "Observed weekly stress readings, if any" }),
+                    scenarios: t.Any({ description: "Every scenario with its full §11 audit trail" })
                 }, { description: "Complete simulation with all scenarios" }),
                 404: t.Object({
                     error: t.String({ examples: ["Simulation not found"] })

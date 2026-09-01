@@ -19,7 +19,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 
 // Import types and utilities
-import { Message } from "@/types/chat";
+import { Message, type ChatMessage } from "@/types/chat";
 import {
     createScenarioContext,
     createSystemPrompt,
@@ -40,7 +40,7 @@ export function FloatingScenarioChat({
 
     // State
     const [model, setModel] = useState<string>("");
-    const [systemPrompt, setSystemPrompt] = useState(() =>
+    const [systemPrompt] = useState(() =>
         createSystemPrompt(scenario, kind)
     );
     const [messages, setMessages] = useState<Message[]>([]);
@@ -210,7 +210,7 @@ export function FloatingScenarioChat({
 
         try {
             // Create chat messages array
-            const chatMessages = [
+            const chatMessages: ChatMessage[] = [
                 {
                     role: "system" as const,
                     content:

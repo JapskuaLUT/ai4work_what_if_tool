@@ -1,0 +1,776 @@
+openapi: 3.1.0
+info:
+  title: AI4Work What-If Tool — Education Stress API (course_stress_prediction v1.0)
+  version: 1.0.0
+  description: |
+    REST endpoints for the **education** half of the What-If Tool, implementing
+    the shared `course_stress_prediction` model described in
+    [request.md](request.md) and [design.md](design.md).
+
+    **What this covers**
+
+    - The versioned stress model, readable at runtime and callable directly as
+      a parity harness (`/stress-model`, `/stress-model/evaluate`).
+    - Creating a case from a course definition — dated assignments with hours,
+      explicit exams, optional observed weekly stress.
+    - Simulating user-authored what-if scenarios against that case and getting
+      back a full baseline-vs-simulation audit.
+
+    **Two payload versions.** `POST /` accepts both the v1.0 body (with
+    `course`) and the pre-v1.0 body (with `course_info`). A legacy body is
+    up-converted and the response lists, by warning code, exactly what could
+    not be recovered — assignment hours were folded into homework and there
+    were no exams, so neither can be reconstructed.
+
+    **Two model versions.** Cases created before v1.0 are tagged
+    `stress_model.version = "legacy-0"` and are still rendered by the original
+    calculator. Their numbers came from a different formula family and are not
+    comparable with v1.0 numbers. Nothing recomputes them in place.
+
+    **A note on the thresholds.** Per the model owners' clarification
+    (decisions.md §1), the model's output is the course's *additive*
+    contribution to stress, on top of a personal baseline (~25-40) the model
+    cannot observe. Schedule-only output saturates around 60.45, so the
+    specification's 75/85 thresholds — which belong to the *total*-stress
+    scale — can never fire on it. The tool therefore displays and defaults to
+    course-model thresholds calibrated to the model's own range: warning 45,
+    critical 55. Callers may override per case; values above the ceiling
+    return a `thresholds_exceed_model_range` warning. The scenario search
+    optimises the primary objective — minimise peak predicted stress. See
+    design.md §3.1 and §10.
+
+servers:
+  - url: https://backend.localhost/api
+    description: Local dev through Traefik
+  - url: http://localhost:8000/api
+    description: Backend directly
+
+tags:
+  - name: Stress model
+    description: The versioned model itself — configuration and direct evaluation.
+  - name: Cases
+    description: Creating and reading education stress cases.
+  - name: Scenarios
+    description: What-if scenarios, generated or user-authored.
+
+paths:
+  /simulations/education/stress-model:
+    get:
+      tags: [Stress model]
+      summary: Read the versioned stress-model configuration
+      description: |
+        Returns the exact constants, component thresholds and
+        schedule-construction order this service uses. The main AI4Work
+        education application should assert against this at boot, so the two
+        systems cannot silently drift apart.
+      responses:
+        "200":
+          description: Model configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stress_model, interpretation, thresholds, classification_bands, components, schedule_build]
+                properties:
+                  stress_model:
+                    $ref: "#/components/schemas/StressModelConfig"
+                  interpretation:
+                    type: object
+                    description: |
+                      What the output means (decisions.md §1): the course's
+                      additive contribution to stress, the personal-baseline
+                      range it sits on top of (25-40), and the computed
+                      schedule-only ceiling (~60.448).
+                  thresholds:
+                    type: object
+                    description: |
+                      Both threshold scales, so they cannot be confused:
+                      `course_model` (warning 45 / critical 55 — the tool's
+                      display and reporting defaults, calibrated to the model's
+                      own range) and `total_stress` (the specification's
+                      75/85, which apply to baseline + course and are not
+                      reachable by schedule-only output).
+                  classification_bands:
+                    type: object
+                    description: Low/Moderate/High bands as defined by the shared specification.
+                  components:
+                    type: object
+                    description: Activation, saturation and maximum for every component.
+                  schedule_build:
+                    type: object
+                    description: |
+                      The §3 constants, plus `build_order` — the canonical order
+                      the weekly schedule is constructed in. The order matters:
+                      exam side effects are not commutative, so two systems that
+                      build in different orders will disagree on any week next to
+                      an exam.
+
+  /simulations/education/stress-model/evaluate:
+    post:
+      tags: [Stress model]
+      summary: Evaluate the stress model directly (parity harness)
+      description: |
+        Runs a week series through the model and returns every intermediate
+        component, plus the calibration bias in and out. Nothing is persisted.
+
+        This is the endpoint the validation requirement asks for: run the same
+        fixtures against both systems and diff every component, not just final
+        stress. Week order matters — the fatigue term reads the previous week's
+        *final* stress, so weeks cannot be evaluated independently.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weeks]
+              properties:
+                weeks:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/WeeklyLoad"
+                use_observed_stress:
+                  type: boolean
+                  default: true
+                  description: Set false to isolate the schedule-only model, with no blending or calibration.
+            example:
+              weeks:
+                - lecture_hours: 3
+                  lab_hours: 2
+                  homework_hours: 8
+                  assignment_hours: 3
+                  exam_hours: 0
+                - lecture_hours: 3
+                  lab_hours: 2
+                  homework_hours: 10
+                  assignment_hours: 8
+                  exam_hours: 6
+                  actual_stress: 55
+      responses:
+        "200":
+          description: Component-level evaluation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stress_model, weeks]
+                properties:
+                  stress_model:
+                    $ref: "#/components/schemas/StressModelConfig"
+                  weeks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EvaluatedWeek"
+
+  /simulations/education/:
+    post:
+      tags: [Cases]
+      summary: Create an education stress case
+      description: |
+        Builds the weekly schedule (or accepts one and diffs it against our
+        rebuild), computes the baseline trajectory, and generates comparison
+        scenarios. Every generated scenario goes through the same engine a
+        user-authored what-if does, so all of them carry the full audit trail.
+
+        Accepts either payload version; see the API description.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/CreateCaseV1"
+                - type: object
+                  description: The pre-v1.0 payload, identified by `course_info`.
+      responses:
+        "201":
+          description: Case created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [caseId, resultsUrl, stress_model_version, baseline, scenario_ids, warnings]
+                properties:
+                  caseId: { type: string, format: uuid }
+                  resultsUrl: { type: string }
+                  stress_model_version: { type: string, example: "1.0" }
+                  baseline:
+                    type: object
+                    properties:
+                      peak_stress: { type: number }
+                      peak_week_number: { type: integer }
+                      warning_week_numbers: { type: array, items: { type: integer } }
+                      critical_week_numbers: { type: array, items: { type: integer } }
+                  scenario_ids:
+                    type: array
+                    items: { type: string }
+                    description: Generated scenarios, best first by the primary objective.
+                  warnings:
+                    type: array
+                    items: { $ref: "#/components/schemas/Warning" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /simulations/education/{caseId}:
+    get:
+      tags: [Cases]
+      summary: Read a case with its domain objects, baseline and scenarios
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      responses:
+        "200":
+          description: The case
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  description: { type: string }
+                  stress_model:
+                    $ref: "#/components/schemas/StressModelConfig"
+                  course:
+                    $ref: "#/components/schemas/CourseDefinition"
+                  course_assignments:
+                    type: array
+                    items: { $ref: "#/components/schemas/Assignment" }
+                  course_exams:
+                    type: array
+                    items: { $ref: "#/components/schemas/Exam" }
+                  baseline_schedule:
+                    type: array
+                    items: { $ref: "#/components/schemas/WeekSchedule" }
+                  observed_stress:
+                    type: array
+                    items: { $ref: "#/components/schemas/ObservedStress" }
+                  current_status:
+                    type: object
+                    properties:
+                      current_week_index: { type: integer }
+                      current_week_number: { type: integer }
+                  scenarios:
+                    type: array
+                    items: { $ref: "#/components/schemas/ScenarioListEntry" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /simulations/education/{caseId}/scenarios:
+    get:
+      tags: [Scenarios]
+      summary: List the scenarios on a case
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+        - name: origin
+          in: query
+          schema: { type: string, enum: [generated, user] }
+          description: Filter to engine-generated or user-authored scenarios.
+      responses:
+        "200":
+          description: Scenario list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  caseId: { type: string }
+                  scenarios:
+                    type: array
+                    items: { $ref: "#/components/schemas/ScenarioListEntry" }
+    post:
+      tags: [Scenarios]
+      summary: Simulate a what-if scenario
+      description: |
+        Applies an adjustment list in a fixed order — clone the course, apply
+        assignment and exam changes, rebuild the weekly schedules if anything
+        changed, apply lecture/lab/homework changes, recalculate stress
+        sequentially, compare. That ordering is what stops a rebuild from
+        silently discarding a week-level edit.
+
+        **A 201 does not mean every adjustment applied.** Each one gets its own
+        outcome — `applied`, `partially_applied` or `rejected` — with a
+        machine-readable code and a human-readable message. Callers must read
+        `adjustment_outcomes`; treating the status code as success will
+        misreport what happened.
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjustments]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                adjustments:
+                  type: array
+                  items: { $ref: "#/components/schemas/AdjustmentRequest" }
+                options:
+                  type: object
+                  properties:
+                    redistribution_objective:
+                      type: string
+                      enum: [local_week, trajectory_peak]
+                      default: local_week
+                      description: |
+                        `local_week` scores each candidate week in isolation,
+                        matching the main application. `trajectory_peak`
+                        recomputes the whole semester per candidate and minimises
+                        peak stress, which is the correct objective under fatigue
+                        carry-over. When `local_week` is used, the response says
+                        so in `known_limitations`.
+                    allow_past_week_changes:
+                      type: boolean
+                      default: false
+                      description: When false, week-level edits and redistribution targets must be in the future.
+                    stress_threshold_warning:
+                      type: number
+                      default: 45
+                      description: Course-model scale. Passing total-scale values (75/85) yields a thresholds_exceed_model_range warning.
+                    stress_threshold_critical:
+                      type: number
+                      default: 55
+                      description: Course-model scale.
+                    max_extensions_per_assignment: { type: integer }
+      responses:
+        "201":
+          description: Simulation result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScenarioResult" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The case predates v1.0 and has no domain objects to adjust.
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /simulations/education/{caseId}/scenarios/{scenarioId}:
+    get:
+      tags: [Scenarios]
+      summary: Read one scenario with its full audit trail
+      parameters:
+        - $ref: "#/components/parameters/CaseId"
+        - name: scenarioId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Stored scenario
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScenarioListEntry" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+              message: { type: string }
+
+  schemas:
+    StressModelConfig:
+      type: object
+      description: The versioned constants. Changing any of these is a new model version.
+      properties:
+        name: { type: string, example: course_stress_prediction }
+        version: { type: string, example: "1.0" }
+        minimum_stress: { type: number, example: 0.0 }
+        maximum_stress: { type: number, example: 90.0 }
+        actual_stress_blend: { type: number, example: 0.45 }
+        calibration_learning_rate: { type: number, example: 0.25 }
+        maximum_calibration_bias: { type: number, example: 12.0 }
+        fatigue_carry_over: { type: number, example: 0.07 }
+        soft_cap_softness: { type: number, example: 0.82 }
+
+    WeeklyLoad:
+      type: object
+      description: |
+        The five workload variables. They are stored separately on purpose:
+        homework, assignment and exam load have different contributions and
+        different caps, so folding them together changes the result.
+      properties:
+        lecture_hours: { type: number }
+        lab_hours: { type: number }
+        homework_hours: { type: number }
+        assignment_hours: { type: number }
+        exam_hours:
+          type: number
+          description: A pressure value (2 × course difficulty per exam), not real hours.
+        actual_stress:
+          type: [number, "null"]
+          description: Optional observed stress. Missing, non-finite and non-positive values are treated as unavailable.
+
+    StressComponents:
+      type: object
+      description: Every intermediate value, for component-level parity checks.
+      properties:
+        teaching_load: { type: number }
+        independent_load: { type: number }
+        total_load: { type: number }
+        base: { type: number, description: "P_base" }
+        teaching: { type: number, description: "P_teach" }
+        homework: { type: number, description: "P_home" }
+        assignment: { type: number, description: "P_assign" }
+        exam: { type: number, description: "P_exam" }
+        overload: { type: number, description: "P_over" }
+        fatigue: { type: number, description: "P_fatigue — 7% of the previous week's final stress" }
+        raw: { type: number, description: "R — the sum of the seven components" }
+        soft_capped: { type: number, description: "S-hat" }
+        schedule_only: { type: number, description: "S_schedule" }
+
+    EvaluatedWeek:
+      type: object
+      properties:
+        week_index: { type: integer, description: Zero-based, canonical }
+        week_number: { type: integer, description: One-based, for display }
+        components: { $ref: "#/components/schemas/StressComponents" }
+        observed_stress: { type: [number, "null"] }
+        observed_applied: { type: boolean }
+        calibration_bias_in: { type: number }
+        calibration_bias_out: { type: number }
+        predicted_stress: { type: number, description: "S — the final value" }
+        classification: { type: string, enum: [Low, Moderate, High] }
+
+    WeekSchedule:
+      allOf:
+        - $ref: "#/components/schemas/WeeklyLoad"
+        - type: object
+          properties:
+            week_index: { type: integer }
+            week_number: { type: integer }
+            week_start: { type: string, format: date-time }
+            week_end: { type: string, format: date-time }
+            adjusted: { type: boolean }
+            adjustment_details:
+              type: array
+              items: { type: string }
+
+    Assignment:
+      type: object
+      required: [assignment_id, name, start_date, end_date, estimated_hours]
+      properties:
+        assignment_id: { type: string, example: assignment-1 }
+        name: { type: string }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        estimated_hours: { type: number }
+        extensions:
+          type: array
+          items:
+            type: object
+            properties:
+              extension_id: { type: string }
+              new_end_week: { type: integer, description: One-based }
+              reason: { type: string }
+              weeks_extended: { type: integer }
+              scenario_id: { type: [string, "null"] }
+              created_at: { type: string, format: date-time }
+
+    Exam:
+      type: object
+      required: [exam_id, name, date_time]
+      properties:
+        exam_id: { type: string, example: exam-1 }
+        name: { type: string }
+        date_time: { type: string, format: date-time }
+
+    CourseDefinition:
+      type: object
+      required: [course_name, course_id, start_date, end_date, topic_difficulty, total_homework_hours, course_sessions, lab_sessions, assignments, exams]
+      properties:
+        course_name: { type: string }
+        course_id: { type: string }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        topic_difficulty: { type: number, minimum: 1, maximum: 5 }
+        total_homework_hours:
+          type: number
+          description: Spread across the semester with right-skewed weights, so later weeks carry far more than earlier ones.
+        course_sessions:
+          type: array
+          items: { $ref: "#/components/schemas/Session" }
+        lab_sessions:
+          type: array
+          items: { $ref: "#/components/schemas/Session" }
+        assignments:
+          type: array
+          items: { $ref: "#/components/schemas/Assignment" }
+        exams:
+          type: array
+          items: { $ref: "#/components/schemas/Exam" }
+
+    Session:
+      type: object
+      properties:
+        day: { type: string, example: Monday }
+        start_time: { type: string, example: "10:00" }
+        end_time: { type: string, example: "12:00" }
+
+    ObservedStress:
+      type: object
+      required: [value]
+      description: |
+        Supply at least one of `week_start`, `week_index` or `week_number`.
+        Observations are matched by date containment first and by week key
+        second — never by position in the array, which would assign a reading to
+        the wrong week whenever one is missing.
+      properties:
+        week_start: { type: string, format: date-time }
+        week_index: { type: integer }
+        week_number: { type: integer }
+        value: { type: number }
+
+    CreateCaseV1:
+      type: object
+      required: [name, course, current_status]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        course: { $ref: "#/components/schemas/CourseDefinition" }
+        week_schedules:
+          type: array
+          items: { $ref: "#/components/schemas/WeekSchedule" }
+          description: |
+            Optional. When supplied it becomes the baseline, and our own rebuild
+            is used only to check agreement — any week that differs by more than
+            1e-6 is reported as a `schedule_rebuild_mismatch` warning.
+        observed_stress:
+          type: array
+          items: { $ref: "#/components/schemas/ObservedStress" }
+        current_status:
+          type: object
+          properties:
+            current_week_index: { type: integer }
+            current_week_number: { type: integer }
+        optimization_request:
+          type: object
+          properties:
+            stress_threshold_warning:
+              type: number
+              default: 45
+              description: Course-model scale (see the API description); the specification's 75/85 are total-stress values that cannot fire on this model's output.
+            stress_threshold_critical:
+              type: number
+              default: 55
+              description: Course-model scale.
+            max_extensions_per_assignment: { type: integer, default: 2 }
+            redistribution_objective: { type: string, enum: [local_week, trajectory_peak] }
+            allow_past_week_changes: { type: boolean, default: false }
+        students:
+          type: object
+          properties:
+            count: { type: integer }
+        metadata:
+          type: object
+
+    AdjustmentRequest:
+      type: object
+      required: [id, type]
+      description: |
+        Required fields depend on `type`:
+
+        | type | requires |
+        |---|---|
+        | `cancel_lecture`, `cancel_lab` | `source_week_index` |
+        | `reduce_homework` | `source_week_index`, `hours` |
+        | `move_homework` | `source_week_index`, `target_week_index`, `hours` |
+        | `move_assignment` | `assignment_id`, `new_start_date`, `new_end_date` |
+        | `update_assignment` | `assignment_id` + at least one of `new_start_date`, `new_end_date`, `new_estimated_hours` |
+        | `extend_assignment` | `assignment_id`, `new_end_date` |
+        | `move_exam` | `exam_id`, `new_date` |
+        | `cancel_exam` | `exam_id` |
+
+        Anything missing or malformed comes back as a `rejected` outcome with a
+        code, never as a silent failure.
+      properties:
+        id: { type: string, example: adj-001 }
+        type:
+          type: string
+          enum: [cancel_lecture, cancel_lab, reduce_homework, move_homework, move_assignment, update_assignment, extend_assignment, move_exam, cancel_exam]
+        reason: { type: string }
+        source_week_index: { type: integer }
+        target_week_index: { type: integer }
+        hours: { type: number }
+        assignment_id: { type: string }
+        new_start_date: { type: string, format: date-time }
+        new_end_date: { type: string, format: date-time }
+        new_estimated_hours: { type: number }
+        exam_id: { type: string }
+        new_date: { type: string, format: date-time }
+
+    AdjustmentOutcome:
+      type: object
+      properties:
+        adjustment_id: { type: string }
+        type: { type: string }
+        status: { type: string, enum: [applied, partially_applied, rejected] }
+        code:
+          type: string
+          description: |
+            `ok`, or one of: `malformed_adjustment`, `duplicate_adjustment_id`,
+            `assignment_not_found`, `exam_not_found`, `domain_objects_unavailable`,
+            `week_out_of_range`, `week_in_past`, `source_equals_target`,
+            `non_positive_hours`, `negative_hours`, `insufficient_homework`,
+            `no_lecture_hours`, `no_lab_hours`, `invalid_date`,
+            `date_outside_semester`, `start_after_end`, `extension_not_later`,
+            `extension_limit_reached`, `nothing_to_change`,
+            `partial_redistribution`.
+        message: { type: string }
+        reason: { type: string, description: The reason the caller stated for the change. }
+        details: { type: object }
+
+    RedistributionFlow:
+      type: object
+      description: One placement of cancelled teaching hours, at most 3h per iteration.
+      properties:
+        source_week_index: { type: integer }
+        source_week_number: { type: integer }
+        target_week_index: { type: integer }
+        target_week_number: { type: integer }
+        hours: { type: number }
+        workload_type: { type: string, enum: [lecture_hours, lab_hours] }
+        target_stress_before: { type: number }
+        target_stress_after: { type: number }
+        impact: { type: number }
+        objective: { type: string, enum: [local_week, trajectory_peak] }
+
+    TrajectorySummary:
+      type: object
+      properties:
+        peak_stress: { type: number }
+        peak_week_index: { type: integer }
+        peak_week_number: { type: integer }
+        average_stress: { type: number }
+        total_stress: { type: number }
+        warning_week_indices: { type: array, items: { type: integer } }
+        warning_week_numbers: { type: array, items: { type: integer } }
+        critical_week_indices: { type: array, items: { type: integer } }
+        critical_week_numbers: { type: array, items: { type: integer } }
+        recovery_week_number:
+          type: [integer, "null"]
+          description: First week at or after the peak that is back below the warning threshold.
+        band_counts:
+          type: object
+          properties:
+            Low: { type: integer }
+            Moderate: { type: integer }
+            High: { type: integer }
+
+    ObjectiveMetrics:
+      type: object
+      description: The primary objective plus the tie-break criteria, so several scenarios can be ranked without recomputation.
+      properties:
+        peak_stress_delta: { type: number, description: Negative means the peak came down. }
+        total_stress_delta: { type: number }
+        average_stress_delta: { type: number }
+        warning_week_delta: { type: integer }
+        critical_week_delta: { type: integer }
+        changed_event_count: { type: integer }
+        moved_workload_hours: { type: number }
+        changed_week_count: { type: integer }
+        improved: { type: boolean }
+
+    WeeklyResult:
+      type: object
+      properties:
+        week_index: { type: integer }
+        week_number: { type: integer }
+        week_start: { type: string, format: date-time }
+        week_end: { type: string, format: date-time }
+        adjusted: { type: boolean }
+        adjustment_details: { type: array, items: { type: string } }
+        actual_stress: { type: [number, "null"] }
+        baseline: { $ref: "#/components/schemas/WeeklyResultSide" }
+        simulation: { $ref: "#/components/schemas/WeeklyResultSide" }
+        stress_delta: { type: number }
+
+    WeeklyResultSide:
+      allOf:
+        - $ref: "#/components/schemas/WeeklyLoad"
+        - type: object
+          properties:
+            predicted_stress: { type: number }
+            classification: { type: string, enum: [Low, Moderate, High] }
+            components: { $ref: "#/components/schemas/StressComponents" }
+            calibration_bias: { type: number }
+
+    Warning:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        subject: { type: string }
+
+    ScenarioResult:
+      type: object
+      description: Everything the output contract requires.
+      properties:
+        scenario_id: { type: string }
+        created_at: { type: string, format: date-time }
+        name: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        origin: { type: string, enum: [generated, user] }
+        stress_model: { $ref: "#/components/schemas/StressModelConfig" }
+        stress_model_version: { type: string }
+        redistribution_objective: { type: string, enum: [local_week, trajectory_peak] }
+        known_limitations: { type: array, items: { type: string } }
+        current_week_index: { type: integer }
+        current_week_number: { type: integer }
+        baseline:
+          type: object
+          properties:
+            week_schedules: { type: array, items: { $ref: "#/components/schemas/WeekSchedule" } }
+            trajectory: { type: array, items: { $ref: "#/components/schemas/EvaluatedWeek" } }
+            summary: { $ref: "#/components/schemas/TrajectorySummary" }
+        simulation:
+          type: object
+          properties:
+            week_schedules: { type: array, items: { $ref: "#/components/schemas/WeekSchedule" } }
+            trajectory: { type: array, items: { $ref: "#/components/schemas/EvaluatedWeek" } }
+            summary: { $ref: "#/components/schemas/TrajectorySummary" }
+            assignments: { type: array, items: { $ref: "#/components/schemas/Assignment" } }
+            exams: { type: array, items: { $ref: "#/components/schemas/Exam" } }
+        adjustments: { type: array, items: { $ref: "#/components/schemas/AdjustmentRequest" } }
+        adjustment_outcomes: { type: array, items: { $ref: "#/components/schemas/AdjustmentOutcome" } }
+        applied_adjustment_ids: { type: array, items: { type: string } }
+        partially_applied_adjustment_ids: { type: array, items: { type: string } }
+        rejected_adjustment_ids: { type: array, items: { type: string } }
+        redistribution_flows: { type: array, items: { $ref: "#/components/schemas/RedistributionFlow" } }
+        extensions_applied: { type: array, items: { type: object } }
+        objective: { $ref: "#/components/schemas/ObjectiveMetrics" }
+        warnings: { type: array, items: { $ref: "#/components/schemas/Warning" } }
+        weekly_results: { type: array, items: { $ref: "#/components/schemas/WeeklyResult" } }
+
+    ScenarioListEntry:
+      type: object
+      properties:
+        scenario_id: { type: string }
+        origin: { type: string, enum: [generated, user] }
+        name: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        stress_model_version: { type: [string, "null"] }
+        summary_metrics: { type: object }
+        comparison:
+          type: object
+          description: Baseline and simulation summaries, the objective metrics and the per-week results.
+        created_at: { type: string, format: date-time }

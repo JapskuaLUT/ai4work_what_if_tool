@@ -84,7 +84,8 @@ All services are orchestrated by Docker Compose, making the development environm
 -   [Docker](https://www.docker.com/get-started)
 -   [Docker Compose](https://docs.docker.com/compose/install/)
 -   [mkcert](https://github.com/FiloSottile/mkcert) for generating trusted local certificates.
--   [Bun](https://bun.sh/) (for local development outside of Docker)
+-   [Bun](https://bun.sh/) **1.4.0** (for local development outside of Docker; the
+    Docker images pin the same version and install with `--frozen-lockfile`)
 -   [Ollama](https://ollama.com/) — must run on the **host machine**
     (not inside Docker) for the AI features. See
     [ollama_readme.md](ollama_readme.md) for the required env vars and
