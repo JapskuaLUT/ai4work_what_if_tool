@@ -1,0 +1,9 @@
+[
+  { "file": "edu_chat_peak_week.png", "title": "Education AI chat — the peak week", "description": "Chat panel only (1728×1524): the AI explains what drives the week-11 stress peak.", "llm": true },
+  { "file": "edu_chat_scenario_critique.png", "title": "Education AI chat — critiquing a what-if", "description": "Chat panel only: why “Move the exam and ease the run-up” did not lower the peak.", "llm": true },
+  { "file": "edu_chat_scenario_critique_end.png", "title": "Education AI chat — suggested alternatives", "description": "Chat panel only: the end of the same answer, with what to try instead.", "llm": true },
+  { "file": "yard_chat_why_worse.png", "title": "Yard AI chat — diagnosing the worst run", "description": "Chat panel only: why WaitingProblem is so much worse than SequencedOk.", "llm": true },
+  { "file": "yard_chat_discuss_proposal.png", "title": "Yard AI chat — discussing a proposal", "description": "Chat panel only: confidence and risks of the saved “Increase Check-In Terminal Capacity” proposal.", "llm": true },
+  { "file": "logs_chat_longest_tail.png", "title": "Logs AI chat — the longest tail", "description": "Chat panel only: which kiosk dialog has the longest tail, and possible explanations.", "llm": true },
+  { "file": "logs_chat_session.png", "title": "Logs AI chat — reading one session", "description": "Chat panel only: what is unusual about session #1420.", "llm": true }
+]

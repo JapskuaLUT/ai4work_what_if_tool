@@ -1,0 +1,33 @@
+[
+  {
+    "file": "01_home.png",
+    "title": "Home page",
+    "description": "Landing page with one entry point per use case: stress simulation, yard simulation, check-in logs, and an Ollama chat test."
+  },
+  {
+    "file": "02_model_picker.png",
+    "title": "Global LLM model picker",
+    "description": "The model picker in the top bar lists the models installed in the local Ollama; the selected model is used by every AI feature."
+  },
+  {
+    "file": "03_ollama_test_page.png",
+    "title": "Ollama connection test",
+    "description": "A plain chat page for checking that the local LLM is reachable before using the AI features."
+  },
+  {
+    "file": "04_ollama_test_answer.png",
+    "title": "Ollama connection test — answer",
+    "description": "The test chat answering, confirming the LLM connection works end to end.",
+    "llm": true
+  },
+  {
+    "file": "05_api_docs_swagger.png",
+    "title": "Backend API documentation (Swagger)",
+    "description": "Interactive OpenAPI documentation served by the backend at https://backend.localhost/swagger, for integrating simulators and data sources."
+  },
+  {
+    "file": "06_api_docs_swagger_endpoints.png",
+    "title": "Backend API endpoints",
+    "description": "The endpoint list for education, yard logistics and log ingestion."
+  }
+]

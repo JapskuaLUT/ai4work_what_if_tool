@@ -1,0 +1,151 @@
+1
+00:00:00,550 --> 00:00:06,702
+This tutorial shows how to read the check-in kiosk logs in the What-If Tool: where drivers spend
+
+2
+00:00:06,702 --> 00:00:09,650
+their time, and how the AI assistant can help.
+
+3
+00:00:10,950 --> 00:00:16,530
+Before entering the yard, every driver checks in at a self-service kiosk,
+
+4
+00:00:16,530 --> 00:00:20,352
+which logs each screen as a German status message.
+
+5
+00:00:20,352 --> 00:00:27,843
+The tool groups 5,764 of those messages into 34 driver visits, translates every step into English,
+
+6
+00:00:27,843 --> 00:00:30,900
+and measures how long each screen takes.
+
+7
+00:00:32,200 --> 00:00:35,362
+Start with the plain-English summary at the top.
+
+8
+00:00:35,362 --> 00:00:39,182
+It is written straight from the data, with no AI involved.
+
+9
+00:00:39,182 --> 00:00:45,900
+A typical visit takes two minutes 25 seconds, and 8 of the 34 visits never reached the closing screen.
+
+10
+00:00:47,200 --> 00:00:52,949
+Below it, five key numbers give the scale: 34 visits, 5,764 events,
+
+11
+00:00:52,949 --> 00:01:00,500
+the typical visit length with its slow tail, events per visit, and 21 different screens.
+
+12
+00:01:01,800 --> 00:01:05,142
+The time per step chart ranks the slowest screens.
+
+13
+00:01:05,142 --> 00:01:09,821
+The solid bar is the typical time, and the faded bar is the slow tail.
+
+14
+00:01:09,821 --> 00:01:16,706
+Choosing a language normally takes 41 seconds, but the slowest visits stay on it for almost 40 minutes.
+
+15
+00:01:16,706 --> 00:01:20,850
+Hover over a bar to see the German screen name and both times.
+
+16
+00:01:22,150 --> 00:01:25,566
+Click a visit in the sessions table to open it.
+
+17
+00:01:25,566 --> 00:01:27,528
+Visit 1420 took 41 minutes.
+
+18
+00:01:27,528 --> 00:01:33,415
+The bar at the top, Where did the time go, shows that 97 percent went into setup,
+
+19
+00:01:33,415 --> 00:01:36,322
+almost all of it on the language screen.
+
+20
+00:01:36,322 --> 00:01:40,900
+Names and signatures stay masked unless you click Reveal P I I.
+
+21
+00:01:42,200 --> 00:01:47,515
+Every step is listed with its English name and the German kiosk name underneath.
+
+22
+00:01:47,515 --> 00:01:49,243
+Click a step to expand it.
+
+23
+00:01:49,243 --> 00:01:55,156
+You see its phase, whether it is a screen the driver uses, the exact start and end times,
+
+24
+00:01:55,156 --> 00:01:56,950
+and the raw kiosk messages.
+
+25
+00:01:58,250 --> 00:02:04,988
+The round button in the bottom-right corner opens the AI assistant, which runs locally on your machine.
+
+26
+00:02:04,988 --> 00:02:07,801
+We asked which screen has the longest tail.
+
+27
+00:02:07,801 --> 00:02:12,773
+It named the language screen, quoted the real figures, and suggested causes,
+
+28
+00:02:12,773 --> 00:02:16,175
+such as drivers being unsure which language to pick.
+
+29
+00:02:17,475 --> 00:02:20,144
+It also reads the visit you have open.
+
+30
+00:02:20,144 --> 00:02:26,818
+For visit 1420, it confirmed the driver finished, and pointed to the 39 minutes spent in setup.
+
+31
+00:02:26,818 --> 00:02:31,525
+Treat its reasons as ideas, and check its numbers against the page.
+
+32
+00:02:32,825 --> 00:02:33,421
+To recap.
+
+33
+00:02:33,421 --> 00:02:35,869
+Start with the plain-English summary.
+
+34
+00:02:35,869 --> 00:02:39,310
+Look for long faded bars in the time per step chart.
+
+35
+00:02:39,310 --> 00:02:42,288
+Keep personal data masked unless you need it.
+
+36
+00:02:42,288 --> 00:02:45,200
+And check what the AI says against the page.
+
+37
+00:02:46,500 --> 00:02:50,671
+For every step in more detail, see the check-in logs user guide.
+
+38
+00:02:50,671 --> 00:02:51,975
+Thanks for watching.

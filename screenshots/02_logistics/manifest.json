@@ -1,0 +1,105 @@
+[
+  {
+    "file": "01_yard_layout.png",
+    "title": "Yard case — layout and contents",
+    "description": "Imported simulator case: the physical yard map (terminals, parking, scale, 25 storages, 110 streets) and its entity counts."
+  },
+  {
+    "file": "02_run_comparison.png",
+    "title": "Run comparison",
+    "description": "All simulator runs side by side: orders, completed, total / average / max wait, throughput and top bottleneck."
+  },
+  {
+    "file": "03_waitingproblem_orders.png",
+    "title": "Run “WaitingProblem” (71 orders): ORDERS",
+    "description": "Run “WaitingProblem” (71 orders) — the “ORDERS” section."
+  },
+  {
+    "file": "04_waitingproblem_per_truck_timeline.png",
+    "title": "Run “WaitingProblem” (71 orders): Per-truck timeline",
+    "description": "Run “WaitingProblem” (71 orders) — the “Per-truck timeline” section."
+  },
+  {
+    "file": "05_waitingproblem_per_truck_timeline_cont.png",
+    "title": "Run “WaitingProblem” (71 orders): Per-truck timeline (continued)",
+    "description": "Run “WaitingProblem” (71 orders) — lower part of “Per-truck timeline”."
+  },
+  {
+    "file": "06_bottleneck_occupancy.png",
+    "title": "Bottleneck → occupancy timeline",
+    "description": "Clicking a bottleneck (here the LT010 check-in terminal) drives the occupancy chart: trucks present over time vs. the entity's capacity (red dashed line)."
+  },
+  {
+    "file": "07_gantt_hover.png",
+    "title": "Per-truck timeline with tooltip",
+    "description": "Hovering a truck shows its per-action totals; red bands are waiting time."
+  },
+  {
+    "file": "08_run_sequencedok.png",
+    "title": "Run “SequencedOk”",
+    "description": "KPIs and bottlenecks of the “SequencedOk” run."
+  },
+  {
+    "file": "09_run_smooth.png",
+    "title": "Run “Smooth”",
+    "description": "KPIs and bottlenecks of the “Smooth” run."
+  },
+  {
+    "file": "10_chat_why_worse.png",
+    "title": "AI chat — diagnosing the worst run",
+    "description": "The yard chat knows every run's KPIs and bottlenecks and explains where trucks lose time in the WaitingProblem run.",
+    "llm": true
+  },
+  {
+    "file": "11_chat_why_worse_end.png",
+    "title": "AI chat — diagnosing the worst run (end of answer)",
+    "description": "The yard chat knows every run's KPIs and bottlenecks and explains where trucks lose time in the WaitingProblem run. End of the model's answer.",
+    "llm": true
+  },
+  {
+    "file": "12_improvements_tab.png",
+    "title": "Improvements — generate AI suggestions",
+    "description": "Pick a target run and how many proposals; the LLM drafts structured improvement proposals."
+  },
+  {
+    "file": "13_generating.png",
+    "title": "Generating proposals",
+    "description": "The local LLM is generating proposals for the WaitingProblem run.",
+    "llm": true
+  },
+  {
+    "file": "14_drafts.png",
+    "title": "AI-generated proposal drafts",
+    "description": "Each draft has a title, the bottleneck it targets, typed changes (capacity / stagger orders / reroute / add entity), expected impact and risks — validated against the yard's entities.",
+    "llm": true
+  },
+  {
+    "file": "15_drafts_more.png",
+    "title": "AI-generated proposal drafts (continued)",
+    "description": "More drafts from the same generation run.",
+    "llm": true
+  },
+  {
+    "file": "16_saved_proposal.png",
+    "title": "Saved proposal",
+    "description": "A saved proposal can be discussed with the AI or (once the partner API is live) sent to the simulator for re-evaluation.",
+    "llm": true
+  },
+  {
+    "file": "17_chat_discuss_proposal.png",
+    "title": "Discuss with AI — critiquing a proposal",
+    "description": "“Discuss” opens the chat scoped to one proposal and the target run's KPIs: the AI weighs its likely impact and risks before anything is simulated.",
+    "llm": true
+  },
+  {
+    "file": "18_chat_discuss_proposal_end.png",
+    "title": "Discuss with AI — critiquing a proposal (end of answer)",
+    "description": "“Discuss” opens the chat scoped to one proposal and the target run's KPIs: the AI weighs its likely impact and risks before anything is simulated. End of the model's answer.",
+    "llm": true
+  },
+  {
+    "file": "19_manual_proposal_form.png",
+    "title": "Manual proposal form",
+    "description": "Planners can also write their own proposal with the same typed changes; it is validated the same way."
+  }
+]

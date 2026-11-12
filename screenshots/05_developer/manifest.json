@@ -1,0 +1,52 @@
+[
+  {
+    "file": "01_api_docs_overview.png",
+    "title": "Backend API documentation",
+    "description": "Interactive OpenAPI docs (Scalar) served by the backend at /swagger: endpoints grouped by domain in the sidebar."
+  },
+  {
+    "file": "02_education_endpoints.png",
+    "title": "Education endpoints",
+    "description": "The Educational Stress group: create a case, add scenarios, read results, select a scenario, and run the stress model directly."
+  },
+  {
+    "file": "03_education_create.png",
+    "title": "POST /api/simulations/education/",
+    "description": "Create an education case: the request body schema for the course, its assignments, exams and observed stress."
+  },
+  {
+    "file": "04_education_scenario.png",
+    "title": "POST …/education/{caseId}/scenarios",
+    "description": "Run a user what-if against a case: a named list of typed adjustments."
+  },
+  {
+    "file": "05_education_evaluate.png",
+    "title": "POST …/education/stress-model/evaluate",
+    "description": "Evaluate weeks directly through the stress model and get every intermediate component back."
+  },
+  {
+    "file": "06_yard_endpoints.png",
+    "title": "Yard logistics endpoints",
+    "description": "The Yard Logistics group: ingest simulator runs, add runs, read overviews and run detail, timelines, proposals and the yard image."
+  },
+  {
+    "file": "07_yard_create.png",
+    "title": "POST /api/simulations/yard/",
+    "description": "Create a yard case from one or more simulator runs (the SimulationExportData wrapper)."
+  },
+  {
+    "file": "08_logs_endpoints.png",
+    "title": "Logistic logs endpoints",
+    "description": "The Logistic Logs group: ingest kiosk log rows and read the case overview and per-session detail."
+  },
+  {
+    "file": "09_api_client_health.png",
+    "title": "Trying an endpoint from the docs",
+    "description": "Scalar's built-in API client sending GET /api/health and showing the live JSON response."
+  },
+  {
+    "file": "10_architecture.png",
+    "title": "Architecture diagram",
+    "description": "Data flow (your systems → backend API → PostgreSQL) and user flow (browser → backend; browser → Ollama proxy → local LLM), with what runs in Docker vs on the host."
+  }
+]

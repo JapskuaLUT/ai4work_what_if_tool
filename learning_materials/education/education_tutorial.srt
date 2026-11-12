@@ -1,0 +1,143 @@
+1
+00:00:00,550 --> 00:00:01,072
+Welcome.
+
+2
+00:00:01,072 --> 00:00:07,342
+This short tutorial shows how to use the education part of the What-If Tool: read a course plan,
+
+3
+00:00:07,342 --> 00:00:11,325
+compare alternatives, test your own idea, and ask the AI why.
+
+4
+00:00:12,625 --> 00:00:20,667
+For every week, the tool combines lectures, labs, homework, assignments and exams into one score from 0 to 90.
+
+5
+00:00:20,667 --> 00:00:24,688
+It is the course's share of stress, not anyone's total.
+
+6
+00:00:24,688 --> 00:00:27,100
+Warning is at 45, critical at 55.
+
+7
+00:00:28,400 --> 00:00:29,870
+Open your course's page.
+
+8
+00:00:29,870 --> 00:00:35,875
+The course card lists the semester, the current week, the students, and every assignment and exam.
+
+9
+00:00:37,175 --> 00:00:44,810
+The Overview shows the plan as it stands, one point per week, with the warning and critical lines dashed.
+
+10
+00:00:44,810 --> 00:00:49,100
+This plan peaks at 59.95 in week 11, right before the exam.
+
+11
+00:00:50,400 --> 00:00:53,580
+Below, every scenario is ranked by its peak.
+
+12
+00:00:53,580 --> 00:00:59,217
+Four were generated automatically, and the best brings the peak down to 49.11.
+
+13
+00:00:59,217 --> 00:01:02,325
+Scenarios people build are ranked here too.
+
+14
+00:01:03,625 --> 00:01:06,464
+Click a scenario's tab to see it in detail.
+
+15
+00:01:06,464 --> 00:01:10,822
+The solid line is the scenario, the dashed line the original plan.
+
+16
+00:01:10,822 --> 00:01:13,925
+When one suits you, press Select this scenario.
+
+17
+00:01:15,225 --> 00:01:20,381
+In the weekly breakdown, click a week to open the seven components behind its score,
+
+18
+00:01:20,381 --> 00:01:24,800
+from homework and the exam to fatigue carried over from the week before.
+
+19
+00:01:26,100 --> 00:01:28,662
+To test your own idea, open New what-if.
+
+20
+00:01:28,662 --> 00:01:33,723
+Pick an adjustment, fill in the details and a reason, and press Add adjustment.
+
+21
+00:01:33,723 --> 00:01:39,231
+Here we cut 6 hours of homework from week 11 and give the project report another week.
+
+22
+00:01:39,231 --> 00:01:41,025
+Name it, and press Simulate.
+
+23
+00:01:42,325 --> 00:01:45,486
+The result opens as its own tab.
+
+24
+00:01:45,486 --> 00:01:48,944
+The peak drops from 59.95 to 56.05.
+
+25
+00:01:48,944 --> 00:01:50,525
+This one helped.
+
+26
+00:01:51,825 --> 00:01:53,060
+But always check.
+
+27
+00:01:53,060 --> 00:01:58,945
+Moving the exam a week later applied all four changes, yet the peak rose by 0.14.
+
+28
+00:01:58,945 --> 00:02:06,500
+The tool says so plainly, and every change shows whether it was applied, partially applied, or rejected.
+
+29
+00:02:07,800 --> 00:02:11,054
+When a result surprises you, open the chat and ask.
+
+30
+00:02:11,054 --> 00:02:14,499
+The assistant knows the course and the tab you are on.
+
+31
+00:02:14,499 --> 00:02:20,752
+Here it explains that the exam now stacks on top of week 12's workload, and suggests alternatives.
+
+32
+00:02:20,752 --> 00:02:21,773
+It runs locally.
+
+33
+00:02:21,773 --> 00:02:24,325
+Treat it as advice, and check its facts.
+
+34
+00:02:25,625 --> 00:02:32,525
+So: read the Overview, compare the scenarios, build your own what-if, and check the result, asking the AI why.
+
+35
+00:02:33,825 --> 00:02:37,343
+The written user guide covers every step in more detail.
+
+36
+00:02:37,343 --> 00:02:38,600
+Thanks for watching.

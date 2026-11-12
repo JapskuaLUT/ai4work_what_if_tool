@@ -1,0 +1,142 @@
+[
+  {
+    "file": "01_course_header.png",
+    "title": "Education case — course overview",
+    "description": "Course card: dates, current week, difficulty, students, assignments and the exam that drive the stress model."
+  },
+  {
+    "file": "02_overview_baseline_trajectory.png",
+    "title": "Overview tab: Baseline trajectory",
+    "description": "Overview tab — the “Baseline trajectory” section."
+  },
+  {
+    "file": "03_overview_scenarios.png",
+    "title": "Overview tab: Scenarios",
+    "description": "Overview tab — the “Scenarios” section."
+  },
+  {
+    "file": "04_balanced_balanced_redistribution_smooth_.png",
+    "title": "Generated scenario “Balanced Redistribution”: Balanced Redistribution - Smooth Stress Curve",
+    "description": "Generated scenario “Balanced Redistribution” — the “Balanced Redistribution - Smooth Stress Curve” section."
+  },
+  {
+    "file": "05_balanced_baseline_vs_simulation.png",
+    "title": "Generated scenario “Balanced Redistribution”: Baseline vs simulation",
+    "description": "Generated scenario “Balanced Redistribution” — the “Baseline vs simulation” section."
+  },
+  {
+    "file": "06_balanced_adjustments_4.png",
+    "title": "Generated scenario “Balanced Redistribution”: Adjustments (4)",
+    "description": "Generated scenario “Balanced Redistribution” — the “Adjustments (4)” section."
+  },
+  {
+    "file": "07_balanced_model_and_parameters.png",
+    "title": "Generated scenario “Balanced Redistribution”: Model and parameters",
+    "description": "Generated scenario “Balanced Redistribution” — the “Model and parameters” section."
+  },
+  {
+    "file": "08_balanced_weekly_breakdown.png",
+    "title": "Generated scenario “Balanced Redistribution”: Weekly breakdown",
+    "description": "Generated scenario “Balanced Redistribution” — the “Weekly breakdown” section."
+  },
+  {
+    "file": "09_balanced_week11_components.png",
+    "title": "Week breakdown — the seven stress components",
+    "description": "Clicking a week expands the seven model components (base load, teaching density, homework, assignment, exam, overload, fatigue carry-over) behind its score."
+  },
+  {
+    "file": "10_scenario_aggressive_optimization.png",
+    "title": "Generated scenario “Aggressive Optimization”",
+    "description": "Trajectory of the generated “Aggressive Optimization” scenario against the baseline."
+  },
+  {
+    "file": "11_scenario_extension_based.png",
+    "title": "Generated scenario “Extension-Based”",
+    "description": "Trajectory of the generated “Extension-Based” scenario against the baseline."
+  },
+  {
+    "file": "12_scenario_minimal_adjustment.png",
+    "title": "Generated scenario “Minimal Adjustment”",
+    "description": "Trajectory of the generated “Minimal Adjustment” scenario against the baseline."
+  },
+  {
+    "file": "13_user_scenario_move_the_exam_and_ease_the.png",
+    "title": "User what-if “Move the exam and ease the run-up”: Move the exam and ease the run-up",
+    "description": "User what-if “Move the exam and ease the run-up” — the “Move the exam and ease the run-up” section."
+  },
+  {
+    "file": "14_user_scenario_baseline_vs_simulation.png",
+    "title": "User what-if “Move the exam and ease the run-up”: Baseline vs simulation",
+    "description": "User what-if “Move the exam and ease the run-up” — the “Baseline vs simulation” section."
+  },
+  {
+    "file": "15_user_scenario_adjustments_4.png",
+    "title": "User what-if “Move the exam and ease the run-up”: Adjustments (4)",
+    "description": "User what-if “Move the exam and ease the run-up” — the “Adjustments (4)” section."
+  },
+  {
+    "file": "16_user_scenario_redistribution_flows_2.png",
+    "title": "User what-if “Move the exam and ease the run-up”: Redistribution flows (2)",
+    "description": "User what-if “Move the exam and ease the run-up” — the “Redistribution flows (2)” section."
+  },
+  {
+    "file": "17_user_scenario_weekly_breakdown.png",
+    "title": "User what-if “Move the exam and ease the run-up”: Weekly breakdown",
+    "description": "User what-if “Move the exam and ease the run-up” — the “Weekly breakdown” section."
+  },
+  {
+    "file": "18_scenario_selected.png",
+    "title": "Marking the preferred scenario",
+    "description": "“Select this scenario” records the instructor's chosen plan for the course."
+  },
+  {
+    "file": "19_new_whatif_empty.png",
+    "title": "New what-if — builder",
+    "description": "The what-if builder: pick an adjustment type and its parameters; several adjustments can be combined into one scenario."
+  },
+  {
+    "file": "20_new_whatif_filled.png",
+    "title": "New what-if — adjustments queued",
+    "description": "Two adjustments queued (reduce week-11 homework by 6h, extend the project report by a week), named “Ease week 11”, ready to simulate."
+  },
+  {
+    "file": "21_new_whatif_result.png",
+    "title": "New what-if — result",
+    "description": "The simulated “Ease week 11” scenario appears as its own tab: simulated trajectory against the baseline."
+  },
+  {
+    "file": "22_new_whatif_result_numbers.png",
+    "title": "New what-if — did it help?",
+    "description": "Peak before vs. after, warning/critical weeks, weeks changed and workload moved — the tool says plainly whether the change helped."
+  },
+  {
+    "file": "23_chat_open.png",
+    "title": "AI chat — opened on the course",
+    "description": "The floating AI chat opens with the course, baseline and every scenario already in its context. Runs on the local LLM (phi4 via Ollama).",
+    "llm": true
+  },
+  {
+    "file": "24_chat_peak_week.png",
+    "title": "AI chat — explaining the peak week",
+    "description": "Asking the AI why week 11 is the peak: it answers from the model's component breakdown rather than guessing.",
+    "llm": true
+  },
+  {
+    "file": "25_chat_peak_week_end.png",
+    "title": "AI chat — explaining the peak week (end of answer)",
+    "description": "Asking the AI why week 11 is the peak: it answers from the model's component breakdown rather than guessing. End of the model's answer.",
+    "llm": true
+  },
+  {
+    "file": "26_chat_scenario_critique.png",
+    "title": "AI chat — critiquing a what-if",
+    "description": "On a scenario tab the chat is scoped to that scenario: here it explains why the user's what-if failed to lower the peak and suggests alternatives.",
+    "llm": true
+  },
+  {
+    "file": "27_chat_scenario_critique_end.png",
+    "title": "AI chat — critiquing a what-if (end of answer)",
+    "description": "On a scenario tab the chat is scoped to that scenario: here it explains why the user's what-if failed to lower the peak and suggests alternatives. End of the model's answer.",
+    "llm": true
+  }
+]
