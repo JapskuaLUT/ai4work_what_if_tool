@@ -10,6 +10,13 @@ What-If Tool does, how to use it, and how to read the numbers it gives you.
   models the *course plan*, not people. It is not a clinical instrument and
   should not be used as one.
 
+> **Prefer a shorter, non-technical version?** The
+> [education user guide](../../learning_materials/education/education_user_guide.md)
+> ([PDF](../../learning_materials/education/education_user_guide.pdf)),
+> [slides](../../learning_materials/education/education_slides.pdf) and a
+> [narrated 3-minute video](../../learning_materials/education/education_tutorial.mp4)
+> cover the same UI for teachers and course planners.
+
 ---
 
 ## 1. The model in one page
@@ -242,3 +249,6 @@ explicitly.
   implemented, and what we found while implementing it.
 - [API contract](../../specifications/education_stress/specification.yml).
 - [Parity fixtures](../../specifications/education_stress/parity/README.md).
+- [Developer guide](../../learning_materials/developer/developer_guide.md) — the
+  APIs, JSON in and out, the database, and how to swap the LLM, across all three
+  cases.

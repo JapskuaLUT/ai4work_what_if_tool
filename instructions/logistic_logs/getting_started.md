@@ -5,6 +5,13 @@ before. By the end you will: have the demo data loaded, understand
 every panel in the UI, know how to read the German step names, and be
 able to send your own log batch through the API.
 
+> **Prefer a shorter, non-technical version?** The
+> [check-in logs user guide](../../learning_materials/checkin_logs/checkin_logs_user_guide.md)
+> ([PDF](../../learning_materials/checkin_logs/checkin_logs_user_guide.pdf)),
+> [slides](../../learning_materials/checkin_logs/checkin_logs_slides.pdf) and a
+> [narrated 3-minute video](../../learning_materials/checkin_logs/checkin_logs_tutorial.mp4)
+> cover the same UI for gate and check-in staff.
+
 ---
 
 ## Table of Contents
@@ -238,10 +245,13 @@ the raw German message + timestamps.
 
 ### 4.4 "Did this session abandon, or complete?"
 
-Look at the *completed* column in the session table, or the focus
-session's "Where did the time go?" bar. Backend marks `completed:
-true` when the session reached the `ANZEIGE SCHLUSSBILD` (Show closing
-screen) step.
+The **Plain-English summary** card counts the sessions that never reach
+the closing screen ("*N of M sessions don't appear to reach the closing
+screen*"). For a single session, open it and check whether the
+step-by-step list ends with **Show closing screen** (`ANZEIGE
+SCHLUSSBILD`). The backend marks `completed: true` on a session that
+reached that step; the session table has no completion column, but the
+flag is in the API response and the chat assistant sees it too.
 
 ### 4.5 "What's the AI's read on this session?"
 
@@ -389,7 +399,7 @@ The smallest possible body is in
 [../../specifications/examples/logistic_logs/01_create_case.json](../../specifications/examples/logistic_logs/01_create_case.json) —
 9 rows producing one complete session, readable end-to-end.
 
-### 6.3 The 8 workflow phases
+### 6.3 The 9 workflow phases
 
 The UI groups steps into phases for at-a-glance interpretation. The
 mapping is hand-curated in

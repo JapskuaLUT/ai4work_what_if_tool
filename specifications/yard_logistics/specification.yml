@@ -73,11 +73,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateYardSimulationResponse"
         "400":
-          description: Validation error.
+          description: |
+            Validation error. Either the body fails schema validation, or a
+            run's `export` is not a usable `SimulationExportData` object
+            (`error: "Invalid simulation payload."`). The `message` names
+            the offending run and what to fix — most commonly an `export`
+            that was double-serialized into a JSON string, or one that is
+            nested one level too deep so `ComparisonInformation`,
+            `YardStructure.Entities`, `Orders` or
+            `Measurements.Measurements` are missing at its top level.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              example:
+                error: "Invalid simulation payload."
+                message: >-
+                  runs[0].export is a JSON string, but must be the
+                  SimulationExportData JSON object itself. It looks
+                  double-serialized — embed the parsed object instead of
+                  a serialized string.
         "500":
           description: Internal error.
           content:
@@ -153,6 +168,16 @@ paths:
                 properties:
                   caseId: { type: string }
                   runId: { type: string }
+        "400":
+          description: |
+            The run's `export` is not a usable `SimulationExportData` object
+            (`error: "Invalid run payload."`). Same checks as the create
+            endpoint; the `message` refers to the run as `body`, e.g.
+            `body.export is a JSON string, …`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Parent simulation not found.
           content:
@@ -590,9 +615,10 @@ paths:
                 $ref: "#/components/schemas/Error"
         "503":
           description: |
-            Returned today — the forward endpoint is defined but not yet
-            wired to a live simulator. Will switch to 202 once partners
-            ship their API.
+            Planned response while the forward endpoint exists but is not
+            yet wired to a live simulator. Today the route is not mounted
+            at all, so the backend answers 404; once implemented it will
+            return 202 when partners ship their API.
           content:
             application/json:
               schema:

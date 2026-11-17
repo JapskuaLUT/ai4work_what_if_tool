@@ -219,7 +219,7 @@ Prefix: `/api/simulations/yard/`. Mirrors the education shape so the UI service 
 | `GET`  | `/:caseId/proposals` | List all improvement proposals (AI- or human-authored). |
 | `POST` | `/:caseId/proposals` | Save a new proposal; server validates changes against the case's yard. |
 | `DELETE` | `/:caseId/proposals/:id` | Remove a proposal. |
-| `POST` | `/:caseId/proposals/:id/run` | **Stub** — forward the proposal to the simulator for a what-if run (returns 503 until partners wire up their API). Contract defined; see §14 for the partner-side shape we expect. |
+| `POST` | `/:caseId/proposals/:id/run` | **Not implemented** — forward the proposal to the simulator for a what-if run. Contract defined in the OpenAPI spec only; the route is not mounted, so it returns 404 until partners wire up their API. See §14 for the partner-side shape we expect. |
 
 The first two endpoints accept the simulator's native JSON unchanged — drop a `*.complete.json` straight in.
 

@@ -21,9 +21,10 @@ Why each variable matters:
     reach it across the Docker host gateway → the UI sees `502 Bad
     Gateway`.
 -   **`OLLAMA_ORIGINS=…`** — Ollama itself adds the
-    `Access-Control-Allow-Origin` header for the listed origins. Without
-    this the browser blocks the response with a CORS error even though
-    Ollama responded successfully.
+    `Access-Control-Allow-Origin` header for the listed origins, and
+    answers requests from any other browser origin with `403 Forbidden`.
+    Without this the UI's model dropdown stays empty and the chat fails,
+    even though `curl` from a terminal (which sends no `Origin`) works.
 
 Keep that terminal open while you develop, or background it with
 `nohup`:
@@ -33,6 +34,23 @@ nohup env OLLAMA_HOST=0.0.0.0 \
     OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' \
     ollama serve > /tmp/ollama.log 2>&1 &
 ```
+
+## Pull at least one model
+
+A fresh Ollama install has no models, so the UI's model dropdown is
+empty until you pull one. `phi4` (~9 GB) is the model the screenshots,
+tutorials and proposal generation were tested with; it is not a
+reasoning model, so it answers well inside the proxy timeout:
+
+```sh
+ollama pull phi4
+ollama list        # should show phi4:latest
+```
+
+Any other chat model works too. The dropdown lists whatever
+`/api/tags` returns, so you can pull a smaller model on a laptop
+(`llama3.2`, `qwen2.5:7b`) or a bigger one on a workstation. Reasoning
+models can be slow; see row 2 of the troubleshooting table.
 
 ## Verify before opening the UI
 
@@ -48,8 +66,9 @@ curl -ksS -H 'Origin: https://app.localhost' \
     https://ollama.localhost/api/tags -o /dev/null -w 'HTTP %{http_code}\n'
 ```
 
-You want, in order: a process listening, a JSON `models` array, and
-`HTTP 200`. If step 3 prints `502`, jump to **Troubleshooting** below.
+You want, in order: a process listening, a JSON `models` array (not
+empty — see above), and `HTTP 200`. If step 3 prints `502` or `403`,
+jump to **Troubleshooting** below.
 
 ## Troubleshooting: "CORS error" in the browser
 
@@ -74,8 +93,8 @@ and the real upstream failure on every request:
 docker-compose logs --tail=50 ollama-proxy
 ```
 
-You'll see one of: `502`, `504`, `200` (with no CORS header), or a
-`connect() failed` error. Match the result to the table below.
+You'll see one of: `502`, `504`, `403`, or a `connect() failed`
+error. Match the result to the table below.
 
 ### Step 2 — match the symptom
 
@@ -85,7 +104,7 @@ Ranked by how often we've actually hit each one:
 |:-:|:------------------------------------------------------------|:------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------|
 | 1 | `502` + `connect() failed (111: Connection refused)`        | Ollama isn't running on the host (or is bound to `127.0.0.1` only — same symptom from the container's POV). | `lsof -iTCP:11434 -sTCP:LISTEN` — if empty or shows `127.0.0.1` only, restart Ollama with `OLLAMA_HOST=0.0.0.0`.   |
 | 2 | `504` + `upstream timed out (110)` after 600s/1200s         | Slow / stuck model inference. Reasoning models (qwen3.5, gpt-oss with thinking) on a long prompt can hang past the proxy's read timeout.   | Use a non-reasoning model (`phi4:latest`) for proposal generation; ensure `num_predict` is capped in the request. |
-| 3 | `200` returned but no `Access-Control-Allow-Origin` header  | Wrong `OLLAMA_ORIGINS` — Ollama didn't recognise the request origin.                                  | Restart Ollama with `OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost'`.                            |
+| 3 | `403` for requests with `Origin: https://app.localhost`     | `OLLAMA_ORIGINS` is missing or doesn't list the origin — Ollama rejects browser requests from unknown origins. A `curl` without an `Origin` header still gets `200`, which makes this easy to miss. | Restart Ollama with `OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost'`.                            |
 | 4 | `404` / route mismatch                                      | Asking for a path Ollama doesn't expose, or pointing the UI at the wrong proxy host.                  | Compare the failing URL against `/api/tags`, `/api/chat`, `/api/generate`, `/api/ps` — those are the real ones.    |
 
 ### Step 3 — verify with curl

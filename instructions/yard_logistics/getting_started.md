@@ -5,6 +5,13 @@ By the end of this doc you will have: the stack running, the demo data
 loaded, a clear picture of every panel in the UI, and you'll know how to
 send your own data through the API.
 
+> **Prefer a shorter, non-technical version?** The
+> [yard logistics user guide](../../learning_materials/yard_logistics/yard_logistics_user_guide.md)
+> ([PDF](../../learning_materials/yard_logistics/yard_logistics_user_guide.pdf)),
+> [slides](../../learning_materials/yard_logistics/yard_logistics_slides.pdf) and a
+> [narrated 3-minute video](../../learning_materials/yard_logistics/yard_logistics_tutorial.mp4)
+> cover the same UI for planners.
+
 ---
 
 ## Table of Contents
@@ -280,6 +287,26 @@ Both return:
 
 Open the `resultsUrl` to see your case in the UI.
 
+**If you get a 400 instead.** Before anything is stored, the server checks
+that every run's `export` is the simulator's `SimulationExportData`
+*object*, with `ComparisonInformation`, `YardStructure.Entities`, `Orders`
+and `Measurements.Measurements` at its top level. When it isn't, nothing
+is saved and the `message` names the run and what to fix:
+
+```json
+{
+  "error":   "Invalid simulation payload.",
+  "message": "runs[0].export is a JSON string, but must be the SimulationExportData JSON object itself. It looks double-serialized — embed the parsed object instead of a serialized string."
+}
+```
+
+The two usual causes:
+
+| Message says | What happened | Fix |
+|---|---|---|
+| `… is a JSON string … double-serialized` | The export file was read as text and put into `export` as a string (`"export": "{\"Orders\": …}"`). | Parse the file first and embed the object (`"export": {"Orders": …}`). |
+| `… is missing or has malformed fields: YardStructure.Entities, …` | The export is wrapped in another object, or a key was renamed. | Put the simulator's top-level keys directly under `export`. |
+
 ### 5.2 Add a run to an existing case
 
 If you already created a case and want to push another simulator result
@@ -294,6 +321,10 @@ curl -ksS -X POST https://backend.localhost/api/simulations/yard/<caseId>/runs \
 > This is the future **simulator-webhook target**. When the partner's
 > simulator API is wired up, it will POST to this URL each time it
 > finishes a what-if run; we already accept that shape.
+
+The same `export` checks apply here; a malformed run gets a 400 with
+`"error": "Invalid run payload."` and a `message` that refers to it as
+`body.export`.
 
 ### 5.3 Save an improvement proposal manually
 
