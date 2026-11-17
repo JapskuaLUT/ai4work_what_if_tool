@@ -901,10 +901,10 @@ treating parity as established.
 The **integration suite** (`backend/src/tests/integration/`) hits the running
 backend at `https://backend.localhost` and covers the education and yard
 APIs end-to-end. Each suite probes `/api/health` first and
-`describe.skipIf(!reachable)`'s itself if the stack is down. One
-exception: the legacy `backend/src/tests/simulation.test.ts` has no such
-probe, so its two tests fail with `ECONNREFUSED` when the stack is down —
-use `bun run test:unit` for an offline run. The request bodies live in
+`describe.skipIf(!reachable)`'s itself if the stack is down — so
+`bun test` stays green either way. The legacy pre-v1.0 API test
+(`backend/src/tests/simulation.test.ts`) uses the same probe from
+`integration/_helpers.ts`. The request bodies live in
 [specifications/examples/](specifications/examples/), shared with the
 human-readable docs there.
 
