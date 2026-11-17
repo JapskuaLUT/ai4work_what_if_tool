@@ -1,0 +1,175 @@
+1
+00:00:00,550 --> 00:00:07,106
+A developer's tour of the What-If Tool: its API, the JSON in and out, the database, the AI layer,
+
+2
+00:00:07,106 --> 00:00:08,525
+and how to extend it.
+
+3
+00:00:09,825 --> 00:00:10,496
+Two flows.
+
+4
+00:00:10,496 --> 00:00:16,137
+Your systems post JSON to the backend API, which validates it, computes what it can,
+
+5
+00:00:16,137 --> 00:00:18,017
+and stores it in PostgreSQL.
+
+6
+00:00:18,017 --> 00:00:24,463
+The browser runs the React app: it reads results over REST, and calls the language model itself,
+
+7
+00:00:24,463 --> 00:00:27,551
+through an nginx proxy, to Ollama on the host.
+
+8
+00:00:27,551 --> 00:00:29,700
+The backend never calls a model.
+
+9
+00:00:31,000 --> 00:00:36,103
+Every endpoint is documented live at slash swagger: three domains, education,
+
+10
+00:00:36,103 --> 00:00:41,868
+yard logistics and check-in logs, with schemas from the code and a curl for every call.
+
+11
+00:00:41,868 --> 00:00:46,175
+There's no authentication yet, so put it behind your own gateway.
+
+12
+00:00:47,475 --> 00:00:51,101
+Yard data goes in exactly as the simulator wrote it.
+
+13
+00:00:51,101 --> 00:00:56,609
+You add a case name, and per run an id and a label; the export is stored as is.
+
+14
+00:00:56,609 --> 00:01:01,350
+Later runs go to the case's runs endpoint, a natural webhook target.
+
+15
+00:01:02,650 --> 00:01:10,334
+The backend checks only the four parts it reads, and rejects anything else with a 400 that says what's wrong.
+
+16
+00:01:10,334 --> 00:01:13,225
+A body that breaks the schema gets a 422.
+
+17
+00:01:14,525 --> 00:01:21,309
+For education, a what-if is a named list of typed adjustments, posted to a case's scenarios endpoint.
+
+18
+00:01:21,309 --> 00:01:27,421
+They apply in a fixed order: assignment and exam changes, a schedule rebuild, then lecture,
+
+19
+00:01:27,421 --> 00:01:29,100
+lab and homework changes.
+
+20
+00:01:30,400 --> 00:01:32,365
+Every result is an audit trail.
+
+21
+00:01:32,365 --> 00:01:37,247
+Here every adjustment applied, but the peak still rose, so improved is false.
+
+22
+00:01:37,247 --> 00:01:43,650
+A two-oh-one means it ran, not that it helped: check improved, and each adjustment's status and code.
+
+23
+00:01:44,950 --> 00:01:52,299
+In PostgreSQL, partner data is stored as JSON B exactly as sent, so new fields never need a migration.
+
+24
+00:01:52,299 --> 00:01:58,135
+Derived numbers are computed once at ingest; cheap views are rebuilt per request.
+
+25
+00:01:58,135 --> 00:02:03,250
+Schema changes go in the SQL file, the Drizzle schema, and a migration.
+
+26
+00:02:04,550 --> 00:02:10,979
+Every model call comes from the browser: a feature calls a React hook, which calls one file,
+
+27
+00:02:10,979 --> 00:02:15,800
+ollama service dot T S, then an nginx proxy, then Ollama on the host.
+
+28
+00:02:17,100 --> 00:02:23,235
+Here's the logs chat request: model, streaming, a low temperature, a reply cap, and messages.
+
+29
+00:02:23,235 --> 00:02:28,975
+The system message is rebuilt from page data every time; nothing is stored server-side.
+
+30
+00:02:30,275 --> 00:02:32,333
+Three ways to swap the model.
+
+31
+00:02:32,333 --> 00:02:35,029
+Any Ollama model: pull it and pick it.
+
+32
+00:02:35,029 --> 00:02:38,647
+An Ollama-compatible server: point the proxy at it.
+
+33
+00:02:38,647 --> 00:02:43,756
+OpenAI-style or hosted APIs: write an adapter in ollama service dot T S.
+
+34
+00:02:43,756 --> 00:02:50,000
+And never put an API key in a VITE variable; keep it server-side, behind authentication.
+
+35
+00:02:51,300 --> 00:02:53,768
+Three recipes cover most extensions.
+
+36
+00:02:53,768 --> 00:02:57,059
+A new use case: copy the logs domain end to end.
+
+37
+00:02:57,059 --> 00:03:00,349
+A new adjustment type: adjustments and simulate.
+
+38
+00:03:00,349 --> 00:03:06,725
+A new proposal change: its type, validation, and the prompt's schema, or the parser drops it.
+
+39
+00:03:08,025 --> 00:03:14,137
+To integrate, push each finished run to the runs endpoint and read results with plain gets; the
+
+40
+00:03:14,137 --> 00:03:16,646
+example bodies double as test fixtures.
+
+41
+00:03:16,646 --> 00:03:22,436
+Watch out: Ollama must allow the app's origin, there's no authentication and CORS is open,
+
+42
+00:03:22,436 --> 00:03:25,975
+and sending proposals to the simulator isn't built yet.
+
+43
+00:03:27,275 --> 00:03:31,301
+Every endpoint, contract and recipe is in the developer guide.
+
+44
+00:03:31,301 --> 00:03:32,600
+Thanks for watching.

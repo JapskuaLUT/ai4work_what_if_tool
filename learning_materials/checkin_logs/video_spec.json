@@ -1,0 +1,164 @@
+{
+  "title": "What-If Tool — Check-in kiosk logs tutorial",
+  "voice": "af_heart",
+  "speed": 1.0,
+  "say": {
+    "LT 010": "L T zero ten",
+    "phi4": "phi four",
+    "visit 1420": "visit fourteen twenty",
+    "5,764": "five thousand, seven hundred and sixty-four"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "eyebrow": "What-If Tool · Tutorial",
+      "title": "Check-in kiosk logs",
+      "subtitle": "See where drivers spend their time at check-in",
+      "logo": "../../ui/public/what_if_logo.png",
+      "pills": ["Summary", "Time per step", "One visit", "AI assistant"],
+      "minSeconds": 7,
+      "narration": "This tutorial shows how to read the check-in kiosk logs in the What-If Tool: where drivers spend their time, and how the AI assistant can help."
+    },
+    {
+      "type": "points",
+      "eyebrow": "What it does",
+      "title": "From raw kiosk events to driver visits",
+      "points": [
+        "5,764 raw events from kiosk LT 010, logged in German",
+        "Grouped into 34 driver visits",
+        "Every step in English, with its phase and time"
+      ],
+      "pointTimes": [0.3, 0.55, 0.7],
+      "narration": "Before entering the yard, every driver checks in at a self-service kiosk, which logs each screen as a German status message. The tool groups 5,764 of those messages into 34 driver visits, translates every step into English, and measures how long each screen takes."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/03_logs/01_summary.png",
+      "caption": "Plain-English summary",
+      "camera": [
+        { "at": 0.0, "x": 0.5, "y": 0.5, "zoom": 1.0 },
+        { "at": 0.18, "x": 0.5, "y": 0.43, "zoom": 1.15 }
+      ],
+      "highlights": [
+        { "at": 0.46, "until": 0.7, "rect": [0.088, 0.358, 0.75, 0.034], "label": "A typical visit: 2 min 25 s", "labelPos": "below" },
+        { "at": 0.72, "until": 0.97, "rect": [0.088, 0.546, 0.48, 0.032], "label": "8 of 34 never reached the end", "labelPos": "below" }
+      ],
+      "narration": "Start with the plain-English summary at the top. It is written straight from the data, with no AI involved. A typical visit takes two minutes 25 seconds, and 8 of the 34 visits never reached the closing screen."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/03_logs/01_summary.png",
+      "caption": "Key numbers",
+      "camera": [
+        { "at": 0.0, "x": 0.5, "y": 0.43, "zoom": 1.15 },
+        { "at": 0.22, "x": 0.5, "y": 0.72, "zoom": 1.15 }
+      ],
+      "highlights": [
+        { "at": 0.25, "until": 0.97, "rect": [0.075, 0.648, 0.855, 0.155] }
+      ],
+      "narration": "Below it, five key numbers give the scale: 34 visits, 5,764 events, the typical visit length with its slow tail, events per visit, and 21 different screens."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/03_logs/05_step_tooltip.png",
+      "caption": "Time per step",
+      "camera": [
+        { "at": 0.0, "x": 0.5, "y": 0.4, "zoom": 1.0 },
+        { "at": 0.15, "x": 0.5, "y": 0.3, "zoom": 1.2 }
+      ],
+      "highlights": [
+        { "at": 0.44, "until": 0.72, "rect": [0.165, 0.158, 0.705, 0.036], "label": "Slow tail: almost 40 minutes" },
+        { "at": 0.76, "until": 0.98, "rect": [0.29, 0.25, 0.52, 0.135], "label": "Hover for the German name and both times", "labelPos": "below" }
+      ],
+      "cursor": [
+        { "at": 0.68, "x": 0.85, "y": 0.5 },
+        { "at": 0.75, "x": 0.62, "y": 0.236 }
+      ],
+      "narration": "The time per step chart ranks the slowest screens. The solid bar is the typical time, and the faded bar is the slow tail. Choosing a language normally takes 41 seconds, but the slowest visits stay on it for almost 40 minutes. Hover over a bar to see the German screen name and both times."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/03_logs/06_session_detail.png",
+      "caption": "One driver’s visit",
+      "camera": [
+        { "at": 0.0, "x": 0.5, "y": 0.5, "zoom": 1.0 },
+        { "at": 0.3, "x": 0.5, "y": 0.5, "zoom": 1.0 },
+        { "at": 0.42, "x": 0.66, "y": 0.25, "zoom": 1.5 }
+      ],
+      "highlights": [
+        { "at": 0.16, "until": 0.38, "rect": [0.075, 0.41, 0.273, 0.08], "label": "Visit 1420: 41 min 24 s", "labelPos": "below" },
+        { "at": 0.46, "until": 0.74, "rect": [0.38, 0.196, 0.532, 0.104], "label": "Where did the time go? Setup: 97 %", "labelPos": "below" },
+        { "at": 0.77, "until": 0.98, "rect": [0.38, 0.152, 0.532, 0.036], "label": "Names and signatures masked" }
+      ],
+      "cursor": [
+        { "at": 0.03, "x": 0.6, "y": 0.75 },
+        { "at": 0.13, "x": 0.15, "y": 0.45, "click": true }
+      ],
+      "narration": "Click a visit in the sessions table to open it. Visit 1420 took 41 minutes. The bar at the top, Where did the time go, shows that 97 percent went into setup, almost all of it on the language screen. Names and signatures stay masked unless you click Reveal P I I."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/03_logs/07_session_step_expanded.png",
+      "caption": "Every step in detail",
+      "camera": [
+        { "at": 0.0, "x": 0.5, "y": 0.4, "zoom": 1.0 },
+        { "at": 0.25, "x": 0.66, "y": 0.38, "zoom": 1.45 }
+      ],
+      "highlights": [
+        { "at": 0.3, "until": 0.97, "rect": [0.382, 0.2, 0.528, 0.39], "label": "Step 4 expanded: Enter ident code" }
+      ],
+      "cursor": [
+        { "at": 0.05, "x": 0.8, "y": 0.6 },
+        { "at": 0.2, "x": 0.53, "y": 0.217, "click": true }
+      ],
+      "narration": "Every step is listed with its English name and the German kiosk name underneath. Click a step to expand it. You see its phase, whether it is a screen the driver uses, the exact start and end times, and the raw kiosk messages."
+    },
+    {
+      "type": "chat",
+      "image": "../../screenshots/crops/logs_chat_longest_tail.png",
+      "eyebrow": "Ask the AI assistant",
+      "title": "Ask why a screen is slow",
+      "question": "Which dialog has the longest tail, and what could explain it?",
+      "note": "Runs on phi4, a local model: the logs stay on your machine.",
+      "revealFrom": 0.3,
+      "revealStart": 0.32,
+      "revealEnd": 0.88,
+      "narration": "The round button in the bottom-right corner opens the AI assistant, which runs locally on your machine. We asked which screen has the longest tail. It named the language screen, quoted the real figures, and suggested causes, such as drivers being unsure which language to pick."
+    },
+    {
+      "type": "chat",
+      "image": "../../screenshots/crops/logs_chat_session.png",
+      "eyebrow": "Ask the AI assistant",
+      "title": "Ask about the open visit",
+      "question": "Is there anything unusual about the session I have open? Did the driver finish?",
+      "note": "Its reasons are ideas to check. Verify its numbers on the page.",
+      "revealFrom": 0.31,
+      "revealStart": 0.25,
+      "revealEnd": 0.8,
+      "narration": "It also reads the visit you have open. For visit 1420, it confirmed the driver finished, and pointed to the 39 minutes spent in setup. Treat its reasons as ideas, and check its numbers against the page."
+    },
+    {
+      "type": "points",
+      "dark": true,
+      "eyebrow": "Recap",
+      "title": "Four good habits",
+      "points": [
+        "Start with the plain-English summary",
+        "Look for long faded bars in the chart",
+        "Keep personal data masked",
+        "Check what the AI says against the page"
+      ],
+      "pointTimes": [0.12, 0.33, 0.56, 0.74],
+      "narration": "To recap. Start with the plain-English summary. Look for long faded bars in the time per step chart. Keep personal data masked unless you need it. And check what the AI says against the page."
+    },
+    {
+      "type": "end",
+      "dark": true,
+      "eyebrow": "What-If Tool",
+      "title": "Check-in kiosk logs",
+      "subtitle": "More detail: the check-in logs user guide",
+      "minSeconds": 5,
+      "narration": "For every step in more detail, see the check-in logs user guide. Thanks for watching."
+    }
+  ]
+}

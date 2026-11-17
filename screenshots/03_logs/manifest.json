@@ -1,0 +1,61 @@
+[
+  {
+    "file": "01_summary.png",
+    "title": "Check-in logs — plain-English summary",
+    "description": "Process-mining view over 5,764 kiosk events reconstructed into 34 driver sessions, opening with an automatic plain-English summary and KPIs."
+  },
+  {
+    "file": "02_logs_time_per_step_top_12_dialogs.png",
+    "title": "Check-in logs: Time per step — top 12 dialogs",
+    "description": "Check-in logs — the “Time per step — top 12 dialogs” section."
+  },
+  {
+    "file": "03_logs_sessions_34.png",
+    "title": "Check-in logs: Sessions (34)",
+    "description": "Check-in logs — the “Sessions (34)” section."
+  },
+  {
+    "file": "04_logs_about_this_view.png",
+    "title": "Check-in logs: About this view",
+    "description": "Check-in logs — the “About this view” section."
+  },
+  {
+    "file": "05_step_tooltip.png",
+    "title": "Time per step — hover detail",
+    "description": "Hovering a dialog shows the original German step name, occurrences, and typical (p50) vs. tail (p95) time."
+  },
+  {
+    "file": "06_session_detail.png",
+    "title": "Session detail — where did the time go?",
+    "description": "Selecting a session shows its phase breakdown and every step, with personal data (driver name, signature) masked by default."
+  },
+  {
+    "file": "07_session_step_expanded.png",
+    "title": "Session step expanded",
+    "description": "Each step expands to its raw kiosk message, exact timestamps and captured value."
+  },
+  {
+    "file": "08_chat_longest_tail.png",
+    "title": "AI chat — explaining the long tail",
+    "description": "The logs chat has the KPIs, slowest dialogs and sessions in context; it explains tail latency in English while citing the German kiosk labels.",
+    "llm": true
+  },
+  {
+    "file": "09_chat_longest_tail_end.png",
+    "title": "AI chat — explaining the long tail (end of answer)",
+    "description": "The logs chat has the KPIs, slowest dialogs and sessions in context; it explains tail latency in English while citing the German kiosk labels. End of the model's answer.",
+    "llm": true
+  },
+  {
+    "file": "10_chat_session.png",
+    "title": "AI chat — reading one session",
+    "description": "The chat also sees the session currently open in the detail panel, so it can interpret a single driver visit.",
+    "llm": true
+  },
+  {
+    "file": "11_chat_session_end.png",
+    "title": "AI chat — reading one session (end of answer)",
+    "description": "The chat also sees the session currently open in the detail panel, so it can interpret a single driver visit. End of the model's answer.",
+    "llm": true
+  }
+]

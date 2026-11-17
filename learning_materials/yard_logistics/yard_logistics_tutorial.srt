@@ -1,0 +1,159 @@
+1
+00:00:00,550 --> 00:00:01,071
+Welcome.
+
+2
+00:00:01,071 --> 00:00:07,326
+In the next few minutes you'll learn to use the yard logistics view of the What-If Tool: compare
+
+3
+00:00:07,326 --> 00:00:13,125
+simulator runs, find where trucks lose time, and let the AI assistant draft improvements.
+
+4
+00:00:14,425 --> 00:00:16,796
+The tool doesn't simulate the yard.
+
+5
+00:00:16,796 --> 00:00:23,095
+It reads runs from the yard simulator, compares them side by side, shows where trucks waited,
+
+6
+00:00:23,095 --> 00:00:26,075
+and lets a local AI draft and discuss fixes.
+
+7
+00:00:27,375 --> 00:00:30,580
+From the home page, click Load Yard Simulation.
+
+8
+00:00:30,580 --> 00:00:36,513
+At the top is a map of the yard: the check-in terminal at the gate, parking, the scale,
+
+9
+00:00:36,513 --> 00:00:38,559
+and twenty-five storage silos.
+
+10
+00:00:38,559 --> 00:00:41,150
+Remember the check-in terminal, LT010.
+
+11
+00:00:42,450 --> 00:00:45,667
+The Comparison tab puts every run side by side.
+
+12
+00:00:45,667 --> 00:00:47,926
+With thirty trucks, nobody waits.
+
+13
+00:00:47,926 --> 00:00:51,212
+With fifty-two, the longest wait is six minutes.
+
+14
+00:00:51,212 --> 00:00:55,662
+With seventy-one, it jumps to three hours and thirty-six minutes.
+
+15
+00:00:55,662 --> 00:00:58,400
+Click Select to star the run you prefer.
+
+16
+00:00:59,700 --> 00:01:01,600
+Open the WaitingProblem tab.
+
+17
+00:01:01,600 --> 00:01:08,386
+The top bottleneck is off-yard waiting: three trucks queuing outside the gate for one check-in slot.
+
+18
+00:01:08,386 --> 00:01:13,475
+So the fix is check-in capacity or spacing out arrivals, not a bigger gate.
+
+19
+00:01:14,775 --> 00:01:21,445
+Click any bottleneck, like LT010, and the chart shows how many trucks were there, minute by minute,
+
+20
+00:01:21,445 --> 00:01:24,275
+against its capacity: the red dashed line.
+
+21
+00:01:25,575 --> 00:01:30,986
+Further down, the per-truck timeline gives every truck one row, and red means waiting.
+
+22
+00:01:30,986 --> 00:01:32,685
+Hover a row for its totals.
+
+23
+00:01:32,685 --> 00:01:38,600
+This truck waited three hours and thirty-six minutes: eighty-three percent of its whole visit.
+
+24
+00:01:39,900 --> 00:01:41,577
+Open the Improvements tab.
+
+25
+00:01:41,577 --> 00:01:44,093
+The target run starts on the worst one.
+
+26
+00:01:44,093 --> 00:01:49,576
+Choose how many proposals you want, from one to five, and click Generate suggestions.
+
+27
+00:01:49,576 --> 00:01:53,575
+The local model takes from about half a minute to two minutes.
+
+28
+00:01:54,875 --> 00:02:00,182
+Each draft names its target, the changes, the expected impact and the risks.
+
+29
+00:02:00,182 --> 00:02:05,629
+Check the numbers before you save: this one says LT010 goes from two to three,
+
+30
+00:02:05,629 --> 00:02:08,632
+but it actually serves one truck at a time.
+
+31
+00:02:08,632 --> 00:02:13,450
+The tool checks that the places a draft names exist, not its numbers.
+
+32
+00:02:14,750 --> 00:02:18,138
+Click Discuss on a saved proposal to ask about it.
+
+33
+00:02:18,138 --> 00:02:22,339
+We asked how confident the AI is that it fixes the bottleneck.
+
+34
+00:02:22,339 --> 00:02:26,337
+It answered moderate to high, citing the real queue scores.
+
+35
+00:02:26,337 --> 00:02:29,725
+Remember: it explains, but it hasn't run anything.
+
+36
+00:02:31,025 --> 00:02:37,342
+To recap: open the yard case, compare the runs, find the bottleneck, read the truck timeline,
+
+37
+00:02:37,342 --> 00:02:41,350
+let the AI draft fixes, and discuss them before you decide.
+
+38
+00:02:42,650 --> 00:02:49,208
+Once the simulator connection is live, Send to simulator will test a saved proposal for real.
+
+39
+00:02:49,208 --> 00:02:52,240
+Until then, the AI suggests and you decide.
+
+40
+00:02:52,240 --> 00:02:53,650
+Thanks for watching.

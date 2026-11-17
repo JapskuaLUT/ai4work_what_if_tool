@@ -1,0 +1,377 @@
+{
+  "title": "What-If Tool — Developer guide",
+  "voice": "af_heart",
+  "speed": 1.05,
+  "say": {
+    "JSON B": "Jason B",
+    "JSON": "Jason",
+    "Ollama": "Oh-lama",
+    "ollama": "oh-lama",
+    "nginx": "engine X",
+    "PostgreSQL": "Postgres Q L",
+    "CORS": "cores",
+    "SQL": "S Q L",
+    "vLLM": "V L L M",
+    "LM Studio": "L M Studio",
+    "OpenAI": "Open A I",
+    "phi4": "phi four",
+    "VITE": "Veet",
+    "Vite": "Veet",
+    "UI": "U I",
+    "curl": "curl"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "eyebrow": "What-If Tool · For developers",
+      "title": "Integrate and extend the What-If Tool",
+      "subtitle": "APIs, JSON, the database and the AI layer",
+      "logo": "../../ui/public/what_if_logo.png",
+      "pills": [
+        "REST + JSON",
+        "PostgreSQL",
+        "Ollama",
+        "Extend"
+      ],
+      "narration": "A developer's tour of the What-If Tool: its API, the JSON in and out, the database, the AI layer, and how to extend it."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/05_developer/10_architecture.png",
+      "caption": "Two flows: data in, people out",
+      "camera": [
+        {
+          "at": 0,
+          "x": 0.5,
+          "y": 0.5,
+          "zoom": 1
+        }
+      ],
+      "highlights": [
+        {
+          "at": 0.06,
+          "until": 0.5,
+          "rect": [
+            0.03,
+            0.11,
+            0.94,
+            0.25
+          ],
+          "label": "Data flow",
+          "labelPos": "below"
+        },
+        {
+          "at": 0.52,
+          "until": 0.97,
+          "rect": [
+            0.03,
+            0.6,
+            0.94,
+            0.25
+          ],
+          "label": "User flow"
+        }
+      ],
+      "narration": "Two flows. Your systems post JSON to the backend API, which validates it, computes what it can, and stores it in PostgreSQL. The browser runs the React app: it reads results over REST, and calls the language model itself, through an nginx proxy, to Ollama on the host. The backend never calls a model."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/05_developer/06_yard_endpoints.png",
+      "caption": "Live docs at /swagger",
+      "camera": [
+        {
+          "at": 0,
+          "x": 0.5,
+          "y": 0.5,
+          "zoom": 1
+        },
+        {
+          "at": 0.35,
+          "x": 0.5,
+          "y": 0.5,
+          "zoom": 1
+        },
+        {
+          "at": 0.6,
+          "x": 0.78,
+          "y": 0.44,
+          "zoom": 1.55
+        }
+      ],
+      "highlights": [
+        {
+          "at": 0.08,
+          "until": 0.42,
+          "rect": [
+            0.01,
+            0.13,
+            0.19,
+            0.2
+          ],
+          "label": "Three domains",
+          "labelPos": "below"
+        },
+        {
+          "at": 0.62,
+          "until": 0.97,
+          "rect": [
+            0.617,
+            0.23,
+            0.336,
+            0.425
+          ],
+          "label": "Twelve yard operations"
+        }
+      ],
+      "narration": "Every endpoint is documented live at slash swagger: three domains, education, yard logistics and check-in logs, with schemas from the code and a curl for every call. There's no authentication yet, so put it behind your own gateway."
+    },
+    {
+      "type": "code",
+      "eyebrow": "JSON in · Yard logistics",
+      "title": "Send simulator runs as they are",
+      "note": "The export is stored verbatim. Add later runs with POST /:caseId/runs.",
+      "header": "POST /api/simulations/yard/",
+      "code": "{\n  \"name\": \"Yard AI4Work — sample comparison\",\n  \"runs\": [{\n    \"run_id\": \"03_waiting_problem\",\n    \"label\": \"WaitingProblem\",\n    \"export\": {\n      \"ComparisonInformation\": { … },\n      \"YardStructure\": { \"Entities\": { … }, \"Streets\": [ … ] },\n      \"Processes\": [ … ],\n      \"Orders\": [ … ],\n      \"Measurements\": { … }\n    }\n  }]\n}",
+      "highlights": [
+        {
+          "at": 0.42,
+          "until": 0.97,
+          "lines": [
+            5,
+            11
+          ],
+          "label": "stored verbatim"
+        }
+      ],
+      "narration": "Yard data goes in exactly as the simulator wrote it. You add a case name, and per run an id and a label; the export is stored as is. Later runs go to the case's runs endpoint, a natural webhook target."
+    },
+    {
+      "type": "code",
+      "eyebrow": "Validation",
+      "title": "Errors that tell you what to fix",
+      "note": "400 means understood but rejected. 422 means the body broke its schema.",
+      "header": "400 Bad Request",
+      "code": "// Only what the backend reads is checked:\n//   ComparisonInformation · YardStructure.Entities\n//   Orders · Measurements.Measurements\n\n{\n  \"error\": \"Invalid simulation payload.\",\n  \"message\": \"runs[0].export is a JSON string …\"\n}\n\n// The message goes on: it looks double-serialized,\n// so embed the parsed object instead of a string.\n// A body that breaks the schema gets 422 instead.",
+      "highlights": [
+        {
+          "at": 0.1,
+          "until": 0.45,
+          "lines": [
+            0,
+            2
+          ]
+        },
+        {
+          "at": 0.5,
+          "until": 0.97,
+          "lines": [
+            6,
+            6
+          ],
+          "label": "a fix, not just a fail"
+        }
+      ],
+      "revealEnd": 0.3,
+      "narration": "The backend checks only the four parts it reads, and rejects anything else with a 400 that says what's wrong. A body that breaks the schema gets a 422."
+    },
+    {
+      "type": "code",
+      "eyebrow": "JSON in · Education",
+      "title": "A what-if is a list of typed adjustments",
+      "note": "Nine types, applied in a fixed order. Week indexes start at zero.",
+      "header": "POST /api/simulations/education/{caseId}/scenarios",
+      "code": "{\n  \"name\": \"Move the exam and ease the run-up\",\n  \"adjustments\": [\n    { \"id\": \"adj-001\", \"type\": \"move_exam\",\n      \"exam_id\": \"exam-1\", \"new_date\": \"2026-11-17T09:00:00Z\" },\n    { \"id\": \"adj-002\", \"type\": \"extend_assignment\",\n      \"assignment_id\": \"assignment-2\",\n      \"new_end_date\": \"2026-11-02T23:59:59Z\" },\n    { \"id\": \"adj-003\", \"type\": \"move_homework\",\n      \"source_week_index\": 11, \"target_week_index\": 5,\n      \"hours\": 6.0 }\n  ],\n  \"options\": { \"redistribution_objective\": \"trajectory_peak\" }\n}",
+      "highlights": [
+        {
+          "at": 0.35,
+          "until": 0.62,
+          "lines": [
+            3,
+            7
+          ],
+          "label": "domain changes first"
+        },
+        {
+          "at": 0.64,
+          "until": 0.97,
+          "lines": [
+            8,
+            10
+          ],
+          "label": "then week-level changes"
+        }
+      ],
+      "narration": "For education, a what-if is a named list of typed adjustments, posted to a case's scenarios endpoint. They apply in a fixed order: assignment and exam changes, a schedule rebuild, then lecture, lab and homework changes."
+    },
+    {
+      "type": "code",
+      "eyebrow": "JSON out · Education",
+      "title": "Every result carries its own audit trail",
+      "note": "A 201 means it ran, not that it helped.",
+      "header": "201 Created · scenario result (trimmed)",
+      "code": "{\n  \"stress_model_version\": \"1.0\",\n  \"baseline\":   { \"summary\": { \"peak_stress\": 59.95 } },\n  \"simulation\": { \"summary\": { \"peak_stress\": 60.09 } },\n  \"objective\": {\n    \"peak_stress_delta\": 0.14,\n    \"moved_workload_hours\": 26.2,\n    \"improved\": false\n  },\n  \"adjustment_outcomes\": [\n    { \"adjustment_id\": \"adj-001\", \"type\": \"move_exam\",\n      \"status\": \"applied\", \"code\": \"ok\" } ],\n  \"redistribution_flows\": [ … ],\n  \"weekly_results\": [ … ]\n}",
+      "highlights": [
+        {
+          "at": 0.3,
+          "until": 0.62,
+          "lines": [
+            4,
+            8
+          ],
+          "label": "did it help?"
+        },
+        {
+          "at": 0.64,
+          "until": 0.97,
+          "lines": [
+            9,
+            11
+          ],
+          "label": "one outcome per adjustment"
+        }
+      ],
+      "narration": "Every result is an audit trail. Here every adjustment applied, but the peak still rose, so improved is false. A two-oh-one means it ran, not that it helped: check improved, and each adjustment's status and code."
+    },
+    {
+      "type": "points",
+      "eyebrow": "The database",
+      "title": "Raw JSON kept, metrics computed once",
+      "points": [
+        "Partner JSON stored as JSONB, exactly as sent",
+        "Yard metrics and log aggregates computed at ingest",
+        "Timelines and sessions rebuilt per request",
+        "Schema change: schema.sql + schema.ts + a migration"
+      ],
+      "narration": "In PostgreSQL, partner data is stored as JSON B exactly as sent, so new fields never need a migration. Derived numbers are computed once at ingest; cheap views are rebuilt per request. Schema changes go in the SQL file, the Drizzle schema, and a migration."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/05_developer/10_architecture.png",
+      "caption": "The AI layer lives in the browser",
+      "camera": [
+        {
+          "at": 0,
+          "x": 0.5,
+          "y": 0.5,
+          "zoom": 1
+        },
+        {
+          "at": 0.25,
+          "x": 0.5,
+          "y": 0.72,
+          "zoom": 1.08
+        }
+      ],
+      "highlights": [
+        {
+          "at": 0.2,
+          "until": 0.97,
+          "rect": [
+            0.042,
+            0.617,
+            0.208,
+            0.222
+          ],
+          "label": "React app"
+        },
+        {
+          "at": 0.45,
+          "until": 0.97,
+          "rect": [
+            0.403,
+            0.617,
+            0.208,
+            0.222
+          ],
+          "label": "nginx proxy"
+        },
+        {
+          "at": 0.68,
+          "until": 0.97,
+          "rect": [
+            0.75,
+            0.617,
+            0.208,
+            0.222
+          ],
+          "label": "Ollama on the host"
+        }
+      ],
+      "narration": "Every model call comes from the browser: a feature calls a React hook, which calls one file, ollama service dot T S, then an nginx proxy, then Ollama on the host."
+    },
+    {
+      "type": "code",
+      "eyebrow": "The AI layer",
+      "title": "One request per chat message",
+      "note": "The system message is rebuilt from page data every time. Nothing is stored server-side.",
+      "header": "POST https://ollama.localhost/api/chat",
+      "code": "{\n  \"model\": \"phi4:latest\",\n  \"stream\": true,\n  \"options\": { \"temperature\": 0.3, \"num_predict\": 1024 },\n  \"messages\": [\n    { \"role\": \"system\",\n      \"content\": \"<instructions + data from the page>\" },\n    { \"role\": \"user\",\n      \"content\": \"Which dialog has the longest tail?\" }\n  ]\n}",
+      "highlights": [
+        {
+          "at": 0.3,
+          "until": 0.6,
+          "lines": [
+            1,
+            3
+          ],
+          "label": "logs chat options"
+        },
+        {
+          "at": 0.62,
+          "until": 0.97,
+          "lines": [
+            5,
+            6
+          ],
+          "label": "page data, every time"
+        }
+      ],
+      "narration": "Here's the logs chat request: model, streaming, a low temperature, a reply cap, and messages. The system message is rebuilt from page data every time; nothing is stored server-side."
+    },
+    {
+      "type": "points",
+      "eyebrow": "Choose your own LLM",
+      "title": "Three ways to swap the model",
+      "points": [
+        "Any Ollama model: pull it, pick it. No code",
+        "An Ollama-compatible server: point the proxy at it",
+        "OpenAI-style or hosted APIs: rewrite ollamaService.ts",
+        "API keys never in VITE_ variables: server-side, auth first"
+      ],
+      "narration": "Three ways to swap the model. Any Ollama model: pull it and pick it. An Ollama-compatible server: point the proxy at it. OpenAI-style or hosted APIs: write an adapter in ollama service dot T S. And never put an API key in a VITE variable; keep it server-side, behind authentication."
+    },
+    {
+      "type": "points",
+      "eyebrow": "Extend it",
+      "title": "Three recipes you will reach for",
+      "points": [
+        "A new use case: copy the logs domain, end to end",
+        "A new adjustment type: adjustments.ts and simulate.ts",
+        "A new proposal change: type, validation and the prompt",
+        "Every change: example bodies, spec and tests"
+      ],
+      "narration": "Three recipes cover most extensions. A new use case: copy the logs domain end to end. A new adjustment type: adjustments and simulate. A new proposal change: its type, validation, and the prompt's schema, or the parser drops it."
+    },
+    {
+      "type": "points",
+      "eyebrow": "Integrate it",
+      "title": "Hook points and gotchas",
+      "points": [
+        "Push each run: POST …/yard/{caseId}/runs",
+        "Example bodies double as test fixtures",
+        "Ollama must allow https://app.localhost (OLLAMA_ORIGINS)",
+        "No auth, open CORS: lock both down",
+        "Send to simulator: specified, not built yet"
+      ],
+      "narration": "To integrate, push each finished run to the runs endpoint and read results with plain gets; the example bodies double as test fixtures. Watch out: Ollama must allow the app's origin, there's no authentication and CORS is open, and sending proposals to the simulator isn't built yet."
+    },
+    {
+      "type": "end",
+      "dark": true,
+      "eyebrow": "What-If Tool",
+      "title": "Build on it",
+      "subtitle": "Every endpoint, contract and recipe: the developer guide.",
+      "narration": "Every endpoint, contract and recipe is in the developer guide. Thanks for watching."
+    }
+  ]
+}

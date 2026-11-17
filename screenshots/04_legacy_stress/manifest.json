@@ -1,0 +1,33 @@
+[
+  {
+    "file": "01_builder.png",
+    "title": "Legacy stress simulation — builder",
+    "description": "The pre-v1.0 stress simulation reached from the home page's “Load Stress Simulation” button."
+  },
+  {
+    "file": "02_results.png",
+    "title": "Legacy stress simulation — results",
+    "description": "Results of the pre-v1.0 coursework simulation (older model, numbers not comparable with v1.0)."
+  },
+  {
+    "file": "03_results_course_workload_stress_simulatio.png",
+    "title": "Legacy results: Course Workload Stress Simulation Set",
+    "description": "Legacy results — the “Course Workload Stress Simulation Set” section."
+  },
+  {
+    "file": "04_results_stress_level.png",
+    "title": "Legacy results: Stress Level",
+    "description": "Legacy results — the “Stress Level” section."
+  },
+  {
+    "file": "05_results_stress_level_comparison.png",
+    "title": "Legacy results: Stress Level Comparison",
+    "description": "Legacy results — the “Stress Level Comparison” section."
+  },
+  {
+    "file": "06_ai_analysis.png",
+    "title": "Legacy results — AI analysis",
+    "description": "On the pre-v1.0 results page the LLM writes a narrative analysis of the scheduling plan and its scenarios.",
+    "llm": true
+  }
+]

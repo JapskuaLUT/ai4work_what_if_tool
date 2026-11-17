@@ -1,0 +1,171 @@
+{
+  "title": "What-If Tool — Yard logistics tutorial",
+  "voice": "af_heart",
+  "speed": 1.0,
+  "say": {
+    "LT010": "L T zero ten",
+    "SequencedOk": "Sequenced OK",
+    "WaitingProblem": "Waiting Problem",
+    "phi4": "phi four",
+    "What-If": "What If"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "eyebrow": "What-If Tool · Tutorial",
+      "title": "Yard logistics",
+      "subtitle": "Read simulator runs, find the bottleneck, and test AI-drafted fixes",
+      "logo": "../../ui/public/what_if_logo.png",
+      "pills": ["Compare runs", "Find bottlenecks", "AI proposals"],
+      "narration": "Welcome. In the next few minutes you'll learn to use the yard logistics view of the What-If Tool: compare simulator runs, find where trucks lose time, and let the AI assistant draft improvements."
+    },
+    {
+      "type": "points",
+      "eyebrow": "What it does",
+      "title": "From simulator runs to clear answers",
+      "points": [
+        "Reads runs from the yard simulator",
+        "Compares the runs side by side",
+        "Shows the bottlenecks and every truck’s waits",
+        "Drafts and discusses fixes with a local AI"
+      ],
+      "narration": "The tool doesn't simulate the yard. It reads runs from the yard simulator, compares them side by side, shows where trucks waited, and lets a local AI draft and discuss fixes."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/01_yard_layout.png",
+      "caption": "Step 1 · Open the yard case",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.35, "x": 0.38, "y": 0.62, "zoom": 1.3 }
+      ],
+      "highlights": [
+        { "at": 0.45, "until": 0.95, "rect": [0.125, 0.585, 0.05, 0.065], "label": "Check-in terminal LT010" }
+      ],
+      "narration": "From the home page, click Load Yard Simulation. At the top is a map of the yard: the check-in terminal at the gate, parking, the scale, and twenty-five storage silos. Remember the check-in terminal, LT010."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/02_run_comparison.png",
+      "caption": "Step 2 · Compare the runs",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.25, "x": 0.5, "y": 0.64, "zoom": 1.15 }
+      ],
+      "highlights": [
+        { "at": 0.5, "until": 0.95, "rect": [0.08, 0.655, 0.835, 0.07], "label": "71 trucks: longest wait 3 h 36 min", "labelPos": "below" }
+      ],
+      "narration": "The Comparison tab puts every run side by side. With thirty trucks, nobody waits. With fifty-two, the longest wait is six minutes. With seventy-one, it jumps to three hours and thirty-six minutes. Click Select to star the run you prefer."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/03_waitingproblem_orders.png",
+      "caption": "Step 3 · Find the bottleneck",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.3, "x": 0.27, "y": 0.45, "zoom": 1.5 }
+      ],
+      "highlights": [
+        { "at": 0.38, "until": 0.95, "rect": [0.085, 0.315, 0.25, 0.11], "label": "Queue score 3.00", "labelPos": "below" }
+      ],
+      "narration": "Open the WaitingProblem tab. The top bottleneck is off-yard waiting: three trucks queuing outside the gate for one check-in slot. So the fix is check-in capacity or spacing out arrivals, not a bigger gate."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/06_bottleneck_occupancy.png",
+      "caption": "Click a bottleneck to see when it overflowed",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.3, "x": 0.5, "y": 0.3, "zoom": 1.15 }
+      ],
+      "cursor": [
+        { "at": 0.08, "x": 0.6, "y": 0.75 },
+        { "at": 0.3, "x": 0.13, "y": 0.275, "click": true }
+      ],
+      "highlights": [
+        { "at": 0.42, "until": 0.95, "rect": [0.37, 0.07, 0.555, 0.44], "label": "Trucks at LT010, against its capacity" }
+      ],
+      "narration": "Click any bottleneck, like LT010, and the chart shows how many trucks were there, minute by minute, against its capacity: the red dashed line."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/07_gantt_hover.png",
+      "caption": "Step 4 · See each truck’s day",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.3, "x": 0.55, "y": 0.6, "zoom": 1.4 }
+      ],
+      "highlights": [
+        { "at": 0.3, "until": 0.6, "rect": [0.37, 0.46, 0.345, 0.034], "label": "Red means waiting" },
+        { "at": 0.62, "until": 0.97, "rect": [0.46, 0.5, 0.22, 0.33], "label": "3 h 36 min, 83% of the visit" }
+      ],
+      "narration": "Further down, the per-truck timeline gives every truck one row, and red means waiting. Hover a row for its totals. This truck waited three hours and thirty-six minutes: eighty-three percent of its whole visit."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/12_improvements_tab.png",
+      "caption": "Step 5 · Let the AI draft fixes",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.25, "x": 0.4, "y": 0.5, "zoom": 1.4 }
+      ],
+      "highlights": [
+        { "at": 0.35, "until": 0.65, "rect": [0.09, 0.505, 0.155, 0.052], "label": "Starts on the worst run" }
+      ],
+      "cursor": [
+        { "at": 0.3, "x": 0.75, "y": 0.75 },
+        { "at": 0.45, "x": 0.17, "y": 0.53 },
+        { "at": 0.7, "x": 0.3, "y": 0.53 },
+        { "at": 0.85, "x": 0.42, "y": 0.53, "click": true }
+      ],
+      "narration": "Open the Improvements tab. The target run starts on the worst one. Choose how many proposals you want, from one to five, and click Generate suggestions. The local model takes from about half a minute to two minutes."
+    },
+    {
+      "type": "screen",
+      "image": "../../screenshots/02_logistics/14_drafts.png",
+      "caption": "Review every draft before you save it",
+      "camera": [
+        { "at": 0, "x": 0.5, "y": 0.5, "zoom": 1 },
+        { "at": 0.3, "x": 0.42, "y": 0.27, "zoom": 1.45 }
+      ],
+      "highlights": [
+        { "at": 0.45, "until": 0.95, "rect": [0.09, 0.285, 0.36, 0.042], "label": "LT010 serves one truck at a time", "labelPos": "below" }
+      ],
+      "narration": "Each draft names its target, the changes, the expected impact and the risks. Check the numbers before you save: this one says LT010 goes from two to three, but it actually serves one truck at a time. The tool checks that the places a draft names exist, not its numbers."
+    },
+    {
+      "type": "chat",
+      "eyebrow": "Step 6 · AI assistant",
+      "title": "Discuss a proposal",
+      "image": "../../screenshots/crops/yard_chat_discuss_proposal.png",
+      "question": "How confident are you that this fixes the bottleneck, and what could go wrong?",
+      "note": "Answered by phi4, running locally.",
+      "revealFrom": 0.32,
+      "revealStart": 0.25,
+      "revealEnd": 0.8,
+      "narration": "Click Discuss on a saved proposal to ask about it. We asked how confident the AI is that it fixes the bottleneck. It answered moderate to high, citing the real queue scores. Remember: it explains, but it hasn't run anything."
+    },
+    {
+      "type": "points",
+      "eyebrow": "Recap",
+      "title": "The workflow in six steps",
+      "points": [
+        "Open the yard case",
+        "Compare the runs",
+        "Find the bottleneck",
+        "Read the truck timeline",
+        "Let the AI draft fixes",
+        "Discuss, then decide"
+      ],
+      "narration": "To recap: open the yard case, compare the runs, find the bottleneck, read the truck timeline, let the AI draft fixes, and discuss them before you decide."
+    },
+    {
+      "type": "end",
+      "dark": true,
+      "eyebrow": "What-If Tool",
+      "title": "The AI suggests, you decide",
+      "subtitle": "Every step in detail: the yard logistics user guide.",
+      "narration": "Once the simulator connection is live, Send to simulator will test a saved proposal for real. Until then, the AI suggests and you decide. Thanks for watching."
+    }
+  ]
+}
