@@ -30,6 +30,10 @@
 > - 🔑 [Kiosk check-in logs — getting started](instructions/logistic_logs/getting_started.md)
 > - 🎓 [Education what-if — getting started](instructions/education/getting_started.md)
 > - 📊 [Educational stress instructions](instructions/stress_simulation_instructions.md) (pre-v1.0 model)
+> - 🎬 [Learning materials](learning_materials/README.md) — overview deck, plus a
+>   user guide (Markdown + PDF), slides (PDF/PPTX) and narrated video for each
+>   case and for developers ([developer guide](learning_materials/developer/developer_guide.md))
+> - 🖼️ [Screenshot library](screenshots/README.md) — full-size captures of every feature
 >
 > Each guide is self-contained, zero-prior-knowledge, and covers UI,
 > common tasks, API, data formats, and glossary for that case.
@@ -357,9 +361,9 @@ cd backend
 # Install dependencies using Bun (NOT npm/yarn/pnpm)
 bun install
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database credentials
+# Set up environment variables — there is no .env.example; create
+# backend/.env from the "Environment Variables" section below. Outside
+# Docker, Postgres is on host port 5433 (see docker-compose.yml).
 
 # Database schema is applied automatically by Postgres on first startup
 # from db/schema.sql (see "Database schema workflow" section below).
@@ -378,8 +382,8 @@ cd ui
 # Install dependencies using Bun
 bun install
 
-# Set up environment variables (if needed)
-cp .env.example .env
+# ui/.env is checked in and points at the Traefik hosts
+# (https://backend.localhost/api, https://ollama.localhost/api)
 
 # Start development server
 bun run dev
@@ -402,7 +406,7 @@ docker-compose up --build
 #### Backend (.env)
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/ai4work_db
+DATABASE_URL=postgres://whatifuser:whatifpassword@localhost:5433/whatifdatabase
 PORT=8000
 SERVER_URL=http://localhost:8000
 APP_BASE_URL=http://localhost:80
@@ -412,8 +416,8 @@ NODE_ENV=development
 #### Frontend (.env)
 
 ```env
-VITE_API_URL=http://localhost:8000
-VITE_OLLAMA_URL=http://localhost:11434
+VITE_BACKEND_API_URL=https://backend.localhost/api
+VITE_OLLAMA_API_URL=https://ollama.localhost/api
 ```
 
 ---
@@ -510,9 +514,18 @@ Parallel to the education concepts but for truck yards.
     `capacity` / `stagger_orders` / `reroute` / `add_entity`. Validated
     server-side against the yard's entity catalogue on save. A future
     `POST /:caseId/proposals/:id/run` will forward the proposal to the
-    simulator for a what-if run (route defined, returns 503 until
-    partners are ready — see
+    simulator for a what-if run. It is defined in the OpenAPI contract
+    only — there is no route in `yardRoutes.ts` yet, so it 404s until
+    partners are ready (see
     [specifications/yard_logistics/design.md §14](specifications/yard_logistics/design.md)).
+-   **Ingest validation.** Both ingest endpoints run
+    `validateRunExport()`
+    ([yardIngestValidation.ts](backend/src/services/yardIngestValidation.ts))
+    before touching the database. A run whose `export` is a
+    double-serialized JSON string, is nested one level too deep, or lacks
+    `ComparisonInformation` / `YardStructure.Entities` / `Orders` /
+    `Measurements.Measurements` gets a 400 with a message naming the run
+    and the fix, instead of a 500 from deep inside ingest.
 
 ---
 
@@ -871,7 +884,7 @@ Run tests:
 
 ```bash
 cd backend
-bun test                  # full suite — unit + integration (275 tests as of now)
+bun test                  # full suite — unit + integration (287 tests as of now)
 bun test --coverage
 bun run test:unit         # services/* unit tests only — no network
 bun run test:integration  # HTTP integration only; needs the dev stack up
@@ -888,12 +901,18 @@ treating parity as established.
 The **integration suite** (`backend/src/tests/integration/`) hits the running
 backend at `https://backend.localhost` and covers the education and yard
 APIs end-to-end. Each suite probes `/api/health` first and
-`describe.skipIf(!reachable)`'s itself if the stack is down — so
-`bun test` stays green either way. The request bodies live in
+`describe.skipIf(!reachable)`'s itself if the stack is down. One
+exception: the legacy `backend/src/tests/simulation.test.ts` has no such
+probe, so its two tests fail with `ECONNREFUSED` when the stack is down —
+use `bun run test:unit` for an offline run. The request bodies live in
 [specifications/examples/](specifications/examples/), shared with the
 human-readable docs there.
 
-### Frontend Tests (Vitest)
+### Frontend Tests
+
+There are no UI tests yet, and Vitest is not installed. The real gate on the
+frontend is `bun run build` (`tsc -b && vite build`). If you add tests, this
+is the intended shape:
 
 ```typescript
 // ui/src/components/MyComponent.test.tsx
@@ -907,11 +926,11 @@ test("renders title", () => {
 });
 ```
 
-Run tests:
+Run them, once Vitest and Testing Library are added as dev dependencies:
 
 ```bash
 cd ui
-bun test
+bunx vitest
 ```
 
 ---
@@ -1148,6 +1167,14 @@ stale cache surviving a dependency change.
     [parity fixtures](specifications/education_stress/parity/)
 -   `specifications/specification.yml` - Pre-v1.0 API specification
 -   `specifications/yard_logistics/` - Yard logistics design and contract
+-   `learning_materials/` - Training material per case (education, yard
+    logistics, check-in logs, developer) plus a 6-minute overview deck: user
+    guides as Markdown + PDF, slides as Markdown + PDF + PPTX, narrated MP4
+    tutorials with subtitles. Index: [learning_materials/README.md](learning_materials/README.md)
+-   `screenshots/` - Full-size screenshot library used by the slides and guides.
+    Index: [screenshots/README.md](screenshots/README.md)
+-   `ollama_readme.md` - Running host Ollama for the AI features (env vars,
+    model pull, CORS/403 troubleshooting)
 -   `worklog/stress_updates_log.md` - Implementation log
 
 ---

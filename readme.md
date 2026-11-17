@@ -4,10 +4,16 @@ This repository contains the source code for the What-If Tool, a web
 application for comparing alternative scenarios across three analysis
 domains:
 
--   **Educational course planning** — model student stress under
-    different course schedules, generate optimisation scenarios
-    server-side, pick the best one. See
-    [specifications/specification.yml](specifications/specification.yml).
+-   **Educational course planning** — model the stress a course plan
+    puts on students week by week with the shared
+    `course_stress_prediction` v1.0 model, try your own what-ifs (move
+    an exam, extend a deadline, cancel a lecture) next to
+    server-generated scenarios, and pick the best plan. See
+    [specifications/education_stress/design.md](specifications/education_stress/design.md)
+    and
+    [specifications/education_stress/specification.yml](specifications/education_stress/specification.yml)
+    (the pre-v1.0 contract is
+    [specifications/specification.yml](specifications/specification.yml)).
 -   **Yard logistics** — ingest truck-yard simulator outputs from a
     partner-owned simulator, surface KPIs and bottlenecks, let
     planners author improvement proposals (AI- or human-authored) and
@@ -32,6 +38,25 @@ Docker Compose behind mkcert-signed Traefik.
 For request-body examples and curl recipes, see
 [specifications/examples/](specifications/examples/).
 
+## Learning materials: training and introduction
+
+Slides, guides and narrated videos, one set per audience. The full index,
+with a note on what every file is, is in
+[learning_materials/README.md](learning_materials/README.md). All screenshots, including
+many the materials don't use, are in [screenshots/](screenshots/README.md).
+
+| Material | For | Video | Slides | Written guide |
+|---|---|---|---|---|
+| **Introduction**: the tool in 6 minutes | Anyone | — | [PDF](learning_materials/overview/overview_slides.pdf) · [PowerPoint](learning_materials/overview/overview_slides.pptx) · [Markdown + notes](learning_materials/overview/overview_slides.md) | — |
+| **Education** training | Teachers, course planners | [MP4](learning_materials/education/education_tutorial.mp4) (2:40) | [PDF](learning_materials/education/education_slides.pdf) · [PowerPoint](learning_materials/education/education_slides.pptx) · [Markdown + notes](learning_materials/education/education_slides.md) | [PDF](learning_materials/education/education_user_guide.pdf) · [Markdown](learning_materials/education/education_user_guide.md) |
+| **Yard logistics** training | Yard and logistics planners | [MP4](learning_materials/yard_logistics/yard_logistics_tutorial.mp4) (2:55) | [PDF](learning_materials/yard_logistics/yard_logistics_slides.pdf) · [PowerPoint](learning_materials/yard_logistics/yard_logistics_slides.pptx) · [Markdown + notes](learning_materials/yard_logistics/yard_logistics_slides.md) | [PDF](learning_materials/yard_logistics/yard_logistics_user_guide.pdf) · [Markdown](learning_materials/yard_logistics/yard_logistics_user_guide.md) |
+| **Check-in logs** training | Gate and check-in staff | [MP4](learning_materials/checkin_logs/checkin_logs_tutorial.mp4) (2:53) | [PDF](learning_materials/checkin_logs/checkin_logs_slides.pdf) · [PowerPoint](learning_materials/checkin_logs/checkin_logs_slides.pptx) · [Markdown + notes](learning_materials/checkin_logs/checkin_logs_slides.md) | [PDF](learning_materials/checkin_logs/checkin_logs_user_guide.pdf) · [Markdown](learning_materials/checkin_logs/checkin_logs_user_guide.md) |
+| **Developer** onboarding: APIs, JSON, database, Ollama, swapping the LLM | Developers integrating or extending the tool | [MP4](learning_materials/developer/developer_tutorial.mp4) (3:33) | [PDF](learning_materials/developer/developer_slides.pdf) · [PowerPoint](learning_materials/developer/developer_slides.pptx) · [Markdown + notes](learning_materials/developer/developer_slides.md) | [PDF](learning_materials/developer/developer_guide.pdf) · [Markdown](learning_materials/developer/developer_guide.md) |
+
+The videos are 1920 × 1080 with English subtitles built in; each also has
+a separate `.srt` file and its narration script next to it. The PowerPoint
+decks carry speaker notes on every slide.
+
 ## Getting started by case
 
 The fastest way to learn a domain is a self-contained walkthrough. Each
@@ -45,12 +70,21 @@ data-format reference.
 - 🔑 **[Kiosk check-in logs](instructions/logistic_logs/getting_started.md)** —
   process-mining over self-service check-in terminals; sessions,
   per-phase breakdown, PII-aware UI.
-- 📊 **Educational stress** —
-  [instructions/stress_simulation_instructions.md](instructions/stress_simulation_instructions.md)
-  (legacy).
+- 🎓 **[Education what-if](instructions/education/getting_started.md)** —
+  the `course_stress_prediction` v1.0 model, building your own what-ifs,
+  reading the results honestly, and the API.
+- 📊 **Educational stress (pre-v1.0)** —
+  [instructions/stress_simulation_instructions.md](instructions/stress_simulation_instructions.md),
+  for cases created before the v1.0 model.
+- 🛠️ **Developers** — the
+  [developer guide](learning_materials/developer/developer_guide.md)
+  covers all three cases from the API side: endpoints, JSON in and out,
+  the database, extending the tool, and running a different LLM.
 
 ## Table of Contents
 
+-   [Learning materials: training and introduction](#learning-materials-training-and-introduction)
+-   [Getting started by case](#getting-started-by-case)
 -   [Architecture](#architecture)
 -   [Getting Started](#getting-started)
     -   [Prerequisites](#prerequisites)
@@ -76,6 +110,10 @@ The What-If Tool is composed of several services that work together:
 -   **Ollama Proxy**: An Nginx proxy to connect to a local Ollama instance for AI-powered features.
 
 All services are orchestrated by Docker Compose, making the development environment consistent and easy to manage.
+
+For a developer-level tour of how the pieces fit together, with a diagram,
+request flows and JSON examples, see the
+[developer guide](learning_materials/developer/developer_guide.md).
 
 ## Getting Started
 
@@ -134,7 +172,9 @@ All services are orchestrated by Docker Compose, making the development environm
 ### Running the Application
 
 Once the prerequisites are met, the certificates are in place, and
-Ollama is running on the host, start the application:
+Ollama is running on the host with at least one model pulled (see
+[Local Development with Ollama](#local-development-with-ollama)),
+start the application:
 
 ```sh
 docker-compose up -d
@@ -153,6 +193,10 @@ SQL — run these once after `docker-compose up -d`:
 docker-compose exec backend bun run seed:yard   # 3 simulator runs over a 70-entity yard
 docker-compose exec backend bun run seed:logs   # 5764 events / 34 sessions of kiosk check-ins
 ```
+
+The current (v1.0) education model has no seed script: create a case in
+the UI's builder, or post the example course with the curl command in
+[instructions/education/getting_started.md](instructions/education/getting_started.md#create-a-case).
 
 Access the application at:
 
@@ -198,7 +242,9 @@ The backend service provides a RESTful API for the UI. It's responsible for all 
 -   **Service Name**: `postgres`
 -   **Source Code**: `/db`
 
-The PostgreSQL database stores all the data for the application. The data is persisted in a Docker volume (`postgres_whatif_data`). On the first run, the database is initialized with a schema (`schema.sql`) and populated with seed data (`seed.sql`).
+The PostgreSQL database stores all the data for the application. The data is persisted in the host directory `./postgres_whatif_data`, bind-mounted into the container (not a named Docker volume — deleting the directory resets the database). On the first run, the database is initialized with a schema (`schema.sql`) and populated with seed data (`seed.sql`).
+
+From the host, Postgres listens on port **5433** (mapped to 5432 inside the container, so it doesn't collide with another local Postgres): `psql -h localhost -p 5433 -U whatifuser whatifdatabase`.
 
 ### Traefik (Reverse Proxy)
 
@@ -218,12 +264,22 @@ This service is an Nginx proxy that allows the Dockerized services to communicat
 
 ## Local Development with Ollama
 
-The AI features (model dropdown, explanations, chat) call your **host
-machine's** Ollama through the dockerised `ollama-proxy`. Ollama must
-already be running on the host **before** you open the UI; otherwise
-the UI will show `502 Bad Gateway` plus a misleading CORS error.
+The AI features (model dropdown, explanations, chat, yard proposal
+generation) call your **host machine's** Ollama through the dockerised
+`ollama-proxy`. Ollama must already be running on the host **before**
+you open the UI; otherwise the UI will show `502 Bad Gateway` plus a
+misleading CORS error.
 
-Start Ollama on the host with both env vars set:
+Pull at least one model first. A fresh Ollama has none, and the model
+dropdown stays empty until you do. The learning materials and
+screenshots were made with `phi4`; any chat model works, but reasoning
+models can be slow enough to hit the proxy timeout:
+
+```sh
+ollama pull phi4
+```
+
+Then start Ollama on the host with both env vars set:
 
 ```sh
 OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost' ollama serve
@@ -233,11 +289,18 @@ OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS='https://app.localhost,https://backend.localh
     container can reach Ollama through the Docker host gateway.
 -   `OLLAMA_ORIGINS='https://app.localhost,https://backend.localhost'`
     — Ollama itself adds the `Access-Control-Allow-Origin` header for
-    these origins, which is what the browser needs.
+    these origins, which is what the browser needs. Without it Ollama
+    answers the browser with **403 Forbidden**, while a plain `curl`
+    (no `Origin` header) still works, so the problem is easy to miss.
 
 Verify with `curl -ksS -H 'Origin: https://app.localhost'
-https://ollama.localhost/api/tags` — you should get a JSON `models`
-array.
+https://ollama.localhost/api/tags`: you should get a JSON `models`
+array that lists the model you pulled. A `403` means `OLLAMA_ORIGINS`
+is not set on the running Ollama process.
+
+The backend never calls Ollama for chat; the browser does. To use a
+different LLM server or a hosted model, see
+[the developer guide](learning_materials/developer/developer_guide.md).
 
 For full background, troubleshooting, and a LaunchAgent recipe to keep
 Ollama running across reboots, see [ollama_readme.md](ollama_readme.md).
@@ -249,7 +312,7 @@ Tables live across all three domains:
 | Domain | Tables | Notes |
 |---|---|---|
 | Educational stress (legacy) | `simulation_sets`, `scenarios`, `assignments`, `stress_metrics` | The original coursework simulation set + per-scenario stress metrics. |
-| Educational stress (current) | `educational_simulations`, `adjustment_scenarios` | Generative API: server-side `optimizationEngine` produces 4 adjustment scenarios per case. |
+| Educational stress (current) | `educational_simulations`, `adjustment_scenarios` | One case per course plan. `adjustment_scenarios` holds both server-generated scenarios and user-authored what-ifs (`origin` = `generated` / `user`), all simulated by the `course_stress_prediction` v1.0 engine. Cases created before v1.0 keep `stress_model.version = "legacy-0"` and are never recomputed. |
 | Yard logistics | `yard_simulations`, `yard_runs`, `yard_proposals` | Parent case + N simulator runs + AI/manual improvement proposals. |
 | Kiosk check-in logs | `log_cases`, `log_rows` | Parent case + flat fact table of raw kiosk events; sessions reconstructed at read time. |
 
@@ -262,5 +325,7 @@ both files are kept manually in sync.
 For per-domain detail (column semantics, indexes, design rationale)
 see the design docs:
 
+-   [specifications/education_stress/design.md](specifications/education_stress/design.md)
 -   [specifications/yard_logistics/design.md § Data layer](specifications/yard_logistics/design.md)
 -   [specifications/logistic_logs/design.md § Data layer](specifications/logistic_logs/design.md)
+-   [Developer guide § Database](learning_materials/developer/developer_guide.md)

@@ -72,7 +72,7 @@ curl -ksS -X DELETE $BASE/$CASE_ID/proposals/$PROPOSAL_ID | jq .
 ## Forward-to-simulator stub
 
 The contract for `POST /{caseId}/proposals/{id}/run` is defined in the
-spec but the route currently returns **503** — see
+spec but the route is not implemented yet (the backend answers **404**) — see
 [../../yard_logistics/design.md §14](../../yard_logistics/design.md)
 for what we'll send to the partner when they expose their API.
 
